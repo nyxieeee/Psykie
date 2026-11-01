@@ -4688,3 +4688,44 @@ body {
    width:100%;
    padding:10px;
 }
+/* Material-based psychology practice */
+.study-quiz-intro { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; padding:18px; }
+.study-quiz-intro p,.study-document-actions p { color:var(--ref-muted); font-size:12px; line-height:1.65; margin:6px 0; }
+.study-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.study-actions button { white-space:normal; }
+.study-setup-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:16px 0; }
+.study-setup-grid label { min-width:0; font-size:12px; font-weight:600; }
+.ai-draft-dialog { max-width:600px; }
+.ai-draft-dialog :where(select,textarea,input) { max-width:100%; min-width:0; }
+.study-source { display:block; color:var(--ref-muted); font-size:10px; margin-top:5px; overflow-wrap:anywhere; }
+.ref-quizzes-page .ref-quiz-layout { grid-template-columns:minmax(0,.95fr) minmax(0,1.1fr); align-items:start; }
+.ref-quizzes-page .ref-quiz-row { flex-wrap:wrap; }
+.ref-quizzes-page .ref-quiz-row>div { min-width:130px; overflow-wrap:anywhere; }
+.ref-quizzes-page .ref-quiz-row .ref-tag { max-width:100%; white-space:normal; }
+.ref-quizzes-page .ref-result-row small { overflow-wrap:anywhere; }
+.study-practice-panel { padding:20px; min-width:0; gap:16px; scroll-margin-top:72px; }
+.study-practice-panel .ref-question-text { margin:4px 0; font-size:17px; line-height:1.6; }
+.study-practice-panel .ref-answer-options { margin:0 0 10px; }
+.study-practice-panel .ref-answer-options label { overflow-wrap:anywhere; min-width:0; }
+.study-session-meta { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; color:var(--ref-muted); font-size:12px; }
+.study-session-meta>span { display:flex; align-items:center; gap:5px; }
+.study-question-nav { display:flex; flex-wrap:wrap; gap:6px; }
+.study-question-nav button { display:flex; align-items:center; justify-content:center; gap:2px; min-width:32px; height:32px; border:1px solid var(--ref-border); border-radius:9px; font-size:12px; }
+.study-question-nav .answered { background:#e9f7f2; color:#227666; }
+.study-question-nav .current { background:var(--ref-accent); color:white; border-color:var(--ref-accent); }
+.study-finish { align-self:flex-start; margin-top:8px; font-size:12px; }
+.study-practice-panel .ref-quiz-finished { padding:0; gap:10px; }
+.study-practice-panel .ref-quiz-finished h2 { font-size:19px; }
+.study-practice-panel .ref-quiz-finished .study-actions { justify-content:center; }
+.study-answer-review { border-top:1px solid var(--ref-border); padding-top:18px; }
+.study-answer-review>.ref-tabs { flex-wrap:wrap; }
+.study-review-item { padding:15px; margin-top:12px; border:1px solid var(--ref-border); border-left:3px solid #d65c8c; border-radius:12px; overflow-wrap:anywhere; }
+.study-review-item.correct { border-left-color:#3c9c87; }
+.study-review-item h4 { font-size:14px; line-height:1.6; margin:8px 0; }
+.study-review-item small { color:var(--ref-muted); }
+.study-review-item p { font-size:12px; line-height:1.8; margin:5px 0; }
+.study-review-item>div { padding:12px; margin-top:12px; background:var(--ref-soft,#f8f2ff); border-radius:9px; font-size:12px; }
+.study-document-actions { border-top:1px solid var(--ref-border); padding:16px 0; margin-top:16px; }
+.ref-editor-toolbar { flex-wrap:wrap; }
+@media(max-width:1100px) { .ref-quizzes-page .ref-quiz-layout { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:480px) { .study-setup-grid { grid-template-columns:minmax(0,1fr); } .study-practice-panel { padding:14px; } .study-quiz-intro .study-actions { width:100%; } .study-quiz-intro .study-actions button { flex:1; } }

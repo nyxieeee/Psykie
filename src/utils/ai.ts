@@ -1,7 +1,7 @@
 import { useAuthStore } from '../store/useAuthStore'
 import { requireSupabase, supabaseConfigured } from './supabase'
-import { AITask, AIDraft, ResearchResponse, trustedSource, validateDraft } from '../../supabase/functions/_shared/contracts'
-export type { AITask, AIDraft, AIQuestion, ResearchResult, ResearchResponse } from '../../supabase/functions/_shared/contracts'
+import { AITask, AIDraft, QuizOptions, ResearchResponse, trustedSource, validateDraft } from '../../supabase/functions/_shared/contracts'
+export type { AITask, AIDraft, AIQuestion, QuizOptions, ResearchResult, ResearchResponse } from '../../supabase/functions/_shared/contracts'
 export { TRUSTED_SOURCES } from '../../supabase/functions/_shared/contracts'
 export const aiConfigured = supabaseConfigured
 async function invoke(name: string, body: Record<string, unknown>, signal?: AbortSignal) {
@@ -23,8 +23,8 @@ export async function chatWithMindy(messages: { role: 'user' | 'assistant'; cont
   if (typeof data?.answer !== 'string' || !data.answer.trim()) throw new Error('Mindy returned an empty response. Please try again.')
   return data.answer
 }
-export async function generateAIDraft(task: AITask, text: string, category: string, count: number, signal?: AbortSignal): Promise<AIDraft> {
-  return validateDraft(await invoke('psykie-ai', { action: task, text, category, count }, signal), task)
+export async function generateAIDraft(task: AITask, text: string, category: string, count: number, signal?: AbortSignal, quizOptions?: QuizOptions): Promise<AIDraft> {
+  return validateDraft(await invoke('psykie-ai', { action: task, text, category, count, quizOptions }, signal), task)
 }
 export async function searchTrustedResearch(query: string, signal?: AbortSignal): Promise<ResearchResponse> {
   const data = await invoke('psykie-research', { query }, signal)

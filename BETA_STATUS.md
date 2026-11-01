@@ -7,7 +7,7 @@
 - Empty workspaces with no seeded people, papers, cards, questions, appointments, accounts, or progress.
 - Notes: creation, editing, text import, favorites, removal, and cards made from the actual note text. Each nonempty line supplies the answer; `Term: definition` supplies a specific prompt. This is text conversion, not AI generation.
 - Flashcards: deck/card creation and removal, 3D flip, review scheduling, real review progress and streaks.
-- Quizzes: questions/options derived from the account's own flashcards, answer selection, scoring, saved results, filtering and removal. A category needs at least two distinct answers. Available card count limits quiz length.
+- Quizzes: AI practice from topics, uploaded files, or notes; psychology styles and difficulty; optional timer; saved progress; answer rationales, flags, missed-question retries, review downloads, and individual attempt history. Local flashcard-based practice remains available and snapshots the question bank. See STUDY_WORKFLOWS.md for limits, storage, and deployment.
 - Calendar: study/personal events for students; clinical categories for professionals; month/week/agenda navigation; saved events and removal. Dashboard upcoming events uses the saved calendar.
 - Research: curated Mistral web search with server-side source/relevance checks, a saved library, collections, personal references, and summaries from pasted text. See AI_SETUP.md.
 - Documents: empty folders/vault, folder creation, actual uploaded bytes in IndexedDB, preview where supported, bookmarks, downloads, and deletion of both metadata and bytes.

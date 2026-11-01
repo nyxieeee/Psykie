@@ -1,267 +1,118 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { ArrowLeft, ArrowRight, BookOpen, Brain, CheckCircle, Clock, DownloadSimple, Flag, X } from '@phosphor-icons/react'
 import { AIGenerator } from '../components/AIGenerator'
-import { AIQuestion } from '../utils/ai'
-import { readWorkspaceList } from '../utils/workspaceStorage'
-import { workspaceStorage } from '../utils/workspaceStorage'
-import { useStudyStore } from '../store'
-import { ArrowRight, BookOpen, Brain, CheckCircle, Flag, X } from '@phosphor-icons/react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
 import { ReferenceEmpty, ReferenceHeader, ReferenceSearch, ReferenceTabs } from '../components/ReferenceUI'
 import { ViewportOverlay } from '../components/ViewportOverlay'
+import { useStudyStore } from '../store'
+import { readWorkspaceList, workspaceStorage } from '../utils/workspaceStorage'
+import { completeQuizSession, createQuizSession, missedQuestions, questionsFromCards, QuizAttempt, QuizSession, StudyQuiz } from '../utils/quizPractice'
 
+const dateLabel = (date: string) => Number.isNaN(Date.parse(date)) ? date : new Date(date).toLocaleString()
+const timeLabel = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+type Handoff = { studyText?: string; sourceName?: string; category?: string }
 
 export function QuizzesPage() {
   const cards = useStudyStore(state => state.cards)
-  const [showAI, setShowAI] = useState(false)
-  const [creationError, setCreationError] = useState('')
-  const buildQuestions = (category: string, count: number) => {
-    const source = cards.filter(card => card.category.toLowerCase() === category.toLowerCase())
-    return source.filter(card => source.some(other => other.answer !== card.answer)).slice(0, count).map(card => {
-      const answers = [card.answer, ...source.filter(other => other.answer !== card.answer).map(other => other.answer)]
-      const options = [...new Set(answers)].slice(0, 4).sort((a, b) => a.localeCompare(b))
-      return { id: card.id, category: card.category, question: card.question, options, correct: options.indexOf(card.answer) }
-    })
-  }
-  const [quizzes, setQuizzes] = useState<{
-    id: string
-    title: string
-    category: string
-    difficulty: 'easy' | 'medium' | 'hard' | 'board'
-    questionsCount: number
-    passingScore: number
-    questions?: AIQuestion[]
-    createdAt: string
-    lastAttempt?: { score: number; percentage: number; date: string }
-  }[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('all')
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [selectedQuiz, setSelectedQuiz] = useState<string | null>('5')
-  const [newQuiz, setNewQuiz] = useState({
-    title: '',
-    category: 'General Psychology',
-    difficulty: 'medium' as 'easy' | 'medium' | 'hard' | 'board',
-    questionsCount: 10,
-    passingScore: 70
+  const location = useLocation(), navigate = useNavigate()
+  const [quizzes, setQuizzes] = useState<StudyQuiz[]>(() => readWorkspaceList<StudyQuiz>('psykie-quizzes').map(quiz => ({...quiz, questions: quiz.questions || questionsFromCards(cards, quiz.category, quiz.questionsCount)})))
+  const [session, setSession] = useState<QuizSession | null>(() => {
+    try { const saved = JSON.parse(workspaceStorage.getItem('psykie-quiz-session') || 'null'); return saved && quizzes.some(q => q.id === saved.quizId) && Array.isArray(saved.questions) && saved.questions.length && Array.isArray(saved.answers) ? saved : null } catch { return null }
   })
-
-  const categories = [
-    'All',
-    'General Psychology',
-    'Cognitive Psychology',
-    'Developmental Psychology',
-    'Abnormal Psychology',
-    'Social Psychology',
-    'Biological Psychology',
-    'Research Methods',
-    'Statistics',
-    'Board Exam',
-  ]
-
-  const difficulties = [
-    { value: 'easy', label: 'Easy', color: 'bg-emerald-100', text: 'text-emerald-700' },
-    { value: 'medium', label: 'Medium', color: 'bg-amber-100', text: 'text-amber-700' },
-    { value: 'hard', label: 'Hard', color: 'bg-rose-100', text: 'text-rose-700' },
-    { value: 'board', label: 'Board Exam', color: 'bg-pink-100', text: 'text-pink-700' },
-  ]
-
+  const [result, setResult] = useState<QuizAttempt | null>(null), [reviewFilter, setReviewFilter] = useState('all')
+  const [showAI, setShowAI] = useState(false), [handoff, setHandoff] = useState<Handoff>({})
+  const [view, setView] = useState('practice'), [search, setSearch] = useState(''), [category, setCategory] = useState('all')
+  const [showCards, setShowCards] = useState(false), [cardCategory, setCardCategory] = useState(cards[0]?.category || 'General Psychology')
+  const [cardTitle, setCardTitle] = useState(''), [cardCount, setCardCount] = useState(10), [error, setError] = useState('')
+  const [now, setNow] = useState(Date.now())
+  const finishedSession = useRef('')
+  const practiceRef = useRef<HTMLElement>(null), scrollToPractice = useRef(false)
+  const quiz = quizzes.find(item => item.id === session?.quizId)
+  const question = session?.questions[session.index]
+  const chosen = session?.answers[session.index] ?? null
+  const filtered = quizzes.filter(item => (category === 'all' || item.category === category) && (item.title + ' ' + item.category + ' ' + (item.sourceName || '')).toLowerCase().includes(search.toLowerCase()))
+  const attempts = quizzes.flatMap(item => item.attempts || []).sort((a,b) => b.date.localeCompare(a.date))
+  const legacyResults = quizzes.filter(item => item.lastAttempt && !item.attempts?.length)
+  const finish = useCallback((timedOut = false) => {
+    if (!session || !quiz || finishedSession.current === session.id) return
+    finishedSession.current = session.id
+    const attempt = completeQuizSession(quiz, session, timedOut)
+    setQuizzes(previous => previous.map(item => item.id === quiz.id ? {...item, attempts: [attempt, ...(item.attempts || [])].slice(0,30), lastAttempt: {score:attempt.score,percentage:attempt.percentage,date:attempt.date}} : item))
+    scrollToPractice.current = true
+    setResult(attempt); setReviewFilter('all'); setSession(null)
+  }, [session, quiz])
+  useEffect(() => { workspaceStorage.setItem('psykie-quizzes', JSON.stringify(quizzes)) }, [quizzes])
+  useEffect(() => { if (session) workspaceStorage.setItem('psykie-quiz-session', JSON.stringify(session)); else workspaceStorage.removeItem('psykie-quiz-session') }, [session])
   useEffect(() => {
-    setQuizzes(readWorkspaceList('psykie-quizzes'))
-    setIsLoading(false)
-  }, [])
-  const filteredQuizzes = quizzes.filter(quiz => (quiz.title + ' ' + quiz.category).toLowerCase().includes(searchQuery.toLowerCase()) && (selectedCategory === 'all' || quiz.category.toLowerCase() === selectedCategory))
-  const handleCreateQuiz = (e: React.FormEvent) => { e.preventDefault(); if (!newQuiz.title.trim()) return; const count = buildQuestions(newQuiz.category, newQuiz.questionsCount).length; if (!count) { setCreationError('Add at least two flashcards with different answers in this category first.'); return } setCreationError(''); setQuizzes(previous => [{ ...newQuiz, questionsCount: count, id: 'quiz-' + Date.now(), createdAt: 'Just now' }, ...previous]); setShowCreateModal(false); setNewQuiz({ title: '', category: 'General Psychology', difficulty: 'medium', questionsCount: 10, passingScore: 70 }) }
-  const deleteQuiz = (id: string) => setQuizzes(previous => previous.filter(quiz => quiz.id !== id))
-  const [view, setView] = useState('practice')
-  const [showAllQuizzes, setShowAllQuizzes] = useState(false)
-  const [questionIndex, setQuestionIndex] = useState(0)
-  const [chosenAnswer, setChosenAnswer] = useState<number | null>(null)
-  const [score, setScore] = useState(0)
-  const [finished, setFinished] = useState(false)
-  const [flagged, setFlagged] = useState<string[]>([])
-  const quiz = quizzes.find(item => item.id === selectedQuiz) || filteredQuizzes[0]
-  const questions = quiz?.questions?.map((question, index) => ({ ...question, id: quiz.id + '-' + index })) || (quiz ? buildQuestions(quiz.category, quiz.questionsCount) : [])
-  const question = questions[questionIndex % Math.max(1, questions.length)]
-  const options = question?.options || []
-  const correctIndex = question?.correct ?? 0
-  const begin = (id: string) => { setSelectedQuiz(id); setQuestionIndex(0); setChosenAnswer(null); setScore(0); setFinished(false) }
-  const next = () => { if (chosenAnswer === null || !question) return; const updated = score + (chosenAnswer === correctIndex ? 1 : 0); setScore(updated); setChosenAnswer(null); if (questionIndex + 1 >= questions.length) { setFinished(true); setQuizzes(previous => previous.map(item => item.id === quiz?.id ? { ...item, lastAttempt: { score: updated, percentage: Math.round(updated / questions.length * 100), date: 'Just now' } } : item)) } else setQuestionIndex(value => value + 1) }
-  useEffect(() => { if (!isLoading) workspaceStorage.setItem('psykie-quizzes', JSON.stringify(quizzes)) }, [quizzes, isLoading])
-  return (
-    <div className="reference-page ref-quizzes-page">
-      <ReferenceHeader title="Put your knowledge into practice." subtitle="Choose a quiz, test yourself, and see your progress." action="Create quiz" onAction={() => setShowCreateModal(true)} />
-      <div className="ref-quiz-layout">
-        <section className="ref-quiz-browser"><div className="ref-panel ref-quiz-list"><div className="ref-collection-toolbar"><ReferenceTabs items={[{ id: 'practice', label: 'Practice' }, { id: 'mine', label: 'My quizzes' }, { id: 'results', label: 'Results' }]} value={view} onChange={setView} /><select aria-label="Quiz subject" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>{categories.map(category => <option key={category} value={category.toLowerCase()}>{category === 'All' ? 'All subjects' : category}</option>)}</select></div><ReferenceSearch value={searchQuery} onChange={setSearchQuery} placeholder="Find a quiz…" />{view !== 'results' && <div className="ref-quiz-rows">{filteredQuizzes.filter(item => view !== 'mine' || item.id.startsWith('quiz-')).slice(0, showAllQuizzes || view === 'mine' ? undefined : 3).map((item, index) => <article key={item.id} className="ref-quiz-row"><span className={'ref-icon tint-' + index % 4}>{index % 2 ? <BookOpen size={27} /> : <Brain size={27} />}</span><div><h3>{item.title}</h3><p>{(item.questions?.length || buildQuestions(item.category, item.questionsCount).length)} study questions · {item.difficulty}</p></div><span className="ref-tag tint-2">{item.category}</span><button className="ref-primary" onClick={() => begin(item.id)}>Start quiz</button><details className="ref-item-menu"><summary aria-label={'Options for ' + item.title}>···</summary><button onClick={() => deleteQuiz(item.id)}>Delete quiz</button></details></article>)}{view === 'practice' && filteredQuizzes.length > 3 && <button className="ref-text-action ref-see-all" onClick={() => setShowAllQuizzes(!showAllQuizzes)}>{showAllQuizzes ? 'Show less' : 'View all ' + filteredQuizzes.length + ' quizzes'}</button>}{!filteredQuizzes.length && <ReferenceEmpty>No quizzes match this subject.</ReferenceEmpty>}{view === 'mine' && !filteredQuizzes.some(item => item.id.startsWith('quiz-')) && <ReferenceEmpty>Create a quiz to make practice your own.</ReferenceEmpty>}</div>}</div><section className="ref-panel ref-results"><div className="ref-panel-title"><h2>Recent results</h2><button className="ref-text-action" onClick={() => setView('results')}>View all results<ArrowRight size={15} /></button></div><div className="ref-results-table"><div className="ref-results-heading"><span>Quiz</span><span>Subject</span><span>Score</span><span>Date</span></div>{quizzes.filter(item => item.lastAttempt).slice(0, view === 'results' ? undefined : 3).map(item => <button className="ref-result-row" key={item.id} onClick={() => begin(item.id)}><span>{item.title}</span><span>{item.category}</span><span className="ref-score">{item.lastAttempt?.percentage}%</span><small>{item.lastAttempt?.date}</small></button>)}</div></section><div className="ref-quiz-tools"><button className="ref-secondary" onClick={() => setShowAI(true)}>Generate quiz with AI</button><span>Practice at your own pace. Every attempt helps.</span></div></section>
-        <section className="ref-panel ref-question-panel">{question ? <><div className="ref-question-heading"><div><h2>{quiz?.title || 'Practice psychology'}</h2><p>{finished ? 'Practice complete' : 'Question ' + (questionIndex + 1) + ' of ' + questions.length}</p></div><div className="ref-question-progress"><span style={{ width: (finished ? 100 : questionIndex / questions.length * 100) + '%' }} /></div><small>{finished ? '100' : Math.round(questionIndex / questions.length * 100)}%</small></div>{finished ? <div className="ref-quiz-finished"><CheckCircle size={50} weight="duotone" /><h2>A little more confident.</h2><strong>{score} / {questions.length}</strong><p>You have completed this practice session.</p><button className="ref-primary" onClick={() => begin(quiz?.id || '')}>Practice again</button></div> : <><h3 className="ref-question-text">{question.question}</h3><div className="ref-answer-options">{options.map((answer, index) => <label key={answer} className={chosenAnswer === index ? 'selected' : ''}><input type="radio" name="practice-answer" checked={chosenAnswer === index} onChange={() => setChosenAnswer(index)} /><span>{answer}</span></label>)}</div><div className="ref-question-footer"><button className="ref-secondary" aria-pressed={flagged.includes(question.id)} onClick={() => setFlagged(previous => previous.includes(question.id) ? previous.filter(id => id !== question.id) : [...previous, question.id])}><Flag size={18} />{flagged.includes(question.id) ? 'Flagged' : 'Flag for review'}</button><button className="ref-primary" disabled={chosenAnswer === null} onClick={next}>{questionIndex + 1 === questions.length ? 'See results' : 'Next question'}<ArrowRight size={18} /></button></div></>}</> : <ReferenceEmpty>{isLoading ? 'Preparing your practice space…' : 'Add flashcards to build your practice question bank.'}</ReferenceEmpty>}</section>
-      </div>
-      <AnimatePresence>
-        {showCreateModal && (
-          <ViewportOverlay onDismiss={() => setShowCreateModal(false)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 modal-backdrop flex items-center justify-center z-[99999] p-4 overflow-y-auto"
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
-              className="glass-modal quiz-create-dialog"
-            >
-              <motion.div
-                className="quiz-dialog-heading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-              >
-                <motion.h2
-                  id="create-quiz-heading" className="quiz-dialog-title"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: 0.2 }}
-                >
-                  Create New Quiz
-                </motion.h2>
-                <motion.button
-                  onClick={() => setShowCreateModal(false)}
-                  className="quiz-dialog-close" aria-label="Close create quiz"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <X size={18} />
-                </motion.button>
-              </motion.div>
-
-              <form onSubmit={handleCreateQuiz} className="quiz-create-form"><p className="ref-inline-notice">Practice uses your own flashcards. Add at least two distinct answers in the selected category. The quiz uses up to the requested number of available cards.</p>{creationError && <p role="alert" className="ref-form-error">{creationError}</p>}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.2 }}
-                >
-                  <label htmlFor="quiz-title" className="block text-sm font-medium text-slate-700 mb-2">
-                    Quiz Title
-                  </label>
-                  <input id="quiz-title" required
-                    type="text"
-                    value={newQuiz.title}
-                    onChange={(e) => setNewQuiz({ ...newQuiz, title: e.target.value })}
-                    placeholder="e.g., Cognitive Psychology Basics"
-                    className="input-solid"
-                    autoFocus
-                  />
-                </motion.div>
-
-                <motion.div
-                  className="quiz-form-row"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.3 }}
-                >
-                  <div>
-                    <label htmlFor="quiz-category" className="block text-sm font-medium text-slate-700 mb-2">
-                      Category
-                    </label>
-                    <select id="quiz-category"
-                      value={newQuiz.category}
-                      onChange={(e) => setNewQuiz({ ...newQuiz, category: e.target.value })}
-                      className="input-solid"
-                    >
-                      {categories.slice(1).map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="quiz-difficulty" className="block text-sm font-medium text-slate-700 mb-2">
-                      Difficulty
-                    </label>
-                    <select id="quiz-difficulty"
-                      value={newQuiz.difficulty}
-                      onChange={(e) => setNewQuiz({ ...newQuiz, difficulty: e.target.value as 'easy' | 'medium' | 'hard' | 'board' })}
-                      className="input-solid"
-                    >
-                      {difficulties.map((d) => (
-                        <option key={d.value} value={d.value}>{d.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  className="quiz-form-row"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.4 }}
-                >
-                  <div>
-                    <label htmlFor="quiz-count" className="block text-sm font-medium text-slate-700 mb-2">
-                      Number of Questions
-                    </label>
-                    <input id="quiz-count"
-                      type="number"
-                      value={newQuiz.questionsCount}
-                      onChange={(e) => setNewQuiz({ ...newQuiz, questionsCount: parseInt(e.target.value) || 0 })}
-                      min="1"
-                      max="100"
-                      className="input-solid"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="quiz-passing-score" className="block text-sm font-medium text-slate-700 mb-2">
-                      Passing Score (%)
-                    </label>
-                    <input id="quiz-passing-score"
-                      type="number"
-                      value={newQuiz.passingScore}
-                      onChange={(e) => setNewQuiz({ ...newQuiz, passingScore: parseInt(e.target.value) || 0 })}
-                      min="50"
-                      max="100"
-                      className="input-solid"
-                    />
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  className="quiz-dialog-actions"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.5 }}
-                >
-                  <motion.button
-                    type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="ref-secondary"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Cancel
-                  </motion.button>
-                  <motion.button
-                    type="submit"
-                    className="ref-primary"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <span className="mr-1" aria-hidden="true">+</span>
-                    Create Quiz
-                  </motion.button>
-                </motion.div>
-              </form>
-            </motion.div>
-          </ViewportOverlay>
-        )}
-      </AnimatePresence>
-
-      {/* Floating Action Button */}
-
-
-      {/* ── GENERATE QUIZ WITH AI MODAL ── */}
-      
-      {showAI && <AIGenerator task="quiz" category={newQuiz.category} onClose={() => setShowAI(false)} onSave={draft => { const id = 'quiz-' + crypto.randomUUID(); setQuizzes(previous => [{ id, title: draft.title, category: newQuiz.category, difficulty: 'medium', questionsCount: draft.questions.length, passingScore: 70, createdAt: new Date().toISOString(), questions: draft.questions }, ...previous]); begin(id); setShowAI(false); setView('mine') }}/>}
+    if (!session?.deadline) return
+    setNow(Date.now())
+    const timer = window.setInterval(() => setNow(Date.now()), 500)
+    return () => clearInterval(timer)
+  }, [session?.deadline])
+  useEffect(() => { if (session?.deadline && now >= session.deadline) finish(true) }, [now, session?.deadline, finish])
+  useEffect(() => {
+    const state = location.state as Handoff | null
+    if (!state?.studyText) return
+    setHandoff(state); setShowAI(true)
+    navigate(location.pathname, {replace:true, state:null})
+  }, [location.state, location.pathname, navigate])
+  useEffect(() => {
+    if (!scrollToPractice.current) return
+    scrollToPractice.current = false
+    if (window.innerWidth <= 1100) requestAnimationFrame(() => practiceRef.current?.scrollIntoView({block:'start',behavior:'instant'}))
+  }, [session?.id, result?.id])
+  const begin = (item: StudyQuiz, subset = item.questions) => {
+    if (!subset.length) return
+    scrollToPractice.current = true
+    setNow(Date.now()); setResult(null); setReviewFilter('all'); setSession(createQuizSession(item, subset))
+  }
+  const openGenerator = () => { setHandoff({}); setShowAI(true) }
+  const removeQuiz = (id: string) => { setQuizzes(previous => previous.filter(item => item.id !== id)); if (session?.quizId === id) setSession(null); if (result?.quizId === id) setResult(null) }
+  const exportReview = () => {
+    if (!result) return
+    const lines = [result.title, `${result.score}/${result.questions.length} (${result.percentage}%)`, dateLabel(result.date), ...result.questions.map((item,index) => `\n${index + 1}. ${item.question}\nYour answer: ${item.options[result.answers[index] ?? -1] || 'Unanswered'}\nCorrect answer: ${item.options[item.correct]}\nExplanation: ${item.explanation}`)]
+    const url = URL.createObjectURL(new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'})), link = document.createElement('a')
+    link.href = url; link.download = 'psykie-quiz-review.txt'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+  const createFromCards = (event: React.FormEvent) => {
+    event.preventDefault()
+    const questions = questionsFromCards(cards, cardCategory, cardCount)
+    if (!questions.length) { setError('Add at least two flashcards with different answers in this subject first.'); return }
+    const item: StudyQuiz = {id:'quiz-'+crypto.randomUUID(),title:cardTitle.trim() || cardCategory+' practice',category:cardCategory,difficulty:'medium',questionsCount:questions.length,passingScore:70,questions,createdAt:new Date().toISOString(),sourceName:'Your flashcards'}
+    setQuizzes(previous => [item,...previous]); setShowCards(false); setError(''); setCategory('all'); setSearch(''); setView('mine'); begin(item)
+  }
+  return <div className="reference-page ref-quizzes-page">
+    <ReferenceHeader title="Put your knowledge into practice." subtitle="Turn your psychology notes and reading into practice, then learn from every answer." action="Create quiz" onAction={openGenerator}/>
+    <div className="study-quiz-intro ref-panel"><div><strong>Your material. Your practice.</strong><p>Upload a reading, choose a saved note, or type a topic. Build psychology questions at your level.</p></div><div className="study-actions"><button className="ref-primary" onClick={openGenerator}>Generate quiz with AI</button><button className="ref-secondary" onClick={() => {setError('');setShowCards(true)}}>Practice from flashcards</button></div></div>
+    <div className="ref-quiz-layout">
+      <section className="ref-quiz-browser">
+        <div className="ref-panel ref-quiz-list">
+          <div className="ref-collection-toolbar"><ReferenceTabs items={[{id:'practice',label:'Practice'},{id:'mine',label:'My quizzes'},{id:'results',label:'Results'}]} value={view} onChange={setView}/><select aria-label="Quiz subject" value={category} onChange={e => setCategory(e.target.value)}><option value="all">All subjects</option>{[...new Set(quizzes.map(item => item.category))].map(name => <option key={name}>{name}</option>)}</select></div>
+          <ReferenceSearch value={search} onChange={setSearch} placeholder="Find a quiz or source..."/>
+          {view !== 'results' && <div className="ref-quiz-rows">{filtered.map((item,index) => <article key={item.id} className="ref-quiz-row"><span className={'ref-icon tint-'+index%4}>{index%2 ? <BookOpen size={27}/> : <Brain size={27}/>}</span><div><h3>{item.title}</h3><p>{item.questions.length} questions | {item.difficulty}{item.timerMinutes ? ` | ${item.timerMinutes} min` : ' | Untimed'}</p>{item.sourceName && <small className="study-source">{item.sourceName}</small>}</div><span className="ref-tag tint-2">{item.category}</span><button className="ref-primary" onClick={() => begin(item)} disabled={!item.questions.length}>Start quiz</button><details className="ref-item-menu"><summary aria-label={'Options for '+item.title}>...</summary><button onClick={() => removeQuiz(item.id)}>Delete quiz</button></details></article>)}{!filtered.length && <ReferenceEmpty>No quizzes yet. Create one from a topic, note, or uploaded file.</ReferenceEmpty>}</div>}
+        </div>
+        <section className="ref-panel ref-results"><div className="ref-panel-title"><h2>Recent results</h2><button className="ref-text-action" onClick={() => setView('results')}>View all results<ArrowRight size={15}/></button></div><div className="ref-results-table"><div className="ref-results-heading"><span>Quiz</span><span>Subject</span><span>Score</span><span>Date</span></div>{attempts.filter(item => (category === 'all' || item.category === category) && (item.title+' '+item.category).toLowerCase().includes(search.toLowerCase())).slice(0,view === 'results' ? undefined : 3).map(attempt => <button className="ref-result-row" key={attempt.id} onClick={() => {scrollToPractice.current=true;setResult(attempt);setReviewFilter('all')}}><span>{attempt.title}</span><span>{attempt.category}</span><span className="ref-score">{attempt.percentage}%</span><small>{dateLabel(attempt.date)}</small></button>)}{legacyResults.map(item => <div className="ref-result-row" key={item.id}><span>{item.title}</span><span>{item.category}</span><span>{item.lastAttempt?.percentage}%</span><small>{dateLabel(item.lastAttempt!.date)}</small></div>)}</div>{!attempts.length && !legacyResults.length && <ReferenceEmpty>Completed attempts and answer reviews will appear here.</ReferenceEmpty>}</section>
+        <p className="ref-inline-notice">Study content and up to 30 attempts per quiz are saved in this browser for your account. AI practice is educational; board-style questions are not official exam items.</p>
+      </section>
+      <section ref={practiceRef} className="ref-panel ref-question-panel study-practice-panel">
+        {session && question && !result ? <>
+          <div className="ref-question-heading"><div><h2>{quiz?.title}</h2><p>Question {session.index+1} of {session.questions.length}</p></div><div className="ref-question-progress"><span style={{width:session.answers.filter(answer => answer !== null).length/session.questions.length*100+'%'}}/></div><small>{Math.round(session.answers.filter(answer => answer !== null).length/session.questions.length*100)}%</small></div>
+          <div className="study-session-meta"><span><Clock size={16}/>{session.deadline ? timeLabel(Math.max(0,Math.ceil((session.deadline-now)/1000))) : 'Untimed'}{session.deadline ? ' remaining' : ''}</span><small>Progress saved automatically</small></div>
+          <nav className="study-question-nav" aria-label="Quiz questions">{session.questions.map((_,index) => <button key={index} aria-label={'Go to question '+(index+1)} aria-current={index===session.index ? 'step' : undefined} className={index===session.index ? 'current' : session.answers[index]!==null ? 'answered' : ''} onClick={() => setSession({...session,index})}>{index+1}{session.flagged.includes(index) && <Flag size={10} weight="fill"/>}</button>)}</nav>
+          <h3 className="ref-question-text">{question.question}</h3>
+          <div className="ref-answer-options">{question.options.map((answer,index) => <label key={answer} className={chosen===index ? 'selected' : ''}><input type="radio" name="practice-answer" checked={chosen===index} onChange={() => setSession({...session,answers:session.answers.map((value,i) => i===session.index ? index : value)})}/><span>{answer}</span></label>)}</div>
+          <div className="study-actions"><button className="ref-secondary" aria-pressed={session.flagged.includes(session.index)} onClick={() => setSession({...session,flagged:session.flagged.includes(session.index) ? session.flagged.filter(index => index!==session.index) : [...session.flagged,session.index]})}><Flag size={18}/>{session.flagged.includes(session.index) ? 'Flagged' : 'Flag for review'}</button><button className="ref-secondary" disabled={session.index===0} onClick={() => setSession({...session,index:session.index-1})}><ArrowLeft size={16}/>Previous</button><button className="ref-primary" disabled={chosen===null} onClick={() => session.index+1===session.questions.length ? finish() : setSession({...session,index:session.index+1})}>{session.index+1===session.questions.length ? 'See results' : 'Next question'}<ArrowRight size={16}/></button></div>
+          <button className="ref-text-action study-finish" onClick={() => finish()}>Finish attempt ({session.answers.filter(answer => answer!==null).length}/{session.questions.length} answered)</button>
+        </> : result ? <>
+          <div className="ref-quiz-finished"><CheckCircle size={44} weight="duotone"/><h2>{result.title}</h2><strong>{result.score} / {result.questions.length} ({result.percentage}%)</strong><p>{result.timedOut ? 'Time is up. Your answers have been saved.' : 'Practice complete. Review the explanations below.'} | {timeLabel(result.durationSeconds)}</p><div className="study-actions">{session && <button className="ref-primary" onClick={() => {scrollToPractice.current=true;setResult(null)}}>Resume current quiz</button>}<button className="ref-primary" onClick={() => {const item=quizzes.find(q => q.id===result.quizId);if(item)begin(item)}}>Practice again</button><button className="ref-secondary" disabled={!missedQuestions(result).length} onClick={() => {const item=quizzes.find(q => q.id===result.quizId);if(item)begin(item,missedQuestions(result))}}>Retry missed questions</button><button className="ref-secondary" onClick={exportReview}><DownloadSimple size={17}/>Download review</button></div></div>
+          <div className="study-answer-review"><h3>Review answers</h3><ReferenceTabs items={[{id:'all',label:'All answers'},{id:'missed',label:'Missed'},{id:'flagged',label:'Flagged'}]} value={reviewFilter} onChange={setReviewFilter}/>{result.questions.map((item,index) => ({item,index,correct:result.answers[index]===item.correct})).filter(({index,correct}) => reviewFilter==='all' || (reviewFilter==='missed' ? !correct : result.flagged.includes(index))).map(({item,index,correct}) => <article className={'study-review-item '+(correct ? 'correct' : 'incorrect')} key={index}><small>{correct ? 'Correct' : 'Needs review'}{result.flagged.includes(index) ? ' | Flagged' : ''}</small><h4>{index+1}. {item.question}</h4><p><strong>Your answer:</strong> {item.options[result.answers[index]??-1] || 'Unanswered'}</p><p><strong>Correct answer:</strong> {item.options[item.correct]}</p><div><strong>Why this answer?</strong><p>{item.explanation || 'Review this concept in your source material.'}</p></div></article>)}{reviewFilter==='flagged' && !result.flagged.length && <ReferenceEmpty>No questions were flagged.</ReferenceEmpty>}{reviewFilter==='missed' && !missedQuestions(result).length && <ReferenceEmpty>You answered every question correctly.</ReferenceEmpty>}</div>
+        </> : <ReferenceEmpty>Choose Start quiz to begin, or create a quiz from your own study material.</ReferenceEmpty>}
+      </section>
     </div>
-  )
+    {showCards && <ViewportOverlay onDismiss={() => setShowCards(false)}><form className="glass-modal ref-form-dialog" onSubmit={createFromCards}><div className="ref-panel-title"><h2>Practice from flashcards</h2><button type="button" aria-label="Close flashcard quiz setup" onClick={() => setShowCards(false)}><X size={20}/></button></div><p>Build a practice quiz from cards you have already saved. Questions are kept with the quiz even if you edit your cards later.</p><label>Quiz title<input value={cardTitle} onChange={e => setCardTitle(e.target.value)} maxLength={200}/></label><label>Flashcard subject<select value={cardCategory} onChange={e => setCardCategory(e.target.value)}>{[...new Set([cardCategory,...cards.map(card=>card.category)])].map(name=><option key={name}>{name}</option>)}</select></label><label>Number of questions<input type="number" min={1} max={30} value={cardCount} onChange={e => setCardCount(Number(e.target.value))}/></label>{error && <p role="alert" className="ref-form-error">{error}</p>}<button className="ref-primary" disabled={!Number.isInteger(cardCount)||cardCount<1||cardCount>30}>Create from flashcards</button></form></ViewportOverlay>}
+    {showAI && <AIGenerator task="quiz" initialText={handoff.studyText || ''} initialSourceName={handoff.sourceName || ''} category={handoff.category || 'General Psychology'} onClose={() => setShowAI(false)} onSave={(draft,settings) => {
+      const item: StudyQuiz = {id:'quiz-'+crypto.randomUUID(),title:draft.title,category:settings.category,difficulty:settings.quizOptions.difficulty,style:settings.quizOptions.style,timerMinutes:settings.timerMinutes,sourceName:settings.sourceName,questionsCount:draft.questions.length,passingScore:70,createdAt:new Date().toISOString(),questions:draft.questions}
+      setQuizzes(previous=>[item,...previous]);setShowAI(false);setView('mine');setCategory('all');setSearch('');begin(item)
+    }}/>}
+  </div>
 }

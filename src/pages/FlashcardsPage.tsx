@@ -5,7 +5,8 @@ import {
   Plus, Shuffle, Sparkle, X
 } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { ReferenceEmpty, ReferenceHeader, ReferenceTabs } from '../components/ReferenceUI'
 import { StudyFlashcard } from '../components/StudyFlashcard'
 import { ViewportOverlay } from '../components/ViewportOverlay'
@@ -15,9 +16,17 @@ export function FlashcardsPage() {
   const { decks, cards, createDeck, deleteDeck, addCard, deleteCard, reviewCard } = useStudyStore()
 
   const [selectedDeckId, setSelectedDeckId] = useState<string>(decks.find(deck => deck.id !== 'deck-all')?.id || 'deck-all')
+  const location = useLocation(), navigate = useNavigate()
   const [showAI, setShowAI] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
+
+  useEffect(() => {
+    const id = (location.state as {deckId?: string} | null)?.deckId
+    if (!id || !decks.some(deck => deck.id === id)) return
+    setSelectedDeckId(id); setCurrentIndex(0); setIsFlipped(false)
+    navigate(location.pathname, {replace:true,state:null})
+  }, [location.state, location.pathname, navigate, decks])
 
   // Deck Settings Toggles
   const [spacedRepetition, setSpacedRepetition] = useState(true)
@@ -289,7 +298,7 @@ export function FlashcardsPage() {
           </ViewportOverlay>
         )}
       </AnimatePresence>
-      {showAI && <AIGenerator task="flashcards" category={selectedDeck?.category || 'General Psychology'} onClose={() => setShowAI(false)} onSave={draft => { const category = selectedDeck?.category || 'General Psychology'; const id = createDeck(draft.title, category); draft.cards.forEach(card => addCard(id, card.question, card.answer, category)); setSelectedDeckId(id); setShowAI(false); setCurrentIndex(0); setIsFlipped(false) }}/>}
+      {showAI && <AIGenerator task="flashcards" category={selectedDeck?.category || 'General Psychology'} onClose={() => setShowAI(false)} onSave={(draft,settings) => { const category = settings.category; const id = createDeck(draft.title, category); draft.cards.forEach(card => addCard(id, card.question, card.answer, category)); setSelectedDeckId(id); setShowAI(false); setCurrentIndex(0); setIsFlipped(false) }}/>}
     </div>
   )
 }
