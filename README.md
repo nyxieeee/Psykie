@@ -69,6 +69,10 @@ This checks Supabase's public auth settings and Mistral's model-list endpoint. I
 - **Research:** only retrieved citations from the approved source list can appear; a second relevance pass filters topic matches. Source inclusion is not a guarantee of accuracy or peer review.
 - **Not implemented:** cloud content sync, notification delivery, password-recovery UI, public sharing, or support messaging.
 
+## Deploy to Vercel
+
+Import `nyxieeee/Psykie` in Vercel using the Vite preset. Add the two public Supabase variables in Vercel; Mistral secrets remain in Supabase Edge Functions. The SPA routing configuration is included. Follow [VERCEL_SETUP.md](VERCEL_SETUP.md) for the exact environment, callback, and allowed-origin settings.
+
 ## Checks and details
 
 ```powershell
