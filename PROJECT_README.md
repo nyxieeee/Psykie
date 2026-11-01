@@ -1,3 +1,5 @@
+> Historical project notes. For current setup and implementation status, see README.md, SUPABASE_SETUP.md, and AI_SETUP.md.
+
 # Psykie Web App - Project Setup
 
 This is the web application for Psykie, built with React, Vite, TypeScript, and Tailwind CSS featuring a pastel pink design with 3D elements, glassmorphism, and cute animations.

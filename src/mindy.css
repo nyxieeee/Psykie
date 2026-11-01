@@ -1,0 +1,133 @@
+﻿/* Mindy uses one bounded chat canvas rather than stacking page heroes. */
+.mindy-workspace {
+  position: relative;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  height: calc(100dvh - 60px);
+  min-height: 0;
+  margin: -8px -23px -22px;
+  background: #fffafd88;
+}
+.mindy-workspace[data-history-open="false"] { grid-template-columns: minmax(0, 1fr); }
+.mindy-history {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  padding: 22px 15px;
+  border-right: 1px solid var(--ref-border);
+  background: #fffcfdf5;
+}
+.mindy-history-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.mindy-history-heading h2 { font-size: 14px; }
+.mindy-history > .ref-search { flex-shrink: 0; padding: 10px; }
+.mindy-history > .ref-search input { font-size: 12px; }
+.mindy-history-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.mindy-history-item { position: relative; margin-bottom: 7px; border: 1px solid transparent; border-radius: 11px; }
+.mindy-history-item.selected { background: #fbeafa; border-color: #f3dff7; }
+.mindy-history-select { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 13px 26px 13px 10px; text-align: left; }
+.mindy-history-select > svg { flex-shrink: 0; color: #b166db; margin-top: 2px; }
+.mindy-history-select > span { flex: 1; min-width: 0; }
+.mindy-history-select strong { display: block; font-size: 12px; line-height: 1.5; font-weight: 650; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+.mindy-history-select small { display: block; color: var(--ref-muted); font-size: 11px; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mindy-history-select time { display: block; color: #a48bb7; font-size: 10px; margin-top: 8px; }
+.mindy-history-delete { position: absolute; top: 11px; right: 4px; padding: 6px; color: #ae8bb9; border-radius: 6px; }
+.mindy-history-delete:hover { color: #c74d9b; background: #fff9; }
+.mindy-main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.mindy-header { display: flex; align-items: center; gap: 12px; flex-shrink: 0; min-height: 78px; padding: 15px 28px; border-bottom: 1px solid var(--ref-border); background: #fffcfdeb; }
+.mindy-icon-button { display: grid; place-items: center; padding: 8px; border: 1px solid #e9dff5; border-radius: 9px; color: #8a59b4; background: #fffcff; flex-shrink: 0; }
+.mindy-icon-button:hover { background: #f8edfc; }
+.mindy-header > img { width: 42px; height: 42px; object-fit: contain; }
+.mindy-header > div { flex: 1; min-width: 0; }
+.mindy-header h1 { font-family: 'Nunito', Inter, sans-serif; font-size: 20px; font-weight: 850; line-height: 1.3; color: var(--ref-ink); }
+.mindy-header p { font-size: 12px; color: var(--ref-muted); margin-top: 3px; }
+.mindy-new-chat { padding: 8px 12px; min-height: 36px; font-size: 12px; white-space: nowrap; }
+.mindy-feed { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.mindy-conversation { width: 100%; max-width: 900px; margin: 0 auto; padding: 30px 30px 42px; }
+.mindy-user-message { display: flex; align-items: flex-start; gap: 12px; margin: 0 0 30px; }
+.mindy-user-message .ref-avatar { width: 32px; height: 32px; font-size: 12px; margin-top: 4px; }
+.mindy-user-message p { max-width: 85%; padding: 13px 18px; border: 1px solid #e9ddf8; border-radius: 16px; background: #f0e6ff; color: #4c347f; font-size: 14px; line-height: 1.8; white-space: pre-wrap; }
+.mindy-response { margin-bottom: 34px; }
+.mindy-response-heading { display: flex; align-items: center; gap: 9px; margin-bottom: 11px; }
+.mindy-response-heading img { width: 32px; height: 32px; object-fit: contain; }
+.mindy-response-heading strong { font-size: 13px; }
+.mindy-response-heading time { color: #a58fb8; font-size: 10px; margin-left: 4px; }
+.mindy-response-content { padding-left: 41px; }
+.mindy-response-content > p { color: #5c4989; white-space: pre-line; font-size: 14px; line-height: 1.95; }
+.mindy-examples { margin-top: 19px; border: 1px solid #eadff5; border-radius: 11px; background: #fffcffcc; }
+.mindy-examples > summary { cursor: pointer; padding: 13px 16px; font-size: 12px; font-weight: 600; color: #9154b5; }
+.mindy-examples ol { counter-reset: example; list-style: none; margin: 0; padding: 0 17px 13px; }
+.mindy-examples li { position: relative; counter-increment: example; padding: 14px 0 14px 35px; border-top: 1px solid #f0e8f8; }
+.mindy-examples li::before { content: counter(example); position: absolute; top: 14px; left: 0; display: grid; place-items: center; width: 23px; height: 23px; background: #f0e0fa; border-radius: 50%; color: #9f5bcb; font-size: 11px; font-weight: 650; }
+.mindy-examples h3 { font-size: 13px; margin-bottom: 5px; }
+.mindy-examples li p { color: var(--ref-muted); font-size: 13px; line-height: 1.8; }
+.mindy-response-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px; margin-top: 17px; }
+.mindy-references { flex: 1 1 180px; max-width: 460px; color: #9273ae; font-size: 11px; }
+.mindy-references > summary { display: flex; align-items: center; gap: 7px; width: fit-content; cursor: pointer; padding: 7px 0; font-size: 11px; }
+.mindy-references > p { padding: 10px 0; font-size: 12px; line-height: 1.8; color: var(--ref-muted); }
+.mindy-message-actions { display: flex; align-items: center; gap: 3px; }
+.mindy-message-actions > button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 9px; color: #9680ac; border-radius: 7px; font-size: 11px; }
+.mindy-message-actions > button:hover { color: #ad4bca; background: #f7ecfc; }
+.mindy-more { position: relative; }
+.mindy-more > summary { display: grid; place-items: center; padding: 6px; color: #9c83b3; cursor: pointer; list-style: none; border-radius: 7px; }
+.mindy-more > summary::-webkit-details-marker { display: none; }
+.mindy-more > div { position: absolute; top: 31px; right: 0; z-index: 4; width: 190px; padding: 6px; background: #fffafd; border: 1px solid var(--ref-border); border-radius: 10px; box-shadow: 0 5px 20px #ad80c31a; }
+.mindy-more button { display: block; width: 100%; text-align: left; padding: 10px; color: #775b99; font-size: 11px; border-radius: 6px; }
+.mindy-more button:hover { background: #f8edfc; }
+.mindy-compose-area { flex-shrink: 0; width: 100%; max-width: 900px; margin: 0 auto; padding: 12px 30px 15px; }
+.mindy-composer { display: flex; align-items: flex-end; gap: 12px; padding: 11px 12px 11px 17px; border: 1px solid #dcd0f1; border-radius: 18px; background: #fffdffff; box-shadow: 0 4px 16px #ba9bc70a; }
+.mindy-composer > svg { color: #af87c7; flex-shrink: 0; margin-bottom: 6px; }
+.mindy-composer textarea { display: block; flex: 1; width: 0; min-height: 32px; max-height: 140px; resize: none; border: 0; outline: none; padding: 5px 0; background: transparent; color: #4c3877; font: inherit; font-size: 14px; line-height: 1.6; }
+.mindy-composer .ref-round-button { width: 34px; height: 34px; margin-bottom: 0; }
+.mindy-disclosure { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 9px; color: #ab96b9; font-size: 10px; line-height: 1.5; }
+.mindy-notice { padding: 8px 12px; margin-bottom: 10px; border-radius: 8px; font-size: 12px; color: #9662b2; background: #f7ecfc; }
+.mindy-empty { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 480px; padding: 30px 0; margin: 0 auto; }
+.mindy-empty > img { width: 95px; height: 90px; object-fit: contain; margin-bottom: 15px; }
+.mindy-empty h2 { font-size: 25px; line-height: 1.35; color: var(--ref-ink); }
+.mindy-empty p { color: var(--ref-muted); font-size: 14px; line-height: 1.8; margin: 13px 0 22px; }
+.mindy-empty > div { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.mindy-typing { padding-left: 41px; color: #a487b6; font-size: 12px; }
+.mindy-typing span { letter-spacing: 3px; margin-left: 7px; }
+.mindy-history-backdrop { display: none; }
+@media(max-width:1250px) {
+  .mindy-workspace { grid-template-columns: 215px minmax(0,1fr); margin-inline: -16px; }
+  .mindy-header { padding-inline: 20px; }
+  .mindy-conversation { padding-inline: 22px; }
+  .mindy-compose-area { padding-inline: 22px; }
+}
+@media(max-width:800px) {
+  .mindy-workspace, .mindy-workspace[data-history-open="false"] { grid-template-columns: minmax(0,1fr); height: calc(100dvh - 129px); margin: -15px -17px -95px; }
+  .mindy-history { position: absolute; z-index: 11; top: 0; bottom: 0; left: 0; width: min(285px,calc(100% - 45px)); box-shadow: 8px 0 30px #7f4fa321; }
+  .mindy-history-backdrop { display: block; position: absolute; inset: 0; z-index: 10; background: #38234730; }
+  .mindy-header { min-height: 68px; padding: 12px 15px; gap: 9px; }
+  .mindy-header > img { width: 34px; height: 34px; }
+  .mindy-header h1 { font-size: 18px; }
+  .mindy-header p { font-size: 10px; }
+  .mindy-new-chat { padding: 8px 10px; font-size: 11px; }
+  .mindy-conversation { padding: 22px 17px 30px; }
+  .mindy-compose-area { padding: 10px 16px 11px; }
+  .mindy-response-content { padding-left: 0; }
+  .mindy-response-content > p { font-size: 14px; line-height: 1.85; }
+  .mindy-user-message p { max-width: 88%; font-size: 13px; padding: 11px 14px; }
+  .mindy-user-message .ref-avatar { display: none; }
+  .mindy-response-footer { gap: 8px; }
+  .mindy-disclosure { font-size: 9px; }
+}
+@media(max-width:600px) {
+  .mindy-workspace { margin: -17px -13px -90px; }
+  .mindy-workspace[data-history-open="false"] { margin: -17px -13px -90px; }
+  .mindy-header > img { display: none; }
+  .mindy-new-chat span { display: none; }
+  .mindy-new-chat { padding: 9px; min-height: 35px; }
+  .mindy-header p { font-size: 10px; }
+  .mindy-composer { padding: 8px 9px 8px 12px; gap: 8px; border-radius: 14px; }
+  .mindy-composer > svg { width: 18px; }
+  .mindy-composer textarea { font-size: 13px; }
+  .mindy-conversation { padding-inline: 17px; }
+  .mindy-response-footer { align-items: center; }
+  .mindy-references { flex: 1 1 120px; }
+  .mindy-message-actions > button { padding-inline: 6px; }
+  .mindy-message-actions > button span { font-size: 10px; }
+}
+
+.mindy-user-message p, .mindy-response-content { overflow-wrap: anywhere; }

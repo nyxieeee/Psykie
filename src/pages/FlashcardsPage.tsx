@@ -1,942 +1,295 @@
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { HelpCircle, Layers, Plus } from 'lucide-react'
+import { AIGenerator } from '../components/AIGenerator'
+import {
+  ArrowRight, BookOpen, Brain, CaretLeft,
+  CaretRight, ChartBar, Check, Fire, Cards as Layers,
+  Plus, Shuffle, Sparkle, X
+} from '@phosphor-icons/react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useState } from 'react'
+import { ReferenceEmpty, ReferenceHeader, ReferenceTabs } from '../components/ReferenceUI'
+import { StudyFlashcard } from '../components/StudyFlashcard'
+import { ViewportOverlay } from '../components/ViewportOverlay'
+import { StudyCard, useStudyStore } from '../store'
 
 export function FlashcardsPage() {
-  const user = useUser()
-  const [flashcards, setFlashcards] = useState<{
-    id: string;
-    question: string;
-    answer: string;
-    category: string;
-    difficulty: 'easy' | 'medium' | 'hard' | 'board';
-    isFavorite: boolean;
-    lastReviewed: string;
-    reviewCount: number;
-  }[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('all')
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [newFlashcard, setNewFlashcard] = useState({ 
-    question: '', 
-    answer: '', 
-    category: 'General Psychology',
-    difficulty: 'medium' as 'easy' | 'medium' | 'hard' | 'board'
-  })
-  const [currentCardIndex, setCurrentCardIndex] = useState(0)
+  const { decks, cards, createDeck, deleteDeck, addCard, deleteCard, reviewCard } = useStudyStore()
+
+  const [selectedDeckId, setSelectedDeckId] = useState<string>(decks.find(deck => deck.id !== 'deck-all')?.id || 'deck-all')
+  const [showAI, setShowAI] = useState(false)
+  const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
-  const [studyMode, setStudyMode] = useState(false)
 
-  const categories = [
-    'All',
-    'General Psychology',
-    'Cognitive Psychology',
-    'Developmental Psychology',
-    'Abnormal Psychology',
-    'Social Psychology',
-    'Biological Psychology',
-    'Research Methods',
-    'Clinical Psychology',
-    'Statistics',
-    'Board Exam',
-  ]
+  // Deck Settings Toggles
+  const [spacedRepetition, setSpacedRepetition] = useState(true)
+  const [showHints, setShowHints] = useState(false)
 
-  const difficulties = [
-    { value: 'easy', label: 'Easy', color: 'bg-emerald-100', text: 'text-emerald-700' },
-    { value: 'medium', label: 'Medium', color: 'bg-amber-100', text: 'text-amber-700' },
-    { value: 'hard', label: 'Hard', color: 'bg-rose-100', text: 'text-rose-700' },
-    { value: 'board', label: 'Board Exam', color: 'bg-purple-100', text: 'text-purple-700' },
-  ]
+  // Modals
+  const [showCreateDeckModal, setShowCreateDeckModal] = useState(false)
+  const [newDeckName, setNewDeckName] = useState('')
+  const [newDeckCategory, setNewDeckCategory] = useState('Cognitive Psychology')
 
-  useEffect(() => {
-    // Simulate loading flashcards
-    const timer = setTimeout(() => {
-      const mockFlashcards = [
-        {
-          id: '1',
-          question: 'What is cognitive psychology?',
-          answer: 'Cognitive psychology is the study of mental processes such as attention, memory, perception, problem-solving, and thinking.',
-          category: 'Cognitive Psychology',
-          difficulty: 'easy',
-          isFavorite: true,
-          lastReviewed: '1 day ago',
-          reviewCount: 5,
-        },
-        {
-          id: '2',
-          question: 'What are Piaget\'s four stages of cognitive development?',
-          answer: '1) Sensorimotor (0-2 years), 2) Preoperational (2-7 years), 3) Concrete Operational (7-11 years), 4) Formal Operational (12+ years).',
-          category: 'Developmental Psychology',
-          difficulty: 'medium',
-          isFavorite: false,
-          lastReviewed: '3 days ago',
-          reviewCount: 3,
-        },
-        {
-          id: '3',
-          question: 'What is the difference between classical and operant conditioning?',
-          answer: 'Classical conditioning (Pavlov) associates stimuli with involuntary responses. Operant conditioning (Skinner) uses reinforcement/punishment to shape voluntary behavior.',
-          category: 'General Psychology',
-          difficulty: 'medium',
-          isFavorite: true,
-          lastReviewed: '2 days ago',
-          reviewCount: 8,
-        },
-        {
-          id: '4',
-          question: 'What are the DSM-5-TR criteria for Major Depressive Disorder?',
-          answer: 'Five or more of the following symptoms present for 2+ weeks: depressed mood, loss of interest, significant weight change, insomnia/hypersomnia, psychomotor agitation/retardation, fatigue, feelings of worthlessness, diminished concentration, or suicidal ideation.',
-          category: 'Abnormal Psychology',
-          difficulty: 'board',
-          isFavorite: false,
-          lastReviewed: '1 week ago',
-          reviewCount: 2,
-        },
-        {
-          id: '5',
-          question: 'What is the biological basis of memory?',
-          answer: 'Memory involves synaptic plasticity, particularly long-term potentiation (LTP) in the hippocampus. Neurotransmitters like glutamate and acetylcholine play key roles.',
-          category: 'Biological Psychology',
-          difficulty: 'hard',
-          isFavorite: false,
-          lastReviewed: '5 days ago',
-          reviewCount: 4,
-        },
-        {
-          id: '6',
-          question: 'What is social facilitation?',
-          answer: 'Social facilitation is the tendency to perform better on simple or well-learned tasks when others are present. It is a concept in social psychology.',
-          category: 'Social Psychology',
-          difficulty: 'easy',
-          isFavorite: true,
-          lastReviewed: 'Today',
-          reviewCount: 6,
-        },
-      ]
-      setFlashcards(mockFlashcards)
-      setIsLoading(false)
-    }, 1000)
-    
-    return () => clearTimeout(timer)
-  }, [])
+  const [showAddCardModal, setShowAddCardModal] = useState(false)
+  const [newQuestion, setNewQuestion] = useState('')
+  const [newAnswer, setNewAnswer] = useState('')
 
-  const filteredFlashcards = flashcards.filter(flashcard => {
-    const matchesSearch = flashcard.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                       flashcard.answer.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory === 'all' || flashcard.category === selectedCategory
-    return matchesSearch && matchesCategory
-  })
+  // Study summary session state
+  const [sessionReviewedCount, setSessionReviewedCount] = useState(0)
+  const [showSessionEndModal, setShowSessionEndModal] = useState(false)
 
-  const handleCreateFlashcard = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newFlashcard.question.trim() || !newFlashcard.answer.trim()) return
-    
-    const newFlashcardData = {
-      id: `flashcard-${Date.now()}`,
-      question: newFlashcard.question,
-      answer: newFlashcard.answer,
-      category: newFlashcard.category,
-      difficulty: newFlashcard.difficulty,
-      isFavorite: false,
-      lastReviewed: 'Just now',
-      reviewCount: 0,
+  // Filter cards by selected deck
+  const activeDeckCards: StudyCard[] =
+    selectedDeckId === 'deck-all'
+      ? cards
+      : cards.filter((c) => c.deckId === selectedDeckId)
+
+  const currentCard: StudyCard | undefined =
+    activeDeckCards.length > 0 ? activeDeckCards[currentIndex % activeDeckCards.length] : undefined
+
+  // Dynamic progress stats
+  const totalCards = activeDeckCards.length
+  const todayStr = new Date().toISOString().split('T')[0]
+  const dueCardsCount = activeDeckCards.filter((c) => c.dueDate <= todayStr).length
+  const masteredCardsCount = activeDeckCards.filter((c) => c.status === 'mastered').length
+  const learningCardsCount = activeDeckCards.filter((c) => c.status !== 'mastered').length
+  const overallPercentage = totalCards > 0 ? Math.round((masteredCardsCount / totalCards) * 100) : 0
+
+  const handleNext = () => {
+    setIsFlipped(false)
+    if (activeDeckCards.length > 0) {
+      setCurrentIndex((prev) => (prev + 1) % activeDeckCards.length)
     }
-    
-    setFlashcards([newFlashcardData, ...flashcards])
-    setShowCreateModal(false)
-    setNewFlashcard({ 
-      question: '', 
-      answer: '', 
-      category: 'General Psychology',
-      difficulty: 'medium'
-    })
   }
 
-  const toggleFavorite = (id: string) => {
-    setFlashcards(flashcards.map(flashcard => 
-      flashcard.id === id ? { ...flashcard, isFavorite: !flashcard.isFavorite } : flashcard
-    ))
-  }
-
-  const deleteFlashcard = (id: string) => {
-    setFlashcards(flashcards.filter(flashcard => flashcard.id !== id))
-  }
-
-  const nextCard = () => {
-    if (!studyMode || filteredFlashcards.length === 0) return
-    setCurrentCardIndex((prev) => (prev + 1) % filteredFlashcards.length)
+  const handlePrev = () => {
     setIsFlipped(false)
+    if (activeDeckCards.length > 0) {
+      setCurrentIndex((prev) => (prev - 1 + activeDeckCards.length) % activeDeckCards.length)
+    }
   }
 
-  const previousCard = () => {
-    if (!studyMode || filteredFlashcards.length === 0) return
-    setCurrentCardIndex((prev) => (prev - 1 + filteredFlashcards.length) % filteredFlashcards.length)
+  const handleRating = (rating: 'again' | 'hard' | 'good' | 'easy') => {
+    if (!currentCard) return
+    reviewCard(currentCard.id, rating)
+    setSessionReviewedCount((prev) => prev + 1)
+    handleNext()
+  }
+
+  const handleCreateDeckSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newDeckName.trim()) return
+
+    const createdId = createDeck(newDeckName.trim(), newDeckCategory)
+    setSelectedDeckId(createdId)
+    setCurrentIndex(0)
     setIsFlipped(false)
+    setNewDeckName('')
+    setShowCreateDeckModal(false)
   }
 
-  const currentCard = studyMode ? filteredFlashcards[currentCardIndex] : null
+  const handleAddCardSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newQuestion.trim() || !newAnswer.trim()) return
 
+    const targetDeck = decks.find(deck => deck.id === selectedDeckId)?.id || decks[0]?.id || createDeck('My first deck', 'General Psychology')
+    setSelectedDeckId(targetDeck)
+    addCard(targetDeck, newQuestion.trim(), newAnswer.trim())
+    setNewQuestion('')
+    setNewAnswer('')
+    setShowAddCardModal(false)
+  }
+
+  const handleEndStudySession = () => {
+    setShowSessionEndModal(true)
+  }
+
+  const [deckView, setDeckView] = useState('all')
+  const [reviewing, setReviewing] = useState(false)
+  const visibleDecks = decks.filter(deck => deck.id !== 'deck-all' && (deckView === 'all' || cards.some(card => card.deckId === deck.id && card.dueDate <= todayStr)))
+  const selectedDeck = decks.find(deck => deck.id === selectedDeckId)
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-6"
-    >
-      {/* Header */}
-      <motion.div
-        className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <motion.h1
-            className="text-3xl font-bold text-gradient mb-1"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            Flashcards
-          </motion.h1>
-          <motion.p
-            className="text-slate-500"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            Master psychology concepts with spaced repetition
-          </motion.p>
-        </motion.div>
-
-        <motion.div
-          className="flex items-center gap-2"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          {/* Toggle Study Mode */}
-          <motion.button
-            onClick={() => setStudyMode(!studyMode)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-              studyMode 
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
-            }`}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            {studyMode ? 'Exit Study Mode' : 'Enter Study Mode'}
-          </motion.button>
-
-          {/* Search */}
-          <motion.div
-            className="relative"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            <input
-              type="text"
-              placeholder="Search flashcards..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-pill pl-10"
-            />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Search size={18} /></span>
-          </motion.div>
-
-          {/* Create Button */}
-          <motion.button
-            onClick={() => setShowCreateModal(true)}
-            className="btn-primary px-6 py-3"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            <span className="text-lg mr-1">+</span>
-            New Card
-          </motion.button>
-        </motion.div>
-      </motion.div>
-
-      {/* Categories Filter */}
-      <motion.div
-        className="flex gap-2 overflow-x-auto pb-2"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
-        {categories.map((category, index) => (
-          <motion.button
-            key={category}
-            onClick={() => setSelectedCategory(category.toLowerCase())}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 ${
-              selectedCategory === category.toLowerCase()
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
-            }`}
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, delay: 0.3 + index * 0.05 }}
-          >
-            {category}
-          </motion.button>
-        ))}
-      </motion.div>
-
-      {/* Stats */}
-      <motion.div
-        className="grid grid-cols-2 lg:grid-cols-4 gap-3"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-      >
-        <motion.div
-          className="card p-4 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <motion.p
-            className="text-2xl font-bold text-purple-700"
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            {filteredFlashcards.length}
-          </motion.p>
-          <motion.p
-            className="text-sm text-slate-500"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            Total Cards
-          </motion.p>
-        </motion.div>
-
-        <motion.div
-          className="card p-4 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-        >
-          <motion.p
-            className="text-2xl font-bold text-pink-700"
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            {filteredFlashcards.filter(f => f.isFavorite).length}
-          </motion.p>
-          <motion.p
-            className="text-sm text-slate-500"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            Favorites
-          </motion.p>
-        </motion.div>
-
-        <motion.div
-          className="card p-4 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
-          <motion.p
-            className="text-2xl font-bold text-amber-700"
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            {filteredFlashcards.filter(f => f.difficulty === 'board').length}
-          </motion.p>
-          <motion.p
-            className="text-sm text-slate-500"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            Board Exam
-          </motion.p>
-        </motion.div>
-
-        <motion.div
-          className="card p-4 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-        >
-          <motion.p
-            className="text-2xl font-bold text-emerald-700"
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            {filteredFlashcards.reduce((sum, f) => sum + f.reviewCount, 0)}
-          </motion.p>
-          <motion.p
-            className="text-sm text-slate-500"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            Total Reviews
-          </motion.p>
-        </motion.div>
-      </motion.div>
-
-      {/* Study Mode View */}
-      {studyMode ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="relative"
-        >
-          <AnimatePresence mode="wait">
-            {currentCard && (
-              <motion.div
-                key={currentCard.id}
-                initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
-                animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                exit={{ opacity: 0, scale: 0.9, rotateY: 10 }}
-                transition={{ duration: 0.4, ease: 'easeInOut' }}
-                className="relative w-full max-w-2xl mx-auto"
-              >
-                <motion.div
-                  className={`card card-3d p-8 min-h-[300px] cursor-pointer relative preserve-3d ${
-                    isFlipped ? 'bg-gradient-to-br from-purple-100 to-pink-100' : 'bg-white'
-                  }`}
-                  onClick={() => setIsFlipped(!isFlipped)}
-                  whileHover={{ scale: 1.01 }}
-                >
-                  {/* Front Side (Question) */}
-                  <AnimatePresence mode="wait">
-                    {!isFlipped ? (
-                      <motion.div
-                        key="front"
-                        initial={{ opacity: 0, rotateY: -90 }}
-                        animate={{ opacity: 1, rotateY: 0 }}
-                        exit={{ opacity: 0, rotateY: 90 }}
-                        transition={{ duration: 0.4, ease: 'easeInOut' }}
-                        className="absolute inset-0 p-8 flex flex-col justify-between"
-                      >
-                        <div>
-                          <motion.div
-                            className="flex items-center gap-3 mb-6"
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4, delay: 0.2 }}
-                          >
-                            <motion.span
-                              className="text-2xl"
-                              initial={{ opacity: 0, scale: 0.5 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ duration: 0.4, delay: 0.3 }}
-                            >
-                              <HelpCircle size={18} />
-                            </motion.span>
-                            <motion.span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                difficulties.find(d => d.value === currentCard.difficulty)?.color || 'bg-slate-100'
-                              } ${
-                                difficulties.find(d => d.value === currentCard.difficulty)?.text || 'text-slate-700'
-                              }`}
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.4, delay: 0.4 }}
-                            >
-                              {difficulties.find(d => d.value === currentCard.difficulty)?.label || 'Medium'}
-                            </motion.span>
-                          </motion.div>
-                          
-                          <motion.h3
-                            className="text-2xl font-bold text-slate-800"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4, delay: 0.1 }}
-                          >
-                            {currentCard.question}
-                          </motion.h3>
-                        </div>
-
-                        <motion.div
-                          className="flex items-center justify-between text-sm text-slate-400"
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.4, delay: 0.5 }}
-                        >
-                          <span>{currentCard.category}</span>
-                          <motion.button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              toggleFavorite(currentCard.id)
-                            }}
-                            className={`text-xl ${
-                              currentCard.isFavorite ? 'text-amber-500' : 'text-slate-300'
-                            }`}
-                            whileHover={{ scale: 1.2 }}
-                          >
-                            {currentCard.isFavorite ? '<Star size={16} />' : '<Star size={16} />'}
-                          </motion.button>
-                        </motion.div>
-
-                        <motion.p
-                          className="text-center text-slate-400 mt-4"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.4, delay: 0.6 }}
-                        >
-                          Click to reveal answer
-                        </motion.p>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="back"
-                        initial={{ opacity: 0, rotateY: 90 }}
-                        animate={{ opacity: 1, rotateY: 0 }}
-                        exit={{ opacity: 0, rotateY: -90 }}
-                        transition={{ duration: 0.4, ease: 'easeInOut' }}
-                        className="absolute inset-0 p-8 flex flex-col justify-between"
-                      >
-                        <div>
-                          <motion.div
-                            className="flex items-center gap-3 mb-6"
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4, delay: 0.2 }}
-                          >
-                            <motion.span
-                              className="text-2xl"
-                              initial={{ opacity: 0, scale: 0.5 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ duration: 0.4, delay: 0.3 }}
-                            >
-                              <Check size={18} />
-                            </motion.span>
-                            <motion.span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                difficulties.find(d => d.value === currentCard.difficulty)?.color || 'bg-slate-100'
-                              } ${
-                                difficulties.find(d => d.value === currentCard.difficulty)?.text || 'text-slate-700'
-                              }`}
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.4, delay: 0.4 }}
-                            >
-                              {difficulties.find(d => d.value === currentCard.difficulty)?.label || 'Medium'}
-                            </motion.span>
-                          </motion.div>
-                          
-                          <motion.h3
-                            className="text-xl font-bold text-slate-800 mb-4"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4, delay: 0.1 }}
-                          >
-                            Answer
-                          </motion.h3>
-                          
-                          <motion.p
-                            className="text-slate-700 whitespace-pre-wrap"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4, delay: 0.2 }}
-                          >
-                            {currentCard.answer}
-                          </motion.p>
-                        </div>
-
-                        <motion.div
-                          className="flex items-center justify-between text-sm text-slate-400"
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.4, delay: 0.5 }}
-                        >
-                          <span>Reviewed {currentCard.reviewCount} times</span>
-                          <span>Last: {currentCard.lastReviewed}</span>
-                        </motion.div>
-
-                        <motion.p
-                          className="text-center text-slate-400 mt-4"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.4, delay: 0.6 }}
-                        >
-                          Click to flip back
-                        </motion.p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Navigation */}
-          <motion.div
-            className="flex justify-center gap-4 mt-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.5 }}
-          >
-            <motion.button
-              onClick={previousCard}
-              className="w-14 h-14 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-2xl hover:bg-slate-50 transition-colors"
-              whileHover={{ scale: 1.05, x: -5 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              ←
-            </motion.button>
-            
-            <motion.div
-              className="flex-1 flex justify-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.6 }}
-            >
-              <motion.span
-                className="text-slate-500 text-sm"
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                {currentCardIndex + 1} / {filteredFlashcards.length}
-              </motion.span>
-            </motion.div>
-            
-            <motion.button
-              onClick={nextCard}
-              className="w-14 h-14 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-2xl hover:bg-slate-50 transition-colors"
-              whileHover={{ scale: 1.05, x: 5 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <ArrowRight size={18} />
-            </motion.button>
-          </motion.div>
-        </motion.div>
-      ) : (
-        /* List View */
-        isLoading ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-4"
-          >
-            {[...Array(6)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="card h-32 skeleton"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: i * 0.1 }}
-              />
-            ))}
-          </motion.div>
-        ) : filteredFlashcards.length > 0 ? (
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-2 gap-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <AnimatePresence mode="popLayout">
-              {filteredFlashcards.map((flashcard, index) => (
-                <motion.div
-                  key={flashcard.id}
-                  layout
-                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                  transition={{ duration: 0.4, delay: index * 0.05 }}
-                  className="card card-3d group"
-                >
-                  <div className="p-4">
-                    <motion.div
-                      className="flex items-start justify-between mb-3"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: index * 0.05 + 0.1 }}
-                    >
-                      <motion.div
-                        className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center text-xl flex-shrink-0"
-                        whileHover={{ scale: 1.1 }}
-                      >
-                        <Layers size={32} className="text-indigo-600" />
-                      </motion.div>
-                      
-                      <motion.button
-                        onClick={() => toggleFavorite(flashcard.id)}
-                        className={`text-xl transition-colors ${
-                          flashcard.isFavorite ? 'text-amber-500' : 'text-slate-300 hover:text-amber-500'
-                        }`}
-                        whileHover={{ scale: 1.2 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        {flashcard.isFavorite ? '<Star size={16} />' : '<Star size={16} />'}
-                      </motion.button>
-                    </motion.div>
-
-                    <motion.h3
-                      className="font-bold text-slate-800 mb-2"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: index * 0.05 + 0.2 }}
-                    >
-                      {flashcard.question}
-                    </motion.h3>
-
-                    <motion.div
-                      className="flex items-center gap-2 mb-3"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.4, delay: index * 0.05 + 0.3 }}
-                    >
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        difficulties.find(d => d.value === flashcard.difficulty)?.color || 'bg-slate-100'
-                      } ${
-                        difficulties.find(d => d.value === flashcard.difficulty)?.text || 'text-slate-700'
-                      }`}>
-                        {difficulties.find(d => d.value === flashcard.difficulty)?.label || 'Medium'}
-                      </span>
-                      <span className="text-xs text-slate-400">{flashcard.category}</span>
-                    </motion.div>
-
-                    <motion.p
-                      className="text-sm text-slate-600 line-clamp-2"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: index * 0.05 + 0.4 }}
-                    >
-                      {flashcard.answer}
-                    </motion.p>
-
-                    <motion.div
-                      className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-xs text-slate-400"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.4, delay: index * 0.05 + 0.5 }}
-                    >
-                      <span>Reviewed {flashcard.reviewCount} times</span>
-                      <motion.button
-                        onClick={() => deleteFlashcard(flashcard.id)}
-                        className="hover:text-red-500 transition-colors"
-                        whileHover={{ scale: 1.1 }}
-                      >
-                        <Trash2 size={18} />
-                      </motion.button>
-                    </motion.div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
-        ) : (
-          <motion.div
-            className="empty-state"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <motion.div
-              className="empty-state-icon"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              <Layers size={32} className="text-indigo-600" />
-            </motion.div>
-            <motion.h3
-              className="text-xl font-bold text-slate-800 mb-2"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-            >
-              No flashcards found
-            </motion.h3>
-            <motion.p
-              className="text-slate-500"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.4 }}
-            >
-              {searchQuery || selectedCategory !== 'all' 
-                ? 'Try adjusting your search or filter'
-                : 'Start by creating your first flashcard'}
-            </motion.p>
-          </motion.div>
-        )
-      )}
-
-      {/* Create Flashcard Modal */}
+    <div className="reference-page ref-flashcards-page">
+      <ReferenceHeader title="Make it stick." subtitle="Turn key concepts into lasting knowledge." action="Create deck" onAction={() => setShowCreateDeckModal(true)} />
+      <div className="ref-ai-page-actions"><button className="ref-secondary" onClick={() => setShowAI(true)}><Sparkle size={17}/>Generate with AI</button></div><div className="ref-flashcards-layout">
+        <section className="ref-deck-browser">
+          <div className="ref-stat-row">
+            <div className="ref-stat"><span className="ref-icon tint-0"><Layers size={27} /></span><span><strong>{cards.filter(card => card.dueDate <= todayStr).length}</strong><small>cards due for review</small></span><CaretRight size={17} /></div>
+            <div className="ref-stat"><span className="ref-icon tint-1"><ChartBar size={27} /></span><span><strong>{decks.filter(deck => deck.id !== 'deck-all').length}</strong><small>flashcard decks</small></span><CaretRight size={17} /></div>
+            <div className="ref-stat"><span className="ref-icon tint-3"><Fire size={27} weight="duotone" /></span><span><strong>{useStudyStore.getState().studyStats.dayStreak}</strong><small>day streak</small></span></div>
+          </div>
+          <ReferenceTabs items={[{ id: 'all', label: 'All decks' }, { id: 'due', label: 'Due for review' }]} value={deckView} onChange={setDeckView} />
+          <div className="ref-deck-grid">{visibleDecks.map((deck, index) => { const deckCards = cards.filter(card => card.deckId === deck.id); const due = deckCards.filter(card => card.dueDate <= todayStr).length; const mastered = deckCards.filter(card => card.status === 'mastered').length; return <article key={deck.id} className={selectedDeckId === deck.id ? 'ref-deck selected' : 'ref-deck'}><button className="ref-deck-select" onClick={() => { setSelectedDeckId(deck.id); setCurrentIndex(0); setIsFlipped(false); setReviewing(false) }}><span className={'ref-icon tint-' + index % 4}>{index % 3 === 0 ? <Brain size={29} /> : index % 3 === 1 ? <Sparkle size={29} /> : <BookOpen size={29} />}</span><strong>{deck.name}</strong><small>{deckCards.length} cards</small><span className="ref-deck-progress"><span style={{ width: (deckCards.length ? mastered / deckCards.length * 100 : 0) + '%' }} /></span><span className="ref-deck-due">{due} due</span></button><details className="ref-item-menu"><summary aria-label={'Options for ' + deck.name}>···</summary><button onClick={() => { deleteDeck(deck.id); if (selectedDeckId === deck.id) setSelectedDeckId('deck-all') }}>Delete deck</button></details></article> })}</div>
+          {!visibleDecks.length && <ReferenceEmpty>{decks.length ? 'No decks due. A little breathing room!' : 'Create your first deck or add a card to get started.'}</ReferenceEmpty>}
+          <button className="ref-text-action ref-browser-footer" onClick={() => setShowAddCardModal(true)}><Plus size={16} />Add a card to your collection</button>
+        </section>
+        <section className="ref-panel ref-study-preview">
+          <div className="ref-panel-title"><span className="ref-icon tint-0"><Brain size={24} /></span><h2>{selectedDeck?.name || 'All decks'}</h2><span className="ref-tag tint-0">{selectedDeck?.category || 'General'}</span><button aria-label="Add card" onClick={() => setShowAddCardModal(true)}><Plus size={19} /></button></div>
+          <label className="ref-study-picker"><span>Studying</span><select aria-label="Study deck" value={selectedDeckId} onChange={e => { setSelectedDeckId(e.target.value); setCurrentIndex(0); setIsFlipped(false) }}>{decks.map(deck => <option key={deck.id} value={deck.id}>{deck.name}</option>)}</select></label>
+          <div className="ref-cloud-card"><div className="ref-study-count"><button aria-label="Previous card" onClick={handlePrev}><CaretLeft size={17} /></button><span>{totalCards ? currentIndex % totalCards + 1 : 0} of {totalCards}</span><button aria-label="Next card" onClick={handleNext}><CaretRight size={17} /></button></div>{currentCard ? <StudyFlashcard key={currentCard.id} question={currentCard.question} answer={currentCard.answer} category={currentCard.category} flipped={isFlipped} showHints={showHints} onFlip={() => setIsFlipped(value => !value)} onDelete={() => deleteCard(currentCard.id)} /> : <ReferenceEmpty>This deck is ready for its first card.<button className="ref-primary" onClick={() => setShowAddCardModal(true)}>Add card</button></ReferenceEmpty>}</div>
+          {(reviewing || isFlipped) && currentCard && <div className="ref-review-ratings">{(['again', 'hard', 'good', 'easy'] as const).map(rating => <button key={rating} className={rating} onClick={() => handleRating(rating)}>{rating}<small>{rating === 'again' ? 'Try again' : rating === 'hard' ? 'A little unsure' : rating === 'good' ? 'Got it' : 'Easy recall'}</small></button>)}</div>}
+          <div className="ref-study-footer"><button className="ref-secondary" onClick={() => { setCurrentIndex(Math.floor(Math.random() * Math.max(1, totalCards))); setIsFlipped(false) }}><Shuffle size={19} />Shuffle</button><button className="ref-primary" disabled={!currentCard} onClick={() => { setReviewing(true); setIsFlipped(false) }}>Start review<ArrowRight size={18} /></button></div>
+          <details className="ref-study-options"><summary>Study options · {overallPercentage}% mastered</summary><label><input type="checkbox" checked={showHints} onChange={e => setShowHints(e.target.checked)} />Show hints</label><label><input type="checkbox" checked={spacedRepetition} onChange={e => setSpacedRepetition(e.target.checked)} />Spaced repetition</label><p>{masteredCardsCount} mastered · {learningCardsCount} learning · {dueCardsCount} due</p><button className="ref-text-action" onClick={handleEndStudySession}>End Study Session</button></details>
+        </section>
+      </div>
       <AnimatePresence>
-        {showCreateModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          >
+        {showCreateDeckModal && (
+          <ViewportOverlay onDismiss={() => setShowCreateDeckModal(false)} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-xs">
             <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
-              className="glass-modal w-full max-w-lg p-6"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-pink-100 space-y-4"
             >
-              <motion.div
-                className="flex items-center justify-between mb-6"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-              >
-                <motion.h2
-                  className="text-2xl font-bold text-gradient"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: 0.2 }}
-                >
-                  Create New Flashcard
-                </motion.h2>
-                <motion.button
-                  onClick={() => setShowCreateModal(false)}
-                  className="text-2xl text-slate-400 hover:text-slate-600"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <X size={18} />
-                </motion.button>
-              </motion.div>
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-extrabold text-neutral-800">Create New Deck</h3>
+                <button onClick={() => setShowCreateDeckModal(false)} className="text-neutral-400 hover:text-neutral-600">
+                  <X size={18} weight="bold" />
+                </button>
+              </div>
 
-              <form onSubmit={handleCreateFlashcard} className="space-y-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.2 }}
-                >
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Question
-                  </label>
-                  <textarea
-                    value={newFlashcard.question}
-                    onChange={(e) => setNewFlashcard({ ...newFlashcard, question: e.target.value })}
-                    placeholder="Enter the question..."
-                    className="textarea-solid"
-                    rows={3}
-                    autoFocus
+              <form onSubmit={handleCreateDeckSubmit} className="space-y-3.5">
+                <div>
+                  <label className="text-xs font-bold text-neutral-600 block mb-1">Deck Name</label>
+                  <input
+                    type="text"
+                    value={newDeckName}
+                    onChange={(e) => setNewDeckName(e.target.value)}
+                    placeholder="e.g. Biological Bases of Behavior"
+                    className="w-full px-3.5 py-2 text-xs font-semibold rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300"
+                    required
                   />
-                </motion.div>
+                </div>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.3 }}
-                >
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Answer
-                  </label>
-                  <textarea
-                    value={newFlashcard.answer}
-                    onChange={(e) => setNewFlashcard({ ...newFlashcard, answer: e.target.value })}
-                    placeholder="Enter the answer..."
-                    className="textarea-solid"
-                    rows={4}
-                  />
-                </motion.div>
+                <div>
+                  <label className="text-xs font-bold text-neutral-600 block mb-1">Subject Category</label>
+                  <select
+                    value={newDeckCategory}
+                    onChange={(e) => setNewDeckCategory(e.target.value)}
+                    className="w-full px-3.5 py-2 text-xs font-semibold rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-white"
+                  >
+                    <option value="Cognitive Psychology">Cognitive Psychology</option>
+                    <option value="Developmental Psychology">Developmental Psychology</option>
+                    <option value="Abnormal Psychology">Abnormal Psychology</option>
+                    <option value="Research Methods">Research Methods</option>
+                    <option value="Social Psychology">Social Psychology</option>
+                  </select>
+                </div>
 
-                <motion.div
-                  className="grid grid-cols-2 gap-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.4 }}
-                >
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Category
-                    </label>
-                    <select
-                      value={newFlashcard.category}
-                      onChange={(e) => setNewFlashcard({ ...newFlashcard, category: e.target.value })}
-                      className="input-solid"
-                    >
-                      {categories.slice(1).map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Difficulty
-                    </label>
-                    <select
-                      value={newFlashcard.difficulty}
-                      onChange={(e) => setNewFlashcard({ ...newFlashcard, difficulty: e.target.value as 'easy' | 'medium' | 'hard' | 'board' })}
-                      className="input-solid"
-                    >
-                      {difficulties.map((d) => (
-                        <option key={d.value} value={d.value}>{d.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  className="flex justify-end gap-3 pt-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.5 }}
-                >
-                  <motion.button
+                <div className="flex gap-2 pt-2">
+                  <button
                     type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="btn-secondary px-6 py-2"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setShowCreateDeckModal(false)}
+                    className="flex-1 py-2 rounded-xl text-xs font-bold text-neutral-600 bg-neutral-100 hover:bg-neutral-200"
                   >
                     Cancel
-                  </motion.button>
-                  <motion.button
+                  </button>
+                  <button
                     type="submit"
-                    className="btn-primary px-6 py-2"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-pink-500 to-rose-500 hover:opacity-95 shadow-md shadow-pink-500/20"
                   >
-                    <span className="mr-1">+</span>
-                    Create Card
-                  </motion.button>
-                </motion.div>
+                    Create Deck
+                  </button>
+                </div>
               </form>
             </motion.div>
-          </motion.div>
+          </ViewportOverlay>
         )}
       </AnimatePresence>
 
-      {/* Floating Action Button */}
-      <motion.button
-        onClick={() => setShowCreateModal(true)}
-        className="fab"
-        whileHover={{ scale: 1.1, rotate: 10 }}
-        whileTap={{ scale: 0.95, rotate: 0 }}
-        initial={{ opacity: 0, scale: 0 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, delay: 0.5, type: 'spring', damping: 10, stiffness: 200 }}
-      >
-        <Plus size={28} className="text-white" />
-      </motion.button>
-    </motion.div>
+      {/* ── Modal: Add Flashcard ── */}
+      <AnimatePresence>
+        {showAddCardModal && (
+          <ViewportOverlay onDismiss={() => setShowAddCardModal(false)} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-pink-100 space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-extrabold text-neutral-800">Add New Flashcard</h3>
+                <button onClick={() => setShowAddCardModal(false)} className="text-neutral-400 hover:text-neutral-600">
+                  <X size={18} weight="bold" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddCardSubmit} className="space-y-3.5">
+                <div>
+                  <label className="text-xs font-bold text-neutral-600 block mb-1">Front: Question / Prompt</label>
+                  <textarea
+                    value={newQuestion}
+                    onChange={(e) => setNewQuestion(e.target.value)}
+                    placeholder="e.g. What is the Yerkes-Dodson Law?"
+                    rows={2}
+                    className="w-full px-3.5 py-2 text-xs font-semibold rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-neutral-600 block mb-1">Back: Answer / Explanation</label>
+                  <textarea
+                    value={newAnswer}
+                    onChange={(e) => setNewAnswer(e.target.value)}
+                    placeholder="e.g. Performance increases with physiological or mental arousal, but only up to an optimal point..."
+                    rows={3}
+                    className="w-full px-3.5 py-2 text-xs font-semibold rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300"
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddCardModal(false)}
+                    className="flex-1 py-2 rounded-xl text-xs font-bold text-neutral-600 bg-neutral-100 hover:bg-neutral-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-pink-500 to-rose-500 hover:opacity-95 shadow-md shadow-pink-500/20"
+                  >
+                    Add Card
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </ViewportOverlay>
+        )}
+      </AnimatePresence>
+
+      {/* ── Modal: Session End Summary ── */}
+      <AnimatePresence>
+        {showSessionEndModal && (
+          <ViewportOverlay onDismiss={() => setShowSessionEndModal(false)} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl border border-pink-100 space-y-4"
+            >
+              <div className="w-14 h-14 rounded-full bg-pink-100 text-pink-600 mx-auto flex items-center justify-center">
+                <Check size={28} weight="bold" />
+              </div>
+              <h3 className="text-lg font-black text-neutral-800">Session Complete!</h3>
+              <p className="text-xs font-semibold text-neutral-500">
+                You reviewed <span className="text-pink-600 font-black">{sessionReviewedCount} cards</span> in this active recall session. Your memory consolidation is advancing!
+              </p>
+              <button
+                onClick={() => {
+                  setSessionReviewedCount(0)
+                  setShowSessionEndModal(false)
+                }}
+                className="w-full py-2.5 rounded-full text-xs font-bold text-white shadow-md shadow-pink-500/20"
+                style={{ background: 'linear-gradient(135deg, #FF6EA7 0%, #FF3385 100%)' }}
+              >
+                Back to Dashboard
+              </button>
+            </motion.div>
+          </ViewportOverlay>
+        )}
+      </AnimatePresence>
+      {showAI && <AIGenerator task="flashcards" category={selectedDeck?.category || 'General Psychology'} onClose={() => setShowAI(false)} onSave={draft => { const category = selectedDeck?.category || 'General Psychology'; const id = createDeck(draft.title, category); draft.cards.forEach(card => addCard(id, card.question, card.answer, category)); setSelectedDeckId(id); setShowAI(false); setCurrentIndex(0); setIsFlipped(false) }}/>}
+    </div>
   )
 }

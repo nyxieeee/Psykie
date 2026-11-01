@@ -1,3 +1,5 @@
+import { persist, createJSONStorage } from 'zustand/middleware'
+import { workspaceStorage } from '../utils/workspaceStorage'
 import { create } from 'zustand'
 import { Message, ChatSession } from '../types'
 
@@ -26,19 +28,14 @@ const initialState: MindyState = {
   error: null,
 }
 
-export const useMindyStore = create<MindyStore>((set, get) => ({
+export const useMindyStore = create<MindyStore>()(persist((set) => ({
   ...initialState,
   
   createSession: () => {
     const newSession: ChatSession = {
-      id: `session-${Date.now()}`,
+      id: `session-${crypto.randomUUID()}`,
       userId: 'current-user',
-      messages: [{
-        id: `msg-${Date.now()}`,
-        text: "Hello! I'm Mindy, your AI psychology assistant. How can I help you today?",
-        sender: 'ai',
-        timestamp: new Date(),
-      }],
+      messages: [],
       createdAt: new Date(),
       updatedAt: new Date(),
     }
@@ -100,48 +97,7 @@ export const useMindyStore = create<MindyStore>((set, get) => ({
   clearSessions: () => {
     set(initialState)
   },
-}))
-
-// Helper function to generate AI response
-export const generateMindyResponse = (userMessage: string): string => {
-  const responses = [
-    `That's a fascinating question about ${extractTopic(userMessage)}. Let me provide some psychological insights...`,
-    `Interesting! Based on cognitive psychology principles, ${extractTopic(userMessage)} can be understood as...`,
-    `From a behavioral perspective, ${extractTopic(userMessage)} involves...`,
-    `In clinical practice, we often see that ${extractTopic(userMessage)} relates to...`,
-    `Great observation! Research shows that ${extractTopic(userMessage)} has significant implications for...`,
-    `Let me help you understand ${extractTopic(userMessage)} better. According to recent studies...`,
-    `That's a complex topic. In neuroscience, we find that ${extractTopic(userMessage)} is associated with...`,
-    `From a developmental psychology angle, ${extractTopic(userMessage)} typically manifests as...`,
-  ]
-  
-  const randomIndex = Math.floor(Math.random() * responses.length)
-  return responses[randomIndex]
-}
-
-function extractTopic(message: string): string {
-  const lowerMessage = message.toLowerCase()
-  
-  if (lowerMessage.includes('memory')) return 'memory'
-  if (lowerMessage.includes('cognition') || lowerMessage.includes('cognitive')) return 'cognitive processes'
-  if (lowerMessage.includes('anxiety')) return 'anxiety'
-  if (lowerMessage.includes('depression')) return 'depression'
-  if (lowerMessage.includes('development')) return 'human development'
-  if (lowerMessage.includes('personality')) return 'personality theories'
-  if (lowerMessage.includes('social')) return 'social psychology'
-  if (lowerMessage.includes('abnormal')) return 'abnormal psychology'
-  if (lowerMessage.includes('neuro') || lowerMessage.includes('brain')) return 'neuroscience'
-  if (lowerMessage.includes('behavior')) return 'behavioral psychology'
-  if (lowerMessage.includes('freud')) return 'Freudian theory'
-  if (lowerMessage.includes('piaget')) return "Piaget's stages"
-  if (lowerMessage.includes('skinner')) return 'operant conditioning'
-  if (lowerMessage.includes('learning')) return 'learning theories'
-  if (lowerMessage.includes('therapy') || lowerMessage.includes('cbt')) return 'therapeutic approaches'
-  if (lowerMessage.includes('research')) return 'research methods'
-  if (lowerMessage.includes('statistics')) return 'statistical analysis'
-  
-  return 'this topic'
-}
+}), { name: 'psykie-mindy', storage: createJSONStorage(() => workspaceStorage), partialize: state => ({ sessions: state.sessions, currentSessionId: state.currentSessionId }) }))
 
 // Selector hooks
 export const useSessions = () => useMindyStore(state => state.sessions)

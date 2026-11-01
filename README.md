@@ -1,678 +1,89 @@
-# 🧠 Psykie
-### Your Psychology Study & Practice Companion
+# Psykie
 
-Version: 1.0 (MVP Planning)
-Status: Planning Phase
-AI Assistant: **Mindy**
+Psychology study and professional workspace built with React, TypeScript, Vite, Supabase Auth, and Mistral AI.
 
----
+The frontend is implemented. Live authentication/AI require your own project configuration and deployment. Notes, files, cards, research saves, events, and client content currently stay in the browser; cloud content sync is not implemented.
 
-# Overview
+## 1. Fill three values in one file
 
-Psykie is an AI-powered psychology platform designed for both psychology students and licensed professionals. It combines AI-assisted learning, board exam preparation, research tools, and clinical productivity into a secure, modern web application.
+Open `.env.local`. If it does not exist, copy `.env.example` to `.env.local`.
 
-The integrated AI assistant, **Mindy**, helps users learn psychology, summarize research, generate quizzes and flashcards, assist with academic writing, and provide evidence-based clinical support while respecting ethical and legal boundaries.
+| Setting | Where to get it |
+| --- | --- |
+| `VITE_SUPABASE_URL` | Open your project in the [Supabase dashboard](https://supabase.com/dashboard), then its **Connect** dialog. Copy the project URL. |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase project **Settings > API Keys** (or Connect). Copy the **publishable** key, not the secret key. |
+| `MISTRAL_API_KEY` | Open [Mistral Studio](https://console.mistral.ai), go to **API Keys**, then **Create new key**. Copy it into this field. |
 
----
+Leave `VITE_SUPABASE_ANON_KEY` empty when using the publishable key. Keep the supplied model names and local allowed origins for now. Add your production app origin to `ALLOWED_ORIGINS` when hosting the app.
 
-# Vision
+`.env.local` contains your actual credentials and is ignored by Git. Only `VITE_` variables are exposed to the browser; the Mistral key has no `VITE_` prefix and is used by the server functions.
 
-Create the most trusted all-in-one psychology platform that bridges education, research, and professional practice through responsible AI.
+Check the file without displaying any keys:
 
----
-
-# Core Principles
-
-- Evidence-based
-- Privacy-first
-- Professional-grade security
-- Fast AI responses
-- Beautiful user experience
-- Mobile-friendly
-- Accessible
-- Scalable architecture
-
----
-
-# Target Users
-
-## Students
-
-- Undergraduate Psychology
-- Graduate Students
-- Board Exam Reviewees
-
----
-
-## Professionals
-
-- Licensed Psychologists
-- Psychometricians
-- Guidance Counselors
-- Clinical Supervisors
-- Mental Health Professionals
-
----
-
-# AI Assistant
-
-## Name
-
-**Mindy**
-
----
-
-## AI Providers
-
-### Primary
-
-- Groq
-- GPT OSS
-
-Used for:
-
-- Conversations
-- Tutoring
-- Quizzes
-- Flashcards
-- Psychology explanations
-- Case discussions
-- Study assistance
-
----
-
-### Secondary
-
-- Mistral AI
-
-Used for:
-
-- PDF summaries
-- Research assistance
-- APA formatting
-- Long document understanding
-- Literature reviews
-
----
-
-## AI Routing
-
-Mindy automatically chooses the best AI model depending on the task.
-
-Example:
-
-Student Question
-        ↓
-Groq GPT OSS
-
-Upload Research Paper
-        ↓
-Mistral AI
-
-Generate Flashcards
-        ↓
-Groq GPT OSS
-
-Summarize Lecture PDF
-        ↓
-Mistral AI
-
----
-
-# Student Module
-
-## Dashboard
-
-Features
-
-- Personalized homepage
-- Current subjects
-- Upcoming deadlines
-- Assignment tracker
-- Exam countdown
-- Progress analytics
-- Study streak
-- Recent activity
-
----
-
-## AI Tutor
-
-Mindy can
-
-- Explain psychology concepts
-- Compare theories
-- Explain famous psychologists
-- Generate examples
-- Explain difficult terminology
-- Answer academic questions
-
----
-
-## Smart Notes
-
-Upload
-
-- PDF
-- DOCX
-- PPT
-- Images
-
-AI Features
-
-- Summary
-- Key concepts
-- Important terms
-- Highlighting
-- Question generation
-- Flashcard generation
-
----
-
-## Flashcards
-
-Features
-
-- AI generated
-- Manual cards
-- Spaced repetition
-- Favorites
-- Categories
-- Daily review
-
----
-
-## Quiz Generator
-
-Generate
-
-- Multiple Choice
-- True or False
-- Identification
-- Enumeration
-- Essay Questions
-- Situational Cases
-
-Difficulty
-
-- Easy
-- Medium
-- Hard
-- Board Exam
-
----
-
-## Board Review
-
-Topics
-
-- General Psychology
-- Biological Psychology
-- Developmental Psychology
-- Cognitive Psychology
-- Abnormal Psychology
-- Social Psychology
-- Personality
-- Industrial Psychology
-- Educational Psychology
-- Psychological Assessment
-- Research Methods
-- Ethics
-
-Features
-
-- Mock Boards
-- Timed Exams
-- Random Questions
-- Weak Topic Detection
-- Performance Analytics
-
----
-
-## Research Assistant
-
-Features
-
-- Journal summaries
-- APA 7 citations
-- Citation generator
-- Research questions
-- Literature review assistance
-- Variable suggestions
-- Hypothesis generation
-- Methodology explanation
-- Statistics explanation
-
----
-
-# Professional Module
-
-## Dashboard
-
-Displays
-
-- Today's appointments
-- Client statistics
-- Session reminders
-- Pending assessments
-- Recent notes
-
----
-
-## Calendar
-
-Features
-
-- Schedule sessions
-- Appointment reminders
-- Google Calendar Sync
-- Outlook Sync
-
----
-
-## Client Management
-
-Secure client records
-
-Contains
-
-- Demographics
-- Intake forms
-- Consent forms
-- Session history
-- Progress notes
-- Treatment goals
-- Attachments
-
----
-
-## Assessment Toolkit
-
-Features
-
-- Assessment guides
-- Scoring support
-- Interpretation guidance
-- Report drafting assistance
-
----
-
-## DSM-5-TR Reference
-
-Searchable database
-
-Contains
-
-- Disorder overview
-- Diagnostic summaries
-- Symptom summaries
-- Differential diagnosis guidance
-- Clinical notes
-
-⚠️ Do **not** reproduce copyrighted DSM-5-TR text verbatim. Use original summaries and require users to consult the official DSM-5-TR for the complete criteria.
-
----
-
-## Therapy Library
-
-Evidence-based interventions
-
-Includes
-
-- CBT
-- DBT
-- ACT
-- REBT
-- Motivational Interviewing
-- Family Therapy
-- Solution Focused Therapy
-- Person Centered Therapy
-- Mindfulness
-
-Resources
-
-- Worksheets
-- Psychoeducation
-- Session planning
-- Homework templates
-
----
-
-# Trusted Knowledge Sources
-
-Only retrieve information from trusted sources.
-
-Priority Sources
-
-★★★★★
-
-- American Psychological Association
-- World Health Organization
-- PubMed
-- NIH
-- NIMH
-- Cochrane Library
-
-★★★★☆
-
-- University publications
-- Government health agencies
-- Peer-reviewed journals
-
-Never prioritize
-
-- Reddit
-- Quora
-- Blogs
-- AI generated websites
-- Unverified sources
-
----
-
-# AI Safety
-
-Mindy must never
-
-- Diagnose patients
-- Replace psychologists
-- Prescribe medication
-- Generate fake citations
-- Fabricate statistics
-- Encourage unsafe behavior
-
-Always remind users that AI is an educational and decision-support tool—not a replacement for professional judgment.
-
----
-
-# Authentication
-
-Users can login using
-
-- Email
-- Google
-- Microsoft
-
-Future
-
-- University SSO
-
----
-
-# User Roles
-
-Guest
-
-- Browse information
-
-Student
-
-- Access learning features
-
-Professional
-
-- Clinical workspace
-
-Admin
-
-- Manage platform
-
-Super Admin
-
-- Full access
-
----
-
-# Tech Stack
-
-## Frontend
-
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- Framer Motion
-
----
-
-## Backend
-
-- Next.js API Routes
-- Node.js
-
----
-
-## Database
-
-- PostgreSQL
-- Prisma ORM
-
----
-
-## Authentication
-
-- Clerk
-or
-- Auth.js
-
----
-
-## Storage
-
-- Supabase Storage
-
----
-
-## AI
-
-- Groq GPT OSS
-- Mistral AI
-
----
-
-## Deployment
-
-Frontend
-
-- Vercel
-
-Backend
-
-- Railway
-
-Database
-
-- PostgreSQL
-
-Storage
-
-- Supabase
-
----
-
-# Security
-
-Authentication
-
-- JWT
-- MFA
-- Secure Sessions
-
-Encryption
-
-- AES-256 at rest
-- TLS in transit
-
-Protection
-
-- SQL Injection Protection
-- XSS Protection
-- CSRF Protection
-- Rate Limiting
-- CSP Headers
-- Input Validation
-
-Sensitive Data
-
-Never expose
-
-- .env
-- API Keys
-- Database credentials
-- Server files
-- Internal APIs
-
----
-
-# Folder Structure
-
-```
-app/
-components/
-features/
-    student/
-    professional/
-    ai/
-    research/
-    board-review/
-    flashcards/
-    assessments/
-    therapy/
-lib/
-    ai/
-    auth/
-    db/
-    utils/
-prisma/
-public/
+```powershell
+npm install
+npm run setup:check
 ```
 
----
+## 2. Set up your Supabase project
 
-# Future Roadmap
+These commands run from this project folder. `PROJECT_REF` is the project reference shown in Supabase project settings; for a standard URL `https://abcdefgh.supabase.co`, it is `abcdefgh`. Replace that placeholder before running the link command.
 
-## Version 1.0
+```powershell
+npx supabase login
+npx supabase link --project-ref PROJECT_REF
+npx supabase db push --dry-run
+```
 
-- Student Dashboard
-- AI Tutor
-- Flashcards
-- Smart Notes
-- Quiz Generator
-- Research Assistant
+Review the pending migrations. They create account profiles and AI request limits. If this Supabase project already has a `profiles` table or other app data, review the migrations against its schema before applying them. For a new Psykie project, apply the reviewed migrations, upload the environment settings, and deploy the two functions:
 
----
+```powershell
+npx supabase db push
+npx supabase secrets set --env-file .env.local
+npx supabase functions deploy psykie-ai
+npx supabase functions deploy psykie-research
+```
 
-## Version 1.5
+Microsoft, Google, and Apple need their own provider configuration under **Supabase > Authentication > Providers**. Add your app's `/auth/callback` URL under **Authentication > URL Configuration > Redirect URLs**. See [the authentication setup guide](SUPABASE_SETUP.md) for the exact steps. Email/password signup can be used independently of social-provider setup.
 
-- Professional Dashboard
-- Client Management
-- Calendar
-- Assessment Toolkit
-- Therapy Library
+## 3. Run the app
 
----
+```powershell
+npm run dev
+```
 
-## Version 2.0
+Restart Vite after changing `.env.local`. Development-only demo accounts skip signup and use empty local workspaces. AI requires a real signed-in Supabase account; demo accounts do not call paid AI services.
 
-- Voice conversations with Mindy
-- AI-generated session summaries
-- Telehealth
-- Mobile Apps
-- Offline Mode
-- Supervisor Portal
-- Wearable Integration
+Optional credential connectivity check, after filling the values:
 
----
+```powershell
+npm run setup:check -- --live
+```
 
-# Design Language
+This checks Supabase's public auth settings and Mistral's model-list endpoint. It does not generate AI content or prove the migrations/functions/providers are deployed correctly.
 
-Theme
+## What the integrations do
 
-- Calm
-- Modern
-- Healthcare
-- Apple-inspired
-- Minimal
+- **Supabase:** email/social sign-in, Student/Registered Psych profiles, a fixed account-type choice, and authenticated server functions.
+- **Mistral:** Mindy chat, note summaries, flashcards, quizzes, and source-checked Research search.
+- **Research:** only retrieved citations from the approved source list can appear; a second relevance pass filters topic matches. Source inclusion is not a guarantee of accuracy or peer review.
+- **Not implemented:** cloud content sync, notification delivery, password-recovery UI, public sharing, or support messaging.
 
-Primary Colors
+## Checks and details
 
-- Blue
-- Teal
-- White
+```powershell
+npm run build
+npm run lint
+npm run check:functions
+npm run test:ai:backend
+npm run test:ai:ui
+```
 
-Typography
+AI UI tests use mocked services, not your live API keys. The test harness requires Playwright and Microsoft Edge.
 
-- Clean
-- Accessible
-- Professional
+- [Mistral deployment and source policy](AI_SETUP.md)
+- [Supabase authentication and OAuth setup](SUPABASE_SETUP.md)
+- [Beta functionality and limitations](BETA_STATUS.md)
+- Planning documents: [requirements](PRD.md), [features](Feature_Specification.md), [data model](ERD.md), [data flow](DFD.md), [architecture](System_Architecture.md). These describe planned capabilities as well as current functionality; use the setup/beta guides for implementation status.
 
-Dark Mode
-
-✅ Supported
-
-Light Mode
-
-✅ Supported
-
-Responsive
-
-✅ Desktop
-✅ Tablet
-✅ Mobile
-
----
-
-# Mission Statement
-
-**Psykie exists to empower psychology students and mental health professionals by combining trusted knowledge, secure technology, and responsible artificial intelligence into one seamless platform. Through Mindy, users can learn, research, organize, and practice with confidence while respecting ethical standards, privacy, and the limits of AI.**
-
-# Original Idea and features
-
-Student 
-- Personalized Dashboard
-    •    Subjects, assignments, exams, and deadlines 
-- AI Study Assistant
-    •    Explain psychology concepts
-    •    Answer academic questions
-    •    Generate quizzes and practice tests
-- Smart Notes
-    •    Summarize lectures
-    •    Highlight key concepts
-    •    Organize study materials
-- Board Exam Review
-    •    Topic-based quizzes
-    •    Mock board examinations
-    •    Performance tracking
-- Flashcards
-    •    AI-generated flashcards
-    •    Spaced repetition for better retention
-- Research Assistant
-    •    Summarize journal articles
-    •    Generate APA citations
-    •    Assist with literature reviews
-    •    Explain research methods and statistics
-
-Professional 
-- Schedule & Appointments
-    •    Calendar management
-    •    Session reminders
-- Client Management
-    •    Secure client profiles
-    •    Session history
-    •    Progress notes
-- Psychological Assessment Tools
-    •    Assessment guides
-    •    Scoring support
-    •    Interpretation guidance
-- Diagnostic Criteria
-    •    Searchable diagnostic references
-    •    Differential diagnosis guidance
-    •    Symptom checklists
-- Therapy Techniques
-    •    Evidence-based intervention library
-    •    Session planning resources
-    •    Worksheets and psychoeducation materials
-
-*NOTE: all documents that is pulled from the search engine should be only from trusted sources
-
-*DSM-5 TR DIAGNOSTICS CRITERIA SHOULD ALSO BE IMPLEMENTED (A VERSION OF IT)# Psykie
+Official setup references: [Supabase API keys](https://supabase.com/docs/guides/getting-started/api-keys), [Mistral API keys](https://docs.mistral.ai/getting-started/quickstarts/studio/activate-and-generate-api-key), [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started).

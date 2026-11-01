@@ -1,116 +1,156 @@
+import { AuthCallbackPage } from './pages/auth/AuthCallbackPage'
+import { AccountTypePage } from './pages/auth/AccountTypePage'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { Suspense, lazy, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Suspense, lazy, useEffect, useLayoutEffect, useRef } from 'react'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useAuthStore, useIsAuthenticated } from './store'
-import { Brain, HelpCircle } from 'lucide-react'
+import { TransitionProvider, useTransitionStyle } from './context/TransitionContext'
+import { TRANSITIONS, DEFAULT_TRANSITION } from './utils/transitions'
+import { LoadingScreen } from './components/LoadingScreen'
+import {
+  HelpIcon,
+  BrainIcon,
+} from './components/icons/PsykieIcons'
 
 // Lazy load pages for code splitting
-const AuthLayout = lazy(() => import('./layouts/AuthLayout').then(m => ({ default: m.AuthLayout })))
-const AppLayout = lazy(() => import('./layouts/AppLayout').then(m => ({ default: m.AppLayout })))
-
-// Auth Pages
-const LoginPage = lazy(() => import('./pages/auth/LoginPage').then(m => ({ default: m.LoginPage })))
-const RegisterPage = lazy(() => import('./pages/auth/RegisterPage').then(m => ({ default: m.RegisterPage })))
-
-// App Pages
-const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
-const MindyPage = lazy(() => import('./pages/MindyPage').then(m => ({ default: m.MindyPage })))
-const NotesPage = lazy(() => import('./pages/NotesPage').then(m => ({ default: m.NotesPage })))
+const AuthLayout     = lazy(() => import('./layouts/AuthLayout').then(m => ({ default: m.AuthLayout })))
+const AppLayout      = lazy(() => import('./layouts/AppLayout').then(m => ({ default: m.AppLayout })))
+const LoginPage      = lazy(() => import('./pages/auth/LoginPage').then(m => ({ default: m.LoginPage })))
+const RegisterPage   = lazy(() => import('./pages/auth/RegisterPage').then(m => ({ default: m.RegisterPage })))
+const DashboardPage  = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
+const MindyPage      = lazy(() => import('./pages/MindyPage').then(m => ({ default: m.MindyPage })))
+const NotesPage      = lazy(() => import('./pages/NotesPage').then(m => ({ default: m.NotesPage })))
 const FlashcardsPage = lazy(() => import('./pages/FlashcardsPage').then(m => ({ default: m.FlashcardsPage })))
-const QuizzesPage = lazy(() => import('./pages/QuizzesPage').then(m => ({ default: m.QuizzesPage })))
-const ResearchPage = lazy(() => import('./pages/ResearchPage').then(m => ({ default: m.ResearchPage })))
-const CalendarPage = lazy(() => import('./pages/CalendarPage').then(m => ({ default: m.CalendarPage })))
-const ClientsPage = lazy(() => import('./pages/ClientsPage').then(m => ({ default: m.ClientsPage })))
-const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
-const HelpPage = lazy(() => import('./pages/HelpPage').then(m => ({ default: m.HelpPage })))
+const QuizzesPage    = lazy(() => import('./pages/QuizzesPage').then(m => ({ default: m.QuizzesPage })))
+const ResearchPage   = lazy(() => import('./pages/ResearchPage').then(m => ({ default: m.ResearchPage })))
+const CalendarPage   = lazy(() => import('./pages/CalendarPage').then(m => ({ default: m.CalendarPage })))
+const ClientsPage    = lazy(() => import('./pages/ClientsPage').then(m => ({ default: m.ClientsPage })))
+const SettingsPage   = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const HelpPage       = lazy(() => import('./pages/HelpPage').then(m => ({ default: m.HelpPage })))
+const DocumentsPage  = lazy(() => import('./pages/DocumentsPage').then(m => ({ default: m.DocumentsPage })))
 
-// Loading Fallback
+// Loading fallback
 function LoadingFallback() {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50/20 to-purple-50/20"
-    >
-      <motion.div
-        className="relative"
-        animate={{ rotate: [0, 360] }}
-        transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-      >
-        {/* 3D Brain Loader */}
-        <motion.div
-          className="w-20 h-20 rounded-full border-2 border-indigo-300/50"
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          <motion.div
-            className="absolute inset-0 flex items-center justify-center"
-            animate={{ rotate: [0, -360] }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-          >
-            <Brain size={32} className="text-indigo-600" />
-          </motion.div>
-          {/* Floating particles */}
-          {[...Array(6)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-2 h-2 rounded-full bg-indigo-400"
-              style={{
-                top: `${50 + 30 * Math.sin((i / 6) * Math.PI * 2)}%`,
-                left: `${50 + 30 * Math.cos((i / 6) * Math.PI * 2)}%`,
-              }}
-              animate={{ scale: [0.5, 1, 0.5], opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
-            />
-          ))}
-        </motion.div>
-        <motion.p
-          className="mt-6 text-indigo-600 font-semibold"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-        >
-          Loading Psykie...
-        </motion.p>
-      </motion.div>
-    </motion.div>
-  )
+  return <LoadingScreen fullScreen label="Loading Psykie..." />
 }
 
-// Protected Route Component
+// ── Protected Route ──
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useIsAuthenticated()
+  const isSessionReady = useAuthStore(state => state.isSessionReady)
+  const user = useAuthStore(state => state.user)
   const location = useLocation()
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />
-  }
-  
+  if (!isSessionReady) return <LoadingFallback />
+  if (!isAuthenticated) return <Navigate to="/login" state={{ from: location }} replace />
+  if (!user || !['student', 'professional', 'admin'].includes(user.role)) return <Navigate to="/account-type" replace />
   return children
 }
 
-// Public Route Component (redirect if authenticated)
+function ClinicalRoute({ children }: { children: React.ReactNode }) {
+  const role = useAuthStore(state => state.user?.role)
+  return role === 'professional' || role === 'admin' ? children : <Navigate to="/dashboard" replace />
+}
+
+// ── Public Route ──
 function PublicRoute({ children }: { children: React.ReactNode }) {
+  const isSessionReady = useAuthStore(state => state.isSessionReady)
   const isAuthenticated = useIsAuthenticated()
   const location = useLocation()
-  
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" state={{ from: location }} replace />
-  }
-  
+  if (!isSessionReady) return <LoadingFallback />
+  if (isAuthenticated) return <Navigate to="/dashboard" state={{ from: location }} replace />
   return children
 }
 
-// Route Transition Component
+// ── Page order for direction detection ──
+const PAGE_ORDER = [
+  '/dashboard',
+  '/mindy',
+  '/notes',
+  '/flashcards',
+  '/quizzes',
+  '/research',
+  '/documents',
+  '/calendar',
+  '/clients',
+  '/settings',
+  '/help',
+]
+
+// ── Route Transition ──
+// Uses the globally-set TransitionStyle from context, direction-aware
 function RouteTransition({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  const prevPathRef = useRef<string>(location.pathname)
+  const { active } = useTransitionStyle()
+
+  // Reset once the destination page commits, including lazy-loaded routes.
+  // `instant` overrides the document's smooth scrolling preference.
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }, [location.pathname])
+
+  const prevIdx = PAGE_ORDER.indexOf(prevPathRef.current)
+  const currIdx = PAGE_ORDER.indexOf(location.pathname)
+  const isForward = currIdx > prevIdx
+
+  // For directional transitions, pick opposing direction for backward navigation
+  const getVariant = () => {
+    const base = TRANSITIONS[active] ?? TRANSITIONS[DEFAULT_TRANSITION]
+
+    // Direction-aware: flip left↔right / up↔down for backward nav
+    if (prevIdx !== -1 && currIdx !== -1 && !isForward) {
+      // Automatically use the mirror direction for back navigation
+      const mirrorMap: Partial<Record<string, string>> = {
+        'cube-right':    'cube-left',
+        'cube-left':     'cube-right',
+        'cube-up':       'cube-down',
+        'cube-down':     'cube-up',
+        'slide-right':   'slide-left',
+        'slide-left':    'slide-right',
+        'slide-up':      'slide-down',
+        'slide-down':    'slide-up',
+        'wipe-right':    'wipe-left',
+        'wipe-left':     'wipe-right',
+        'wipe-up':       'wipe-down',
+        'wipe-down':     'wipe-up',
+        'swap-right':    'swap-left',
+        'swap-left':     'swap-right',
+        'swap-up':       'swap-down',
+        'swap-down':     'swap-up',
+        'skew-right':    'skew-left',
+        'skew-left':     'skew-right',
+        'skew-up':       'skew-down',
+        'skew-down':     'skew-up',
+        'uncover-right': 'uncover-left',
+        'uncover-left':  'uncover-right',
+        'uncover-up':    'uncover-down',
+        'uncover-down':  'uncover-up',
+      }
+      const mirror = mirrorMap[active]
+      if (mirror) return TRANSITIONS[mirror as keyof typeof TRANSITIONS] ?? base
+    }
+    return base
+  }
+
+  const reducedMotion = useReducedMotion()
+  const variant = reducedMotion ? TRANSITIONS.fade : getVariant()
+
+  useEffect(() => {
+    prevPathRef.current = location.pathname
+  }, [location.pathname])
+
   return (
     <AnimatePresence mode="wait">
       <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -20 }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        key={location.pathname}
+        className="route-content"
+        initial={reducedMotion ? false : variant.initial as any}
+        animate={{ ...variant.animate, transitionEnd: { ...variant.animate.transitionEnd, filter: 'none', transform: 'none', clipPath: 'none', willChange: 'auto' } }}
+        exit={variant.exit as any}
+        style={{
+          transformOrigin: 'center center',
+          width: '100%',
+        }}
       >
         {children}
       </motion.div>
@@ -118,97 +158,100 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
   )
 }
 
-// Main App Component
-function App() {
+// ── Inner App (needs TransitionProvider in tree) ──
+function InnerApp() {
   const { checkAuth } = useAuthStore()
-  
+
+  useEffect(() => {
+    const previous = window.history.scrollRestoration
+    window.history.scrollRestoration = 'manual'
+    return () => { window.history.scrollRestoration = previous }
+  }, [])
+
   useEffect(() => {
     checkAuth()
   }, [checkAuth])
-  
+
   return (
-    <Suspense fallback={<LoadingFallback />}>
-      <Routes>
-        {/* Public Routes (Auth) */}
-        <Route element={<PublicRoute><AuthLayout /></PublicRoute>}>
-          <Route path="/login" element={<RouteTransition><LoginPage /></RouteTransition>} />
-          <Route path="/register" element={<RouteTransition><RegisterPage /></RouteTransition>} />
-        </Route>
-        
-        {/* Protected Routes (App) */}
-        <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<RouteTransition><DashboardPage /></RouteTransition>} />
-          <Route path="/mindy" element={<RouteTransition><MindyPage /></RouteTransition>} />
-          <Route path="/notes" element={<RouteTransition><NotesPage /></RouteTransition>} />
-          <Route path="/flashcards" element={<RouteTransition><FlashcardsPage /></RouteTransition>} />
-          <Route path="/quizzes" element={<RouteTransition><QuizzesPage /></RouteTransition>} />
-          <Route path="/research" element={<RouteTransition><ResearchPage /></RouteTransition>} />
-          <Route path="/calendar" element={<RouteTransition><CalendarPage /></RouteTransition>} />
-          <Route path="/clients" element={<RouteTransition><ClientsPage /></RouteTransition>} />
-          <Route path="/settings" element={<RouteTransition><SettingsPage /></RouteTransition>} />
-          <Route path="/help" element={<RouteTransition><HelpPage /></RouteTransition>} />
-        </Route>
-        
-        {/* 404 Route */}
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Suspense>
+    <>
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
+          <Route element={<AuthLayout />}><Route path="/account-type" element={<AccountTypePage />} /><Route path="/auth/callback" element={<AuthCallbackPage />} /></Route>
+          {/* Public Routes */}
+          <Route element={<PublicRoute><AuthLayout /></PublicRoute>}>
+            <Route path="/login"    element={<RouteTransition><LoginPage /></RouteTransition>} />
+            <Route path="/register" element={<RouteTransition><RegisterPage /></RouteTransition>} />
+          </Route>
+
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+            <Route path="/"           element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard"  element={<RouteTransition><DashboardPage /></RouteTransition>} />
+            <Route path="/mindy"      element={<RouteTransition><MindyPage /></RouteTransition>} />
+            <Route path="/notes"      element={<RouteTransition><NotesPage /></RouteTransition>} />
+            <Route path="/flashcards" element={<RouteTransition><FlashcardsPage /></RouteTransition>} />
+            <Route path="/quizzes"    element={<RouteTransition><QuizzesPage /></RouteTransition>} />
+            <Route path="/research"   element={<RouteTransition><ResearchPage /></RouteTransition>} />
+            <Route path="/documents"  element={<RouteTransition><DocumentsPage /></RouteTransition>} />
+            <Route path="/calendar"   element={<RouteTransition><CalendarPage /></RouteTransition>} />
+            <Route path="/sessions"   element={<ClinicalRoute><RouteTransition><CalendarPage /></RouteTransition></ClinicalRoute>} />
+            <Route path="/clients"    element={<ClinicalRoute><RouteTransition><ClientsPage /></RouteTransition></ClinicalRoute>} />
+            <Route path="/settings"   element={<RouteTransition><SettingsPage /></RouteTransition>} />
+            <Route path="/help"       element={<RouteTransition><HelpPage /></RouteTransition>} />
+          </Route>
+
+          {/* 404 */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
+    </>
   )
 }
 
-// 404 Page
+// ── Root App ──
+function App() {
+  return (
+    <TransitionProvider>
+      <InnerApp />
+    </TransitionProvider>
+  )
+}
+
+// ── 404 Page ──
 function NotFoundPage() {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50/20 to-purple-50/20"
-    >
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
       <motion.div
-        className="text-center"
-        initial={{ opacity: 0, scale: 0.8 }}
+        className="text-center max-w-sm p-8 rounded-xl bg-white border border-slate-200"
+        initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.25 }}
       >
-        <motion.div
-          className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center mx-auto mb-6"
-          animate={{ rotate: [0, 10, -10, 0] }}
-          transition={{ duration: 4, repeat: Infinity }}
-        >
-          <HelpCircle size={60} className="text-indigo-600" />
-        </motion.div>
-        <motion.h1
-          className="text-5xl font-bold text-gradient mb-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
+        <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center">
+          <HelpIcon size={28} weight="duotone" />
+        </div>
+
+        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
           404
-        </motion.h1>
-        <motion.p
-          className="text-xl text-gray-600 mb-8 max-w-md mx-auto"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
+        </h1>
+
+        <p className="text-sm font-semibold text-slate-700 mb-2">
+          Page Not Found
+        </p>
+
+        <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+          The requested clinical tool or learning resource does not exist or has moved.
+        </p>
+
+        <a
+          href="/dashboard"
+          className="btn btn-primary w-full py-2.5 text-xs font-semibold flex items-center justify-center gap-2"
         >
-          Oops! The page you're looking for doesn't exist.
-        </motion.p>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-        >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="btn-primary px-8 py-3"
-          >
-            <a href="/dashboard">Go to Dashboard</a>
-          </motion.button>
-        </motion.div>
+          <BrainIcon size={16} weight="duotone" />
+          Return to Dashboard
+        </a>
       </motion.div>
-    </motion.div>
+    </div>
   )
 }
 

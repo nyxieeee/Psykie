@@ -1,525 +1,80 @@
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Search, FileText, X, Plus } from 'lucide-react'
+import { AIGenerator } from '../components/AIGenerator'
+import { AITask } from '../utils/ai'
+import { workspaceStorage } from '../utils/workspaceStorage'
+import { ArrowRight, CheckCircle, Trash, FileText, Folder, Link as LinkIcon, ListBullets, Plus, Star, TextB, TextItalic, TextUnderline, UploadSimple, X } from '@phosphor-icons/react'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ReferenceEmpty, ReferenceHeader, ReferenceSearch, ReferenceTabs } from '../components/ReferenceUI'
+import { ViewportOverlay } from '../components/ViewportOverlay'
+import { useStudyStore } from '../store'
+
+function sanitizeNoteHtml(html: string) {
+  const source = new DOMParser().parseFromString(html, 'text/html')
+  const allowed = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'UL', 'OL', 'LI', 'BR', 'P', 'DIV'])
+  const clean = (node: Node): Node => {
+    if (node.nodeType === Node.TEXT_NODE) return document.createTextNode(node.textContent || '')
+    const element = node as Element
+    if (['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT'].includes(element.tagName)) return document.createTextNode('')
+    const target = allowed.has(element.tagName) ? document.createElement(element.tagName.toLowerCase()) : document.createDocumentFragment()
+    node.childNodes.forEach(child => target.appendChild(clean(child)))
+    return target
+  }
+  const result = document.createElement('div')
+  source.body.childNodes.forEach(node => result.appendChild(clean(node)))
+  return result.innerHTML
+}
 
 export function NotesPage() {
-  const user = useUser()
-  const [notes, setNotes] = useState<{
-    id: string;
-    title: string;
-    content: string;
-    category: string;
-    color: string;
-    createdAt: string;
-    isFavorite: boolean;
-  }[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('all')
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [newNote, setNewNote] = useState({ title: '', content: '', category: 'General Psychology' })
-
-  const categories = [
-    'All',
-    'General Psychology',
-    'Cognitive Psychology',
-    'Developmental Psychology',
-    'Abnormal Psychology',
-    'Social Psychology',
-    'Biological Psychology',
-    'Research Methods',
-    'Clinical Notes',
-  ]
-
-  const noteColors = [
-    'from-purple-100 to-pink-100',
-    'from-blue-100 to-cyan-100',
-    'from-emerald-100 to-teal-100',
-    'from-amber-100 to-orange-100',
-    'from-rose-100 to-pink-100',
-  ]
-
+  const { notes, addNote, deleteNote, updateNoteSummary, generateFlashcardsFromNote, createDeck, addCard } = useStudyStore()
+  const navigate = useNavigate()
+  const [selectedId, setSelectedId] = useState(notes[0]?.id || '')
+  const [notebook, setNotebook] = useState('all')
+  const [tab, setTab] = useState('all')
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState('recent')
+  const [favorites, setFavorites] = useState<string[]>(() => { try { return JSON.parse(workspaceStorage.getItem('psykie-note-favorites') || '[]') } catch { return [] } })
+  const [showNew, setShowNew] = useState(false)
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [category, setCategory] = useState('General Psychology')
+  const [question, setQuestion] = useState('')
+  const [saved, setSaved] = useState(true)
+  const [notice, setNotice] = useState('')
+  const [aiTask, setAITask] = useState<AITask | null>(null)
+  const uploadRef = useRef<HTMLInputElement>(null)
+  const editorRef = useRef<HTMLDivElement>(null)
+  const timer = useRef<ReturnType<typeof setTimeout>>()
+  const active = notes.find(note => note.id === selectedId) || notes[0]
+  const categories = [...new Set(notes.map(note => note.category))]
+  const filtered = notes.filter(note => (notebook === 'all' || note.category === notebook) && (tab !== 'favorites' || favorites.includes(note.id)) && `${note.title} ${note.summary}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => sort === 'name' ? a.title.localeCompare(b.title) : b.date.localeCompare(a.date))
+  useEffect(() => { workspaceStorage.setItem('psykie-note-favorites', JSON.stringify(favorites)) }, [favorites])
   useEffect(() => {
-    // Simulate loading notes
-    const timer = setTimeout(() => {
-      const mockNotes = [
-        {
-          id: '1',
-          title: 'Cognitive Psychology Overview',
-          content: 'Cognitive psychology is the study of mental processes such as attention, memory, perception, and problem-solving. It explores how people think, learn, remember, and process information.',
-          category: 'Cognitive Psychology',
-          color: noteColors[0],
-          createdAt: '2 days ago',
-          isFavorite: true,
-        },
-        {
-          id: '2',
-          title: 'Piaget Stages of Development',
-          content: 'Jean Piaget proposed four stages of cognitive development: Sensorimotor (0-2), Preoperational (2-7), Concrete Operational (7-11), and Formal Operational (12+). Each stage represents a different level of thinking.',
-          category: 'Developmental Psychology',
-          color: noteColors[1],
-          createdAt: '1 week ago',
-          isFavorite: false,
-        },
-        {
-          id: '3',
-          title: 'DSM-5-TR Anxiety Disorders',
-          content: 'Anxiety disorders include generalized anxiety disorder, panic disorder, social anxiety disorder, and specific phobias. Key feature is excessive fear or anxiety that is difficult to control.',
-          category: 'Abnormal Psychology',
-          color: noteColors[2],
-          createdAt: '3 days ago',
-          isFavorite: true,
-        },
-        {
-          id: '4',
-          title: 'Classical vs Operant Conditioning',
-          content: 'Classical conditioning (Pavlov) associates stimuli with responses. Operant conditioning (Skinner) uses reinforcement and punishment to shape behavior.',
-          category: 'General Psychology',
-          color: noteColors[3],
-          createdAt: '5 days ago',
-          isFavorite: false,
-        },
-        {
-          id: '5',
-          title: 'Research Ethics Principles',
-          content: 'Key principles: Informed consent, confidentiality, beneficence, non-maleficence, and justice. All research must respect participants rights and well-being.',
-          category: 'Research Methods',
-          color: noteColors[4],
-          createdAt: '1 week ago',
-          isFavorite: false,
-        },
-      ]
-      setNotes(mockNotes)
-      setIsLoading(false)
-    }, 1000)
-    
-    return () => clearTimeout(timer)
-  }, [])
-
-  const filteredNotes = notes.filter(note => {
-    const matchesSearch = note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                       note.content.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory === 'all' || note.category === selectedCategory
-    return matchesSearch && matchesCategory
-  })
-
-  const handleCreateNote = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newNote.title.trim()) return
-    
-    const newNoteData = {
-      id: `note-${Date.now()}`,
-      title: newNote.title,
-      content: newNote.content,
-      category: newNote.category,
-      color: noteColors[Math.floor(Math.random() * noteColors.length)],
-      createdAt: 'Just now',
-      isFavorite: false,
+    const editor = editorRef.current
+    if (editor && editor.dataset.noteId !== active?.id) {
+      const stored = active ? workspaceStorage.getItem('psykie-note-html-' + active.id) : null
+      if (stored) editor.innerHTML = sanitizeNoteHtml(stored)
+      else editor.textContent = active?.summary || ''
+      editor.dataset.noteId = active?.id || ''
+      setSaved(true)
     }
-    
-    setNotes([newNoteData, ...notes])
-    setShowCreateModal(false)
-    setNewNote({ title: '', content: '', category: 'General Psychology' })
-  }
-
-  const toggleFavorite = (id: string) => {
-    setNotes(notes.map(note => 
-      note.id === id ? { ...note, isFavorite: !note.isFavorite } : note
-    ))
-  }
-
-  const deleteNote = (id: string) => {
-    setNotes(notes.filter(note => note.id !== id))
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-6"
-    >
-      {/* Header */}
-      <motion.div
-        className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <motion.h1
-            className="text-3xl font-bold text-gradient mb-1"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            Smart Notes
-          </motion.h1>
-          <motion.p
-            className="text-slate-500"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            Organize and review your psychology knowledge
-          </motion.p>
-        </motion.div>
-
-        <motion.div
-          className="flex items-center gap-2"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          {/* Search */}
-          <motion.div
-            className="relative"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            <input
-              type="text"
-              placeholder="Search notes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-pill pl-10"
-            />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Search size={18} /></span>
-          </motion.div>
-
-          {/* Create Button */}
-          <motion.button
-            onClick={() => setShowCreateModal(true)}
-            className="btn-primary px-6 py-3"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            <span className="text-lg mr-1">+</span>
-            New Note
-          </motion.button>
-        </motion.div>
-      </motion.div>
-
-      {/* Categories Filter */}
-      <motion.div
-        className="flex gap-2 overflow-x-auto pb-2"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
-        {categories.map((category, index) => (
-          <motion.button
-            key={category}
-            onClick={() => setSelectedCategory(category.toLowerCase())}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 ${
-              selectedCategory === category.toLowerCase()
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
-            }`}
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, delay: 0.3 + index * 0.05 }}
-          >
-            {category}
-          </motion.button>
-        ))}
-      </motion.div>
-
-      {/* Notes Grid */}
-      {isLoading ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
-          {[...Array(6)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="card h-40 skeleton"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: i * 0.1 }}
-            />
-          ))}
-        </motion.div>
-      ) : filteredNotes.length > 0 ? (
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <AnimatePresence mode="popLayout">
-            {filteredNotes.map((note, index) => (
-              <motion.div
-                key={note.id}
-                layout
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                className="card card-3d group"
-              >
-                {/* Note Header */}
-                <motion.div
-                  className={`h-2 rounded-t-2xl bg-gradient-to-r ${note.color} mb-4`}
-                  initial={{ opacity: 0, scaleX: 0 }}
-                  animate={{ opacity: 1, scaleX: 1 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 + 0.2 }}
-                />
-
-                <div className="px-4 pb-4">
-                  <motion.div
-                    className="flex items-start justify-between mb-3"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: index * 0.1 + 0.3 }}
-                  >
-                    <div className="flex-1">
-                      <motion.h3
-                        className="font-bold text-slate-800 mb-1 group-hover:text-purple-700 transition-colors"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: index * 0.1 + 0.4 }}
-                      >
-                        {note.title}
-                      </motion.h3>
-                      <motion.p
-                        className="text-xs text-slate-400"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: index * 0.1 + 0.5 }}
-                      >
-                        {note.category}
-                      </motion.p>
-                    </div>
-
-                    <motion.button
-                      onClick={() => toggleFavorite(note.id)}
-                      className={`text-xl transition-colors ${
-                        note.isFavorite ? 'text-amber-500' : 'text-slate-300 hover:text-amber-500'
-                      }`}
-                      whileHover={{ scale: 1.2 }}
-                      whileTap={{ scale: 0.9 }}
-                    >
-                      {note.isFavorite ? '<Star size={16} />' : '<Star size={16} />'}
-                    </motion.button>
-                  </motion.div>
-
-                  <motion.p
-                    className="text-sm text-slate-600 mb-4 line-clamp-3"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: index * 0.1 + 0.6 }}
-                  >
-                    {note.content}
-                  </motion.p>
-
-                  <motion.div
-                    className="flex items-center justify-between text-xs text-slate-400"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.4, delay: index * 0.1 + 0.7 }}
-                  >
-                    <span>{note.createdAt}</span>
-                    <motion.button
-                      onClick={() => deleteNote(note.id)}
-                      className="hover:text-red-500 transition-colors"
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      <Trash2 size={18} />
-                    </motion.button>
-                  </motion.div>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
-      ) : (
-        <motion.div
-          className="empty-state"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <motion.div
-            className="empty-state-icon"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <FileText size={32} className="text-indigo-600" />
-          </motion.div>
-          <motion.h3
-            className="text-xl font-bold text-slate-800 mb-2"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.3 }}
-          >
-            No notes found
-          </motion.h3>
-          <motion.p
-            className="text-slate-500"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.4 }}
-          >
-            {searchQuery || selectedCategory !== 'all' 
-              ? 'Try adjusting your search or filter'
-              : 'Start by creating your first note'}
-          </motion.p>
-        </motion.div>
-      )}
-
-      {/* Create Note Modal */}
-      <AnimatePresence>
-        {showCreateModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
-              className="glass-modal w-full max-w-lg p-6"
-            >
-              <motion.div
-                className="flex items-center justify-between mb-6"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-              >
-                <motion.h2
-                  className="text-2xl font-bold text-gradient"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: 0.2 }}
-                >
-                  Create New Note
-                </motion.h2>
-                <motion.button
-                  onClick={() => setShowCreateModal(false)}
-                  className="text-2xl text-slate-400 hover:text-slate-600"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <X size={18} />
-                </motion.button>
-              </motion.div>
-
-              <form onSubmit={handleCreateNote} className="space-y-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.2 }}
-                >
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    value={newNote.title}
-                    onChange={(e) => setNewNote({ ...newNote, title: e.target.value })}
-                    placeholder="Note title..."
-                    className="input-solid"
-                    autoFocus
-                  />
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.3 }}
-                >
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Content
-                  </label>
-                  <textarea
-                    value={newNote.content}
-                    onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
-                    placeholder="Start typing your notes..."
-                    className="textarea-solid"
-                    rows={5}
-                  />
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.4 }}
-                >
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Category
-                  </label>
-                  <select
-                    value={newNote.category}
-                    onChange={(e) => setNewNote({ ...newNote, category: e.target.value })}
-                    className="input-solid"
-                  >
-                    {categories.slice(1).map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </motion.div>
-
-                <motion.div
-                  className="flex justify-end gap-3 pt-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.5 }}
-                >
-                  <motion.button
-                    type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="btn-secondary px-6 py-2"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Cancel
-                  </motion.button>
-                  <motion.button
-                    type="submit"
-                    className="btn-primary px-6 py-2"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <span className="mr-1">+</span>
-                    Create Note
-                  </motion.button>
-                </motion.div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Floating Action Button */}
-      <motion.button
-        onClick={() => setShowCreateModal(true)}
-        className="fab"
-        whileHover={{ scale: 1.1, rotate: 10 }}
-        whileTap={{ scale: 0.95, rotate: 0 }}
-        initial={{ opacity: 0, scale: 0 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, delay: 0.5, type: 'spring', damping: 10, stiffness: 200 }}
-      >
-        <Plus size={28} className="text-white" />
-      </motion.button>
-    </motion.div>
-  )
+  }, [active])
+  useEffect(() => () => clearTimeout(timer.current), [])
+  const toggleFavorite = (id: string) => setFavorites(previous => previous.includes(id) ? previous.filter(value => value !== id) : [...previous, id])
+  const save = () => { if (!active || !editorRef.current) return; setSaved(false); const text = editorRef.current.innerText; const html = sanitizeNoteHtml(editorRef.current.innerHTML); workspaceStorage.setItem('psykie-note-html-' + active.id, html); updateNoteSummary(active.id, text); clearTimeout(timer.current); timer.current = setTimeout(() => { setSaved(true) }, 500) }
+  const format = (command: string) => { editorRef.current?.focus(); document.execCommand(command); save() }
+  const create = (e: React.FormEvent) => { e.preventDefault(); const id = addNote({ title: title.trim(), fileName: `${title.trim()}.notes`, fileSize: 'Text note', category, summary: content, keyTopics: [], keyConcepts: [], importantTerms: [] }); setSelectedId(id); setShowNew(false); setTitle(''); setContent(''); setNotebook('all'); setTab('all') }
+  return <div className="reference-page ref-notes-page">
+    <ReferenceHeader title="Your notes" subtitle="A little clarity, one thought at a time." action="New note" onAction={() => setShowNew(true)} />
+    <div className="ref-notes-layout">
+      <aside className="ref-panel ref-notebooks"><div className="ref-panel-title"><h2>Notebooks</h2><button aria-label="Create a note" onClick={() => setShowNew(true)}><Plus size={20} /></button></div><button className={`ref-notebook ${notebook === 'all' ? 'selected' : ''}`} onClick={() => setNotebook('all')}><Folder size={23} weight="duotone" /><span>All notes</span><small>{notes.length}</small></button>{categories.map((name, index) => <button key={name} className={`ref-notebook tint-${index % 4} ${notebook === name ? 'selected' : ''}`} onClick={() => setNotebook(name)}><Folder size={22} weight="duotone" /><span>{name}</span><small>{notes.filter(note => note.category === name).length}</small></button>)}<button className="ref-text-action ref-upload-note" onClick={() => uploadRef.current?.click()}><UploadSimple size={17} />Import text</button><input hidden ref={uploadRef} type="file" accept=".txt,.md" onChange={async e => { const file = e.target.files?.[0]; if (!file) return; const text = await file.text(); const id = addNote({ title: file.name.replace(/\.[^.]+$/, ''), fileName: file.name, fileSize: `${Math.max(1, Math.round(file.size / 1024))} KB`, category: 'General Psychology', summary: text, keyTopics: [], keyConcepts: [], importantTerms: [] }); setSelectedId(id); setNotebook('all'); e.target.value = '' }} /></aside>
+      <section className="ref-panel ref-note-list"><div className="ref-note-list-toolbar"><ReferenceTabs items={[{ id: 'all', label: 'All notes' }, { id: 'favorites', label: 'Favorites' }, { id: 'recent', label: 'Recent' }]} value={tab} onChange={setTab} /><ReferenceSearch value={search} onChange={setSearch} placeholder="Search notes…" /></div><div className="ref-list-sort"><select aria-label="Sort notes" value={sort} onChange={e => setSort(e.target.value)}><option value="recent">Last edited</option><option value="name">Name A–Z</option></select></div><div className="ref-note-results">{filtered.map((note, index) => <article key={note.id} className={`ref-note-item ${active?.id === note.id ? 'selected' : ''}`}><button className="ref-note-select" onClick={() => setSelectedId(note.id)}><span className={`ref-icon tint-${index % 4}`}><FileText size={26} /></span><span><strong>{note.title}</strong><p>{note.summary.slice(0, 88)}</p><span className="ref-note-meta"><span className={`ref-tag tint-${index % 4}`}>{note.category}</span><small>{note.date}</small></span></span></button><button className="ref-favorite" aria-label={favorites.includes(note.id) ? 'Remove favorite' : 'Favorite note'} onClick={() => toggleFavorite(note.id)}><Star size={19} weight={favorites.includes(note.id) ? 'fill' : 'regular'} /></button></article>)}{!filtered.length && <ReferenceEmpty>No notes here yet. Start with a new thought.</ReferenceEmpty>}</div></section>
+      <section className="ref-panel ref-note-detail">{active ? <><div className="ref-note-title"><h2>{active.title}</h2><button aria-label="Favorite current note" onClick={() => toggleFavorite(active.id)}><Star size={20} weight={favorites.includes(active.id) ? 'fill' : 'regular'} /></button><span className="ref-save-status"><CheckCircle weight="fill" size={15} />{saved ? 'Saved' : 'Saving…'}</span><button aria-label="Delete current note" onClick={() => deleteNote(active.id)}><Trash size={17} /></button></div><div className="ref-editor-toolbar">{[{ icon: TextB, command: 'bold', label: 'Bold' }, { icon: TextItalic, command: 'italic', label: 'Italic' }, { icon: TextUnderline, command: 'underline', label: 'Underline' }, { icon: ListBullets, command: 'insertUnorderedList', label: 'Bullet list' }].map(item => <button key={item.command} aria-label={item.label} onMouseDown={e => e.preventDefault()} onClick={() => format(item.command)}><item.icon size={18} /></button>)}<LinkIcon size={17} /><span>Normal text</span><button className="ref-text-action" onClick={() => { const count = generateFlashcardsFromNote(active.id); setNotice(`${count} flashcards created`); setTimeout(() => setNotice(''), 3000) }}>Make cards</button><button className="ref-text-action" onClick={() => setAITask('summary')}>AI summary</button><button className="ref-text-action" onClick={() => setAITask('flashcards')}>AI flashcards</button></div><div className="ref-editor-content"><h3>Overview</h3><div ref={editorRef} role="textbox" aria-label="Note content" aria-multiline="true" contentEditable suppressContentEditableWarning onInput={save} />{active.keyTopics.length > 0 && <><h3>Key principles</h3><ul>{active.keyTopics.map(topic => <li key={topic}>{topic}</li>)}</ul></>}{active.keyConcepts.length > 0 && <><h3>Common concepts</h3><ul>{active.keyConcepts.map(concept => <li key={concept}>{concept}</li>)}</ul></>}{notice && <p role="status" className="ref-inline-notice">{notice}</p>}</div><form className="ref-note-ask" onSubmit={e => { e.preventDefault(); if (question.trim()) navigate(`/mindy?q=${encodeURIComponent(`About my note "${active.title}": ${question}`)}`, { state: { noteContext: active.summary.slice(0,4000) } }) }}><span><img src="/mindy-mascot.png" alt="" />Ask Mindy</span><input aria-label="Ask about this note" placeholder="Ask a question about this note…" value={question} onChange={e => setQuestion(e.target.value)} /><button className="ref-round-button" aria-label="Ask Mindy" disabled={!question.trim()}><ArrowRight size={20} /></button></form></> : <ReferenceEmpty>Choose a note, or create your first one.</ReferenceEmpty>}</section>
+    </div>
+    {showNew && <ViewportOverlay onDismiss={() => setShowNew(false)}><form className="glass-modal ref-form-dialog" onSubmit={create}><div className="ref-panel-title"><h2>Create Study Note</h2><button type="button" aria-label="Close" onClick={() => setShowNew(false)}><X size={20} /></button></div><label>Note title<input required value={title} onChange={e => setTitle(e.target.value)} /></label><label>Notebook<input list="note-categories" value={category} onChange={e => setCategory(e.target.value)} /><datalist id="note-categories">{categories.map(name => <option key={name}>{name}</option>)}</datalist></label><label>Your notes<textarea rows={6} value={content} onChange={e => setContent(e.target.value)} /></label><button className="ref-primary" type="submit">Save note<ArrowRight size={17} /></button></form></ViewportOverlay>}
+    {aiTask && active && <AIGenerator task={aiTask} initialText={active.summary} category={active.category} onClose={() => setAITask(null)} onSave={draft => {
+      if (aiTask === 'summary') { const id = addNote({ title: draft.title, fileName: draft.title + '.notes', fileSize: 'Text note', category: active.category, summary: draft.summary + '\n\n' + draft.keyPoints.join('\n'), keyTopics: draft.keyPoints, keyConcepts: [], importantTerms: [] }); setSelectedId(id) }
+      else { const id = createDeck(draft.title, active.category); draft.cards.forEach(card => addCard(id, card.question, card.answer, active.category)); setNotice(draft.cards.length + ' AI flashcards saved') }
+      setAITask(null)
+    }}/>}
+  </div>
 }

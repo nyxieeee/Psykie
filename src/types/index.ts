@@ -31,6 +31,7 @@ export interface RegisterData extends LoginCredentials {
 
 // Message Types (for Mindy Chat)
 export interface Message {
+  context?: string
   id: string
   text: string
   sender: 'user' | 'ai'

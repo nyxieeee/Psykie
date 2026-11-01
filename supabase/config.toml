@@ -1,0 +1,8 @@
+# Local CLI project name; the remote project is selected by supabase link.
+project_id = "psykie"
+
+[functions.psykie-ai]
+# User JWT is verified explicitly against Supabase Auth in the handler.
+verify_jwt = false
+[functions.psykie-research]
+verify_jwt = false

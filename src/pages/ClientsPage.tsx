@@ -1,30 +1,36 @@
-import { useState, useEffect } from 'react'
-import { FileText, Calendar, Users, User, X, Search, Mail, MessageCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion'
-import { useUser } from '../store'
+import { readWorkspaceList } from '../utils/workspaceStorage'
+import { workspaceStorage } from '../utils/workspaceStorage'
+import {
+  ArrowRight, ChartBar as BarChart3, Cake, CalendarCheck as Calendar, CaretRight, DotsThreeVertical, FileText, GenderNeuter, EnvelopeSimple as Mail,
+  ChatCircle as MessageCircle, Phone, Plus, User, Users, X
+} from '@phosphor-icons/react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
+import { ReferenceEmpty, ReferenceHeader, ReferenceSearch, ReferenceTabs } from '../components/ReferenceUI'
+import { ViewportOverlay } from '../components/ViewportOverlay'
 
 export function ClientsPage() {
-  const user = useUser()
   const [clients, setClients] = useState<{
-    id: string;
-    firstName: string;
-    lastName: string;
-    email?: string;
-    phone?: string;
-    dateOfBirth?: string;
-    gender?: string;
-    address?: string;
-    emergencyContact?: { name: string; phone: string; relationship: string };
-    notes?: string;
-    createdAt: string;
-    lastSession?: string;
-    sessionsCount: number;
-    status: 'active' | 'inactive' | 'on_hold';
-    avatar?: string;
+    id: string
+    firstName: string
+    lastName: string
+    email?: string
+    phone?: string
+    dateOfBirth?: string
+    gender?: string
+    address?: string
+    emergencyContact?: { name: string; phone: string; relationship: string }
+    notes?: string
+    createdAt: string
+    lastSession?: string
+    sessionsCount: number
+    status: 'active' | 'inactive' | 'on_hold'
+    avatar?: string
   }[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('all')
+  const [editingClientId, setEditingClientId] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showClientDetails, setShowClientDetails] = useState<string | null>(null)
   const [newClient, setNewClient] = useState({
@@ -48,534 +54,48 @@ export function ClientsPage() {
   const genderOptions = ['Male', 'Female', 'Non-binary', 'Other', 'Prefer not to say']
 
   useEffect(() => {
-    // Simulate loading clients
-    const timer = setTimeout(() => {
-      const mockClients = [
-        {
-          id: '1',
-          firstName: 'John',
-          lastName: 'Smith',
-          email: 'john.smith@email.com',
-          phone: '(555) 123-4567',
-          dateOfBirth: '1985-03-15',
-          gender: 'Male',
-          address: '123 Main St, Springfield, IL',
-          emergencyContact: { name: 'Jane Smith', phone: '(555) 987-6543', relationship: 'Wife' },
-          notes: 'History of anxiety. Responds well to CBT.',
-          createdAt: '2 years ago',
-          lastSession: '2 days ago',
-          sessionsCount: 42,
-          status: 'active',
-          avatar: '👨',
-        },
-        {
-          id: '2',
-          firstName: 'Sarah',
-          lastName: 'Johnson',
-          email: 'sarah.j@email.com',
-          phone: '(555) 234-5678',
-          dateOfBirth: '1990-08-22',
-          gender: 'Female',
-          address: '456 Oak Ave, Chicago, IL',
-          emergencyContact: { name: 'Robert Johnson', phone: '(555) 345-6789', relationship: 'Husband' },
-          notes: 'New client. Initial assessment scheduled.',
-          createdAt: '1 month ago',
-          lastSession: '1 week ago',
-          sessionsCount: 3,
-          status: 'active',
-          avatar: '👩',
-        },
-        {
-          id: '3',
-          firstName: 'Michael',
-          lastName: 'Brown',
-          email: 'michael.b@email.com',
-          phone: '(555) 345-6789',
-          dateOfBirth: '1978-11-30',
-          gender: 'Male',
-          address: '789 Pine Rd, Peoria, IL',
-          emergencyContact: { name: 'Lisa Brown', phone: '(555) 456-7890', relationship: 'Sister' },
-          notes: 'On medical leave. Resume sessions in 2 months.',
-          createdAt: '1 year ago',
-          lastSession: '3 months ago',
-          sessionsCount: 28,
-          status: 'on_hold',
-          avatar: '👨',
-        },
-        {
-          id: '4',
-          firstName: 'Emily',
-          lastName: 'Davis',
-          email: 'emily.d@email.com',
-          phone: '(555) 456-7890',
-          dateOfBirth: '1982-05-14',
-          gender: 'Female',
-          address: '321 Elm St, Naperville, IL',
-          emergencyContact: { name: 'David Davis', phone: '(555) 567-8901', relationship: 'Brother' },
-          notes: 'Completed treatment plan. Discharged.',
-          createdAt: '3 years ago',
-          lastSession: '6 months ago',
-          sessionsCount: 56,
-          status: 'inactive',
-          avatar: '👩',
-        },
-        {
-          id: '5',
-          firstName: 'Alex',
-          lastName: 'Wilson',
-          email: 'alex.w@email.com',
-          phone: '(555) 567-8901',
-          dateOfBirth: '1995-12-01',
-          gender: 'Non-binary',
-          address: '654 Cedar Ln, Evanston, IL',
-          emergencyContact: { name: 'Jamie Wilson', phone: '(555) 678-9012', relationship: 'Partner' },
-          notes: 'Working on trauma processing. Good progress.',
-          createdAt: '8 months ago',
-          lastSession: 'Yesterday',
-          sessionsCount: 18,
-          status: 'active',
-          avatar: '<User size={18} />',
-        },
-      ]
-      setClients(mockClients)
-      setIsLoading(false)
-    }, 1000)
-    
-    return () => clearTimeout(timer)
+    setClients(readWorkspaceList('psykie-clients'))
+    setIsLoading(false)
   }, [])
-
   const filteredClients = clients.filter(client => {
-    const matchesSearch = client.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                       client.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                       client.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                       client.notes?.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = selectedStatus === 'all' || client.status === selectedStatus
-    return matchesSearch && matchesStatus
+    const matchesSearch = (client.firstName + ' ' + client.lastName + ' ' + (client.email || '') + ' ' + (client.notes || '') + ' client ' + String.fromCharCode(65 + clients.findIndex(item => item.id === client.id)) + ' cl-' + String(clients.findIndex(item => item.id === client.id) + 1).padStart(3, '0')).toLowerCase().includes(searchQuery.toLowerCase())
+    return matchesSearch && (selectedStatus === 'all' || client.status === selectedStatus)
   })
-
   const handleCreateClient = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newClient.firstName.trim() || !newClient.lastName.trim()) return
-    
-    const newClientData = {
-      id: `client-${Date.now()}`,
-      firstName: newClient.firstName,
-      lastName: newClient.lastName,
-      email: newClient.email,
-      phone: newClient.phone,
-      dateOfBirth: newClient.dateOfBirth,
-      gender: newClient.gender,
-      address: newClient.address,
-      notes: newClient.notes,
-      createdAt: 'Just now',
-      sessionsCount: 0,
-      status: 'active' as const,
-      avatar: '<User size={18} />',
-    }
-    
-    setClients([newClientData, ...clients])
-    setShowCreateModal(false)
-    setNewClient({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      dateOfBirth: '',
-      gender: '',
-      address: '',
-      notes: '',
-    })
+    e.preventDefault(); if (!newClient.firstName.trim() || !newClient.lastName.trim()) return
+    if (editingClientId) setClients(previous => previous.map(client => client.id === editingClientId ? { ...client, ...newClient } : client))
+    else setClients(previous => [{ ...newClient, id: 'client-' + crypto.randomUUID(), createdAt: new Date().toISOString(), sessionsCount: 0, status: 'active' }, ...previous]); setShowCreateModal(false); setEditingClientId(null)
+    setNewClient({ firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '', gender: '', address: '', notes: '' })
   }
-
-  const getStatusColor = (status: string) => {
-    return statusOptions.find(s => s.value === status) || statusOptions[0]
-  }
-
-  const selectedClient = showClientDetails ? clients.find(c => c.id === showClientDetails) : null
-
+  const getStatusColor = (status: string) => statusOptions.find(option => option.value === status) || statusOptions[0]
+  const selectedClient = showClientDetails ? clients.find(client => client.id === showClientDetails) : null
+  const [activeClientId, setActiveClientId] = useState<string | null>(null)
+  const [detailTab, setDetailTab] = useState('overview')
+  const [noteDraft, setNoteDraft] = useState('')
+  const [editingNote, setEditingNote] = useState(false)
+  const activeClient = clients.find(client => client.id === activeClientId) || filteredClients[0]
+  const displayName = (id: string, first: string, last: string) => id.startsWith('client-') ? first + ' ' + last : 'Client ' + String.fromCharCode(65 + Math.max(0, clients.findIndex(client => client.id === id)))
+  const statusLabel = (status: string) => status === 'on_hold' ? 'On hold' : status === 'active' ? 'Active' : 'Inactive'
+  useEffect(() => { if (!isLoading) workspaceStorage.setItem('psykie-clients', JSON.stringify(clients)) }, [clients, isLoading])
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-6"
-    >
-      {/* Header */}
-      <motion.div
-        className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <motion.h1
-            className="text-3xl font-bold text-gradient mb-1"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            Client Management
-          </motion.h1>
-          <motion.p
-            className="text-slate-500"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            Manage your clients and their records
-          </motion.p>
-        </motion.div>
-
-        <motion.div
-          className="flex items-center gap-2"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          {/* Search */}
-          <motion.div
-            className="relative"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            <input
-              type="text"
-              placeholder="Search clients..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-pill pl-10"
-            />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Search size={18} /></span>
-          </motion.div>
-
-          {/* Create Client Button */}
-          <motion.button
-            onClick={() => setShowCreateModal(true)}
-            className="btn-primary px-6 py-3"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            <span className="text-lg mr-1">+</span>
-            New Client
-          </motion.button>
-        </motion.div>
-      </motion.div>
-
-      {/* Status Filter */}
-      <motion.div
-        className="flex gap-2"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
-        {statusOptions.map((status, index) => {
-          const statusObj = statusOptions.find(s => s.value === status.value)
-          return (
-            <motion.button
-              key={status.value}
-              onClick={() => setSelectedStatus(status.value)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                selectedStatus === status.value
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                  : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
-              }`}
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
-            >
-              {status.label}
-            </motion.button>
-          )
-        })}
-      </motion.div>
-
-      {/* Quick Stats */}
-      <motion.div
-        className="grid grid-cols-2 lg:grid-cols-4 gap-3"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-      >
-        <motion.div
-          className="card p-4 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <motion.p
-            className="text-2xl font-bold text-purple-700"
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            {filteredClients.length}
-          </motion.p>
-          <motion.p
-            className="text-sm text-slate-500"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            Total Clients
-          </motion.p>
-        </motion.div>
-
-        <motion.div
-          className="card p-4 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-        >
-          <motion.p
-            className="text-2xl font-bold text-emerald-700"
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            {filteredClients.filter(c => c.status === 'active').length}
-          </motion.p>
-          <motion.p
-            className="text-sm text-slate-500"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            Active
-          </motion.p>
-        </motion.div>
-
-        <motion.div
-          className="card p-4 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
-          <motion.p
-            className="text-2xl font-bold text-amber-700"
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            {filteredClients.reduce((sum, c) => sum + c.sessionsCount, 0)}
-          </motion.p>
-          <motion.p
-            className="text-sm text-slate-500"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            Total Sessions
-          </motion.p>
-        </motion.div>
-
-        <motion.div
-          className="card p-4 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-        >
-          <motion.p
-            className="text-2xl font-bold text-rose-700"
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            {filteredClients.filter(c => c.status === 'inactive').length}
-          </motion.p>
-          <motion.p
-            className="text-sm text-slate-500"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            Inactive
-          </motion.p>
-        </motion.div>
-      </motion.div>
-
-      {/* Clients List */}
-      {isLoading ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
-          {[...Array(6)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="card h-36 skeleton"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: i * 0.1 }}
-            />
-          ))}
-        </motion.div>
-      ) : filteredClients.length > 0 ? (
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <AnimatePresence mode="popLayout">
-            {filteredClients.map((client, index) => (
-              <motion.div
-                key={client.id}
-                layout
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                transition={{ duration: 0.4, delay: index * 0.05 }}
-                className="card card-3d cursor-pointer group"
-                onClick={() => setShowClientDetails(client.id)}
-              >
-                <div className="p-4">
-                  <motion.div
-                    className="flex items-start gap-4 mb-4"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: index * 0.05 + 0.1 }}
-                  >
-                    {/* Avatar */}
-                    <motion.div
-                      className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-2xl flex-shrink-0"
-                      whileHover={{ scale: 1.1, rotate: [0, 5, -5, 0] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      {client.avatar}
-                    </motion.div>
-
-                    <div className="flex-1 min-w-0">
-                      <motion.h3
-                        className="font-bold text-slate-800 truncate"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: index * 0.05 + 0.2 }}
-                      >
-                        {client.firstName} {client.lastName}
-                      </motion.h3>
-                      <motion.p
-                        className="text-sm text-slate-500"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: index * 0.05 + 0.3 }}
-                      >
-                        {client.email}
-                      </motion.p>
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    className="space-y-2"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.4, delay: index * 0.05 + 0.4 }}
-                  >
-                    <motion.div
-                      className="flex items-center justify-between"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: index * 0.05 + 0.5 }}
-                    >
-                      <motion.span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          getStatusColor(client.status)?.color || 'bg-slate-100'
-                        } ${
-                          getStatusColor(client.status)?.text || 'text-slate-700'
-                        }`}
-                        initial={{ opacity: 0, scale: 0.5 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.4, delay: index * 0.05 + 0.6 }}
-                      >
-                        {client.status}
-                      </motion.span>
-                      <motion.span
-                        className="text-xs text-slate-400"
-                        initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.4, delay: index * 0.05 + 0.7 }}
-                      >
-                        {client.sessionsCount} sessions
-                      </motion.span>
-                    </motion.div>
-
-                    <motion.div
-                      className="flex items-center justify-between text-xs text-slate-400"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: index * 0.05 + 0.6 }}
-                    >
-                      <span>Created: {client.createdAt}</span>
-                      <span>Last: {client.lastSession || 'Never'}</span>
-                    </motion.div>
-                  </motion.div>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
-      ) : (
-        <motion.div
-          className="empty-state"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <motion.div
-            className="empty-state-icon"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Users size={18} />
-          </motion.div>
-          <motion.h3
-            className="text-xl font-bold text-slate-800 mb-2"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.3 }}
-          >
-            No clients found
-          </motion.h3>
-          <motion.p
-            className="text-slate-500"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.4 }}
-          >
-            {searchQuery || selectedStatus !== 'all' 
-              ? 'Try adjusting your search or filter'
-              : 'Start by adding your first client'}
-          </motion.p>
-        </motion.div>
-      )}
-
-      {/* Client Details Modal */}
+    <div className="reference-page ref-clients-page">
+      <ReferenceHeader title="Thoughtful care, organized." subtitle="Keep track of your clients, sessions, and notes in one place." />
+      <div className="ref-clients-layout"><section><div className="ref-clients-toolbar"><ReferenceTabs items={[{ id: 'all', label: 'All clients', count: clients.length }, { id: 'active', label: 'Active', count: clients.filter(client => client.status === 'active').length }, { id: 'inactive', label: 'Inactive', count: clients.filter(client => client.status === 'inactive').length }]} value={selectedStatus} onChange={setSelectedStatus} /><button className="ref-primary" onClick={() => { setEditingClientId(null); setNewClient({ firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '', gender: '', address: '', notes: '' }); setShowCreateModal(true) }}><Plus size={18} />Add client</button></div><ReferenceSearch value={searchQuery} onChange={setSearchQuery} placeholder="Search clients by name or ID…" /><div className="ref-panel ref-clients-table"><div className="ref-client-table-heading"><span>Client ↕</span><span>Client ID ↕</span><span>Last session ↕</span><span>Sessions</span><span>Status ↕</span><span /></div>{filteredClients.map((client, index) => <button key={client.id} className={activeClient?.id === client.id ? 'ref-client-row selected' : 'ref-client-row'} onClick={() => { setActiveClientId(client.id); setEditingNote(false) }}><span><span className={'ref-avatar tint-' + index % 4}>C{String.fromCharCode(65 + Math.max(0, clients.findIndex(item => item.id === client.id)))}</span><strong>{displayName(client.id, client.firstName, client.lastName)}</strong></span><span>CL-{String(clients.findIndex(item => item.id === client.id) + 1).padStart(3, '0')}</span><span>{client.lastSession || '—'}</span><span>{client.sessionsCount}</span><span><span className={'ref-status ' + client.status}><i />{statusLabel(client.status)}</span></span><CaretRight size={18} /></button>)}{!filteredClients.length && <ReferenceEmpty>{isLoading ? 'Preparing your client workspace…' : 'No clients in this view.'}</ReferenceEmpty>}</div></section>
+        <aside className="ref-panel ref-client-detail">{activeClient ? <><div className="ref-client-detail-title"><span className="ref-avatar large tint-0">C{String.fromCharCode(65 + Math.max(0, clients.findIndex(client => client.id === activeClient.id)))}</span><div><h2>{displayName(activeClient.id, activeClient.firstName, activeClient.lastName)}</h2><p>CL-{String(clients.findIndex(client => client.id === activeClient.id) + 1).padStart(3, '0')}</p></div><button aria-label="Open full client profile" onClick={() => setShowClientDetails(activeClient.id)}><DotsThreeVertical size={21} /></button></div><ReferenceTabs items={[{ id: 'overview', label: 'Overview' }, { id: 'sessions', label: 'Sessions' }, { id: 'documents', label: 'Documents' }]} value={detailTab} onChange={setDetailTab} />{detailTab === 'overview' ? <><a className="ref-appointment" href="/calendar"><span className="ref-icon tint-2"><Calendar size={25} /></span><span><strong>Plan the next appointment</strong><small>Open your calendar to schedule a session.</small></span><CaretRight size={19} /></a><button className="ref-primary ref-wide" onClick={() => { setNoteDraft(activeClient.notes || ''); setEditingNote(true) }}><Plus size={18} />Add session note</button><div className="ref-client-overview"><div className="ref-panel-title"><h3>Client overview</h3></div>{editingNote ? <form onSubmit={e => { e.preventDefault(); setClients(previous => previous.map(client => client.id === activeClient.id ? { ...client, notes: noteDraft } : client)); setEditingNote(false) }}><textarea aria-label="Session note" rows={5} value={noteDraft} onChange={e => setNoteDraft(e.target.value)} /><button className="ref-primary">Save note</button></form> : <p>{activeClient.notes || 'No session notes yet. Add a note to keep the next step clear.'}</p>}</div></> : detailTab === 'sessions' ? <div className="ref-detail-section"><h3>Session history</h3><div className="ref-stat"><Calendar size={25} /><span><strong>{activeClient.sessionsCount}</strong><small>completed sessions</small></span></div><p>Last session: {activeClient.lastSession || 'Not recorded'}</p><a className="ref-secondary" href="/calendar">View calendar<ArrowRight size={16} /></a></div> : <div className="ref-detail-section"><h3>Client documents</h3><p>Keep intake forms and session resources together in the document library.</p><a className="ref-primary" href="/documents">Open documents<ArrowRight size={16} /></a></div>}</> : <ReferenceEmpty>Select a client to see their overview.</ReferenceEmpty>}</aside></div>
       <AnimatePresence>
         {showClientDetails && selectedClient && (
-          <motion.div
+          <ViewportOverlay onDismiss={() => setShowClientDetails(null)}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 modal-backdrop flex items-center justify-center z-[99999] p-4 overflow-y-auto"
           >
             <motion.div
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
               transition={{ duration: 0.3 }}
-              className="glass-modal w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto"
+              className="glass-modal w-full max-w-lg p-5 my-auto max-h-[88vh] overflow-y-auto"
             >
               <motion.div
                 className="flex items-center justify-between mb-6 sticky top-0 bg-white/80 backdrop-blur-xl z-10 -mx-6 -mt-6 pt-6 pr-6 pl-6"
@@ -650,7 +170,7 @@ export function ClientsPage() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.4, delay: 0.75 }}
                       >
-                        <span className="text-slate-400">📞</span>
+                        <span className="text-slate-400"><Phone size={18} /></span>
                         <span className="text-slate-700">{selectedClient.phone}</span>
                       </motion.div>
                       <motion.div
@@ -659,7 +179,7 @@ export function ClientsPage() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.4, delay: 0.8 }}
                       >
-                        <span className="text-slate-400">🎂</span>
+                        <span className="text-slate-400"><Cake size={18} /></span>
                         <span className="text-slate-700">{selectedClient.dateOfBirth}</span>
                       </motion.div>
                       <motion.div
@@ -668,7 +188,7 @@ export function ClientsPage() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.4, delay: 0.85 }}
                       >
-                        <span className="text-slate-400">⚧</span>
+                        <span className="text-slate-400"><GenderNeuter size={18} /></span>
                         <span className="text-slate-700">{selectedClient.gender}</span>
                       </motion.div>
                     </motion.div>
@@ -680,11 +200,9 @@ export function ClientsPage() {
                       transition={{ duration: 0.4, delay: 0.9 }}
                     >
                       <motion.div
-                        className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                          getStatusColor(selectedClient.status)?.color || 'bg-slate-100'
-                        } ${
-                          getStatusColor(selectedClient.status)?.text || 'text-slate-700'
-                        }`}
+                        className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedClient.status)?.color || 'bg-slate-100'
+                          } ${getStatusColor(selectedClient.status)?.text || 'text-slate-700'
+                          }`}
                         initial={{ opacity: 0, scale: 0.5 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.4, delay: 1 }}
@@ -759,7 +277,7 @@ export function ClientsPage() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.4, delay: 0.85 }}
                       >
-                        <span className="text-slate-400">📞</span>
+                        <span className="text-slate-400"><Phone size={18} /></span>
                         <span>{selectedClient.emergencyContact.phone}</span>
                       </motion.div>
                       <motion.div
@@ -868,6 +386,7 @@ export function ClientsPage() {
                     Close
                   </motion.button>
                   <motion.button
+                    onClick={() => { setEditingClientId(selectedClient.id); setNewClient({ firstName: selectedClient.firstName, lastName: selectedClient.lastName, email: selectedClient.email || '', phone: selectedClient.phone || '', dateOfBirth: selectedClient.dateOfBirth || '', gender: selectedClient.gender || '', address: selectedClient.address || '', notes: selectedClient.notes || '' }); setShowClientDetails(null); setShowCreateModal(true) }}
                     className="btn-primary px-6 py-2"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -877,25 +396,25 @@ export function ClientsPage() {
                 </motion.div>
               </motion.div>
             </motion.div>
-          </motion.div>
+          </ViewportOverlay>
         )}
       </AnimatePresence>
 
       {/* Create Client Modal */}
       <AnimatePresence>
         {showCreateModal && (
-          <motion.div
+          <ViewportOverlay onDismiss={() => setShowCreateModal(false)}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 modal-backdrop flex items-center justify-center z-[99999] p-4 overflow-y-auto"
           >
             <motion.div
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
               transition={{ duration: 0.3 }}
-              className="glass-modal w-full max-w-lg p-6"
+              className="glass-modal w-full max-w-md p-5 space-y-3 my-auto max-h-[90vh] overflow-y-auto"
             >
               <motion.div
                 className="flex items-center justify-between mb-6"
@@ -909,7 +428,7 @@ export function ClientsPage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: 0.2 }}
                 >
-                  Add New Client
+                  {editingClientId ? 'Edit client' : 'Add New Client'}
                 </motion.h2>
                 <motion.button
                   onClick={() => setShowCreateModal(false)}
@@ -1076,28 +595,18 @@ export function ClientsPage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <span className="mr-1">+</span>
-                    Add Client
+                    <span className="mr-1" aria-hidden="true">+</span>
+                    {editingClientId ? 'Save changes' : 'Add Client'}
                   </motion.button>
                 </motion.div>
               </form>
             </motion.div>
-          </motion.div>
+          </ViewportOverlay>
         )}
       </AnimatePresence>
 
       {/* Floating Action Button */}
-      <motion.button
-        onClick={() => setShowCreateModal(true)}
-        className="fab"
-        whileHover={{ scale: 1.1, rotate: 10 }}
-        whileTap={{ scale: 0.95, rotate: 0 }}
-        initial={{ opacity: 0, scale: 0 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, delay: 0.5, type: 'spring', damping: 10, stiffness: 200 }}
-      >
-        <User size={18} />
-      </motion.button>
-    </motion.div>
+
+    </div>
   )
 }
