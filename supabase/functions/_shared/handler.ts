@@ -1,7 +1,7 @@
 import type { AIDraft, AITask, ResearchResponse } from './contracts.ts'
 import { TRUSTED_SOURCES, trustedSource, validateDraft } from './contracts.ts'
 type Runtime = { env: (key: string) => string | undefined; fetch: typeof fetch }
-class RequestError extends Error { status: number; constructor(status: number, message: string) { super(message); this.status = status } }
+class RequestError extends Error { status: number; code?: string; constructor(status: number, message: string, code?: string) { super(message); this.status = status; this.code = code } }
 const objectSchema = (properties: Record<string, unknown>) => ({ type: 'object', properties, required: Object.keys(properties), additionalProperties: false })
 const string = { type: 'string' }
 const draftSchema = objectSchema({ title: string, summary: string, keyPoints: { type: 'array', maxItems: 12, items: string }, cards: { type: 'array', maxItems: 20, items: objectSchema({ question: string, answer: string }) }, questions: { type: 'array', maxItems: 15, items: objectSchema({ question: string, options: { type: 'array', minItems: 2, maxItems: 4, items: string }, correct: { type: 'integer', minimum: 0, maximum: 3 }, explanation: string }) } })
@@ -13,7 +13,7 @@ function requiredText(value: unknown, max: number, name: string) {
 function getKey(rt: Runtime) { const key = rt.env('MISTRAL_API_KEY'); if (!key) throw new RequestError(503, 'AI is not available for this workspace yet.'); return key }
 async function mistral(rt: Runtime, path: string, payload: unknown) {
   const response = await rt.fetch('https://api.mistral.ai/v1/' + path, { method: 'POST', headers: { Authorization: 'Bearer ' + getKey(rt), 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(65000) })
-  if (!response.ok) throw new RequestError(response.status === 429 ? 429 : 502, response.status === 429 ? 'The AI service is busy. Please try again shortly.' : 'The AI service could not complete this request. Please try again.')
+  if (!response.ok) throw new RequestError(response.status === 429 ? 429 : 502, response.status === 429 ? "Mistral's request or usage allowance has been reached. Wait before retrying, or ask the workspace owner to check the model's included allowance." : 'The AI service could not complete this request. Please try again.', response.status === 429 ? 'MISTRAL_RATE_LIMIT' : 'MISTRAL_REQUEST_FAILED')
   return response.json()
 }
 async function structured(rt: Runtime, name: string, schema: unknown, instruction: string, input: unknown) {
@@ -115,10 +115,10 @@ export function createHandler(rt: Runtime, mode: 'ai' | 'research') {
       getKey(rt)
       const quota = await rt.fetch(url + '/rest/v1/rpc/consume_ai_request', { method: 'POST', headers: authHeaders, body: '{}', signal: AbortSignal.timeout(10000) })
       if (!quota.ok) throw new RequestError(503, 'AI is temporarily unavailable. Please try again later.')
-      if (await quota.json() !== true) throw new RequestError(429, 'Your AI request limit has been reached. Please try again later.')
+      if (await quota.json() !== true) throw new RequestError(429, 'Your Psykie AI request limit has been reached. Please try again later.', 'APP_RATE_LIMIT')
       return reply(200, mode === 'research' ? await research(runtime, body) : await generate(runtime, body))
     } catch(error) {
-      if (error instanceof RequestError) return reply(error.status, { error: error.message })
+      if (error instanceof RequestError) return reply(error.status, { error: error.message, ...(error.code ? {code:error.code} : {}) })
       if (error instanceof Error && ['TimeoutError','AbortError'].includes(error.name)) return reply(504, { error: 'The service took too long. Please try again.' })
       return reply(502, { error: 'The service returned an invalid response. Please try again.' })
     }

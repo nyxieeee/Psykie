@@ -1,5 +1,6 @@
 import { useAuthStore } from '../store/useAuthStore'
 import { requireSupabase, supabaseConfigured } from './supabase'
+import { AIServiceError, aiErrorMessage } from './aiErrors'
 import { AITask, AIDraft, QuizOptions, ResearchResponse, trustedSource, validateDraft } from '../../supabase/functions/_shared/contracts'
 export type { AITask, AIDraft, AIQuestion, QuizOptions, ResearchResult, ResearchResponse } from '../../supabase/functions/_shared/contracts'
 export { TRUSTED_SOURCES } from '../../supabase/functions/_shared/contracts'
@@ -9,11 +10,9 @@ async function invoke(name: string, body: Record<string, unknown>, signal?: Abor
   if (useAuthStore.getState().sessionSource !== 'supabase') throw new Error('Sign in with your account to use AI. Development demo accounts do not include AI access.')
   const { data: session } = await requireSupabase().auth.getSession()
   if (!session.session) throw new Error('Your session expired. Please sign in again.')
-  const { data, error } = await requireSupabase().functions.invoke(name, { body, signal: AbortSignal.any([AbortSignal.timeout(120000), ...(signal ? [signal] : [])]) })
+  const { data, error, response } = await requireSupabase().functions.invoke(name, { body, signal: AbortSignal.any([AbortSignal.timeout(120000), ...(signal ? [signal] : [])]) })
   if (error) {
-    let message = 'The AI service is unavailable. Please try again later.'
-    if (error.context instanceof Response) { try { const result = await error.context.json(); if (typeof result.error === 'string') message = result.error } catch { /* Generic connection error. */ } }
-    throw new Error(message)
+    throw new AIServiceError(await aiErrorMessage(error, response), response?.status || error.context?.status)
   }
   if (data?.error) throw new Error(data.error)
   return data

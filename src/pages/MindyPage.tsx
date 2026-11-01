@@ -1,5 +1,6 @@
 import { AIGenerator } from '../components/AIGenerator'
 import { aiConfigured, chatWithMindy } from '../utils/ai'
+import { AIServiceError } from '../utils/aiErrors'
 import { workspaceStorage } from '../utils/workspaceStorage'
 import { ArrowRight, Bookmark, BookOpen, Check, Copy, DotsThree, Info, NoteBlank, Plus, SidebarSimple, Sparkle, Trash, X } from '@phosphor-icons/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -20,6 +21,14 @@ export function MindyPage() {
 
   const [inputMessage, setInputMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [retryAt, setRetryAt] = useState(0), [retrySeconds, setRetrySeconds] = useState(0)
+  useEffect(() => {
+    if (!retryAt) return
+    const update = () => { const seconds = Math.max(0, Math.ceil((retryAt - Date.now()) / 1000)); setRetrySeconds(seconds); if (!seconds) setRetryAt(0) }
+    update()
+    const timer = window.setInterval(update, 1000)
+    return () => clearInterval(timer)
+  }, [retryAt])
   const sending = useRef(false)
   const controller = useRef<AbortController | null>(null)
   useEffect(() => () => controller.current?.abort(), [])
@@ -52,7 +61,7 @@ export function MindyPage() {
 
   const handleSend = useCallback(async (override?: string) => {
     const text = (override || inputMessage).trim()
-    if (!text || sending.current) return
+    if (!text || sending.current || Date.now() < retryAt) return
     sending.current = true; setIsSending(true); setSavedActionNotice(null)
     const id = currentSessionId || createSession().id
     const existing = useMindyStore.getState().sessions.find(session => session.id === id)?.messages || []
@@ -64,9 +73,9 @@ export function MindyPage() {
     setInputMessage(''); if (inputRef.current) inputRef.current.style.height = ''; followMessages.current = true
     controller.current = new AbortController()
     try { const answer = await chatWithMindy(history, controller.current.signal); addMessage(id, { id: crypto.randomUUID(), sender: 'ai', text: answer, timestamp: new Date() }) }
-    catch(error) { if (!controller.current.signal.aborted) { setSavedActionNotice(error instanceof Error ? error.message : 'Mindy could not respond. Please try again.'); setInputMessage(text) } }
+    catch(error) { if (!controller.current.signal.aborted) { if (error instanceof AIServiceError && error.status === 429) setRetryAt(Date.now() + 60000); setSavedActionNotice(error instanceof Error ? error.message : 'Mindy could not respond. Please try again.'); setInputMessage(text) } }
     finally { sending.current = false; setIsSending(false) }
-  }, [inputMessage, currentSessionId, createSession, addMessage])
+  }, [inputMessage, currentSessionId, createSession, addMessage, retryAt])
 
   // Defer URL-triggered sends until StrictMode's mount cleanup has completed.
   useEffect(() => {
@@ -186,10 +195,11 @@ export function MindyPage() {
 
         <div className="mindy-compose-area">{!aiConfigured && <p className="ref-inline-notice">Mindy is not available for this workspace yet.</p>}
           {savedActionNotice && <p role="status" className="mindy-notice">{savedActionNotice}</p>}
+          {retrySeconds > 0 && <p role="timer" className="mindy-notice">You can retry in {retrySeconds}s. An exhausted allowance may take longer to reset.</p>}
           <form className="mindy-composer" onSubmit={e => {e.preventDefault();handleSend()}}>
             <Sparkle size={22} aria-hidden="true"/>
             <textarea ref={inputRef} rows={1} aria-label="Message Mindy" placeholder="Ask Mindy a question..." value={inputMessage} onChange={e => {setInputMessage(e.target.value);e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,140)+'px'}} onKeyDown={e => {if(e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing){e.preventDefault();handleSend()}}}/>
-            <button className="ref-round-button" aria-label="Send message" disabled={!inputMessage.trim() || isSending}><ArrowRight size={22}/></button>
+            <button className="ref-round-button" aria-label="Send message" disabled={!inputMessage.trim() || isSending || retrySeconds > 0}><ArrowRight size={22}/></button>
           </form>
           <p className="mindy-disclosure"><Info size={13}/>AI study support. Check important information.</p>
         </div>

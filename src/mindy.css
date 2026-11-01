@@ -44,7 +44,7 @@
 .mindy-new-chat { padding: 8px 12px; min-height: 36px; font-size: 12px; white-space: nowrap; }
 .mindy-feed { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 .mindy-conversation { width: 100%; max-width: 900px; margin: 0 auto; padding: 30px 30px 42px; }
-.mindy-user-message { display: flex; align-items: flex-start; gap: 12px; margin: 0 0 30px; }
+.mindy-user-message { display: flex; flex-direction: row-reverse; align-items: flex-start; gap: 12px; margin: 0 0 30px; }
 .mindy-user-message .ref-avatar { width: 32px; height: 32px; font-size: 12px; margin-top: 4px; }
 .mindy-user-message p { max-width: 85%; padding: 13px 18px; border: 1px solid #e9ddf8; border-radius: 16px; background: #f0e6ff; color: #4c347f; font-size: 14px; line-height: 1.8; white-space: pre-wrap; }
 .mindy-response { margin-bottom: 34px; }

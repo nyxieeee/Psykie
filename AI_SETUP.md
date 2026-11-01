@@ -26,6 +26,8 @@ The preflight check makes no AI generation requests and needs no private API key
 
 The app cannot verify your billing plan from a normal API key, and local per-user quotas do not cap organization-wide bills. It does not enable paid billing or switch automatically to a different provider when requests fail. No live Mistral generation is performed by the setup checker.
 
+HTTP 429 has separate error codes: `APP_RATE_LIMIT` for Psykie's own request budget and `MISTRAL_RATE_LIMIT` for the provider's request or usage allowance. A provider 429 can mean exhausted included usage or unavailable model allowance, not just too many clicks. Check the model in Mistral Admin's Limits page. Mindy preserves the failed prompt and pauses manual retries for one minute; it does not automatically retry, switch providers, increase quota, or enable billing. Exhausted allowances can take longer than that pause to reset.
+
 Official references: [usage and limits](https://docs.mistral.ai/admin/billing-usage/usage-limits), [API-key billing settings](https://docs.mistral.ai/admin/identity-access/api-keys), [API pricing](https://docs.mistral.ai/inference/pricing).
 
 ## Connect the services

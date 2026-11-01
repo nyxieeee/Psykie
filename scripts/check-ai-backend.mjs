@@ -1,3 +1,4 @@
+import { aiErrorMessage } from '../src/utils/aiErrors.ts'
 import assert from 'node:assert/strict'
 import { createHandler } from '../supabase/functions/_shared/handler.ts'
 import { trustedSource } from '../supabase/functions/_shared/contracts.ts'
@@ -24,4 +25,11 @@ for (const quizOptions of [{style:'unsupported',difficulty:'easy'}, {style:'scen
 {const rt=runtime();assert.equal((await createHandler(rt,'ai')(req({action:'quiz',text:'memory',quizOptions:{style:'true-false',difficulty:'easy'}}))).status,502);checks++}
 {const rt=runtime({draft:{...draft,questions:[{...draft.questions[0],options:['True','False'],correct:2}]}});assert.equal((await createHandler(rt,'ai')(req({action:'quiz',text:'memory',quizOptions:{style:'mixed',difficulty:'medium'}}))).status,502);checks++}
 {const rt=runtime({env:{ALLOWED_ORIGINS:'http://localhost:5173,https://psykie.vercel.app',MISTRAL_API_KEY:''}});const response=await createHandler(rt,'ai')(req(null,{origin:'https://psykie.vercel.app',authorization:''},'OPTIONS'));assert.equal(response.status,204);assert.equal(response.headers.get('access-control-allow-origin'),'https://psykie.vercel.app');assert.match(response.headers.get('access-control-allow-headers'),/authorization/);assert.equal(rt.calls.length,0);checks++}
+{const rt=runtime(),original=rt.fetch;rt.fetch=async(url,init)=>url.includes('api.mistral.ai')?json({message:'Rate limit exceeded'},429):original(url,init);const response=await createHandler(rt,'ai')(req({action:'chat',messages:[{role:'user',content:'Hi'}]}));assert.equal(response.status,429);const body=await response.json();assert.equal(body.code,'MISTRAL_RATE_LIMIT');assert.match(body.error,/Mistral/);checks++}
+{const response=await createHandler(runtime({quota:false}),'ai')(req({action:'chat',messages:[{role:'user',content:'Hi'}]}));assert.equal((await response.json()).code,'APP_RATE_LIMIT');checks++}
+assert.match(await aiErrorMessage({},new Response(JSON.stringify({message:'Invalid JWT'}),{status:401})),/session expired/);checks++
+assert.match(await aiErrorMessage({},new Response(JSON.stringify({code:'RATE_LIMITED'}),{status:429})),/request limit/);checks++
+assert.equal(await aiErrorMessage({},new Response(JSON.stringify({error:'Exact server explanation'}),{status:503})),'Exact server explanation');checks++
+assert.match(await aiErrorMessage({name:'FunctionsFetchError'}),/connect to AI/);checks++
+assert.match(await aiErrorMessage({context:{name:'TimeoutError'}}),/timed out/);checks++
 console.log(`Passed ${checks} backend checks: authentication, account type, CORS, quotas, input/output validation, Mistral requests, off-topic queries, retrieved-only citations, relevance, and domain spoofing.`)
