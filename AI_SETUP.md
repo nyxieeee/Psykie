@@ -20,6 +20,10 @@ No Mistral key, Supabase project credentials, or deployment access was supplied 
 
 ## What is connected
 
+The study generator accepts topics/instructions, pasted text, or one uploaded PDF, DOCX, TXT, Markdown, or CSV file. Combine topics with material to focus the generated cards on selected concepts. Files are parsed locally; only the editable extracted text and instructions are sent when Generate draft is clicked. Limits: 10 MB per file, 100 PDF pages, 25,000 combined characters, and 1–20 flashcards per request. Long documents are rejected rather than silently truncated. Scans without selectable text require OCR elsewhere before import. Uploading replaces the source material; changing inputs discards the previous draft. Preview and Save create a new study deck.
+
+After updating the generation prompt, redeploy `psykie-ai` with the command above. No new API keys or database migrations are required for document imports. Parser references: [PDF.js](https://mozilla.github.io/pdf.js/getting_started/) and [Mammoth raw text extraction](https://github.com/mwilliamson/mammoth.js#extractrawtextinput).
+
 - **Mindy**: server-side Mistral chat completions with recent conversation history. Chats persist separately per account. Note questions carry a bounded excerpt through navigation state, not a large private note in the URL. A retry after failure does not duplicate the user message. Chat does not pretend to browse: current-source questions are directed to Research.
 - **Notes**: AI summaries save as new notes, preserving originals. AI flashcards can be generated from the selected note. The existing line-to-card conversion remains a separate local action.
 - **Flashcards**: generate from a topic or pasted text, preview, then save a real deck with individual cards.
