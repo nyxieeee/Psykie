@@ -1,16 +1,14 @@
 # Supabase authentication setup
 
-The app supports Supabase email/password authentication and Microsoft, Google, and Apple OAuth. Workspace content remains browser-local; this change does not sync notes, clients, documents, or events to Supabase.
+The app supports Supabase email/password authentication and Google OAuth. Workspace content remains browser-local; this change does not sync notes, clients, documents, or events to Supabase.
 
 ## Connect your project
 
 1. Create/select your Supabase project. Copy `.env.example` to `.env.local` and enter `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Older projects may use `VITE_SUPABASE_ANON_KEY` instead. Never place a service-role key or provider client secret in a `VITE_` variable.
 2. Apply `supabase/migrations/202611010001_profiles.sql` in your project's SQL editor, or through the Supabase CLI migration workflow. It creates the profile table, own-profile access policies, profile creation trigger, and database rule locking the selected account type. It is intended for a project without a conflicting `public.profiles` schema. Review existing schemas before applying.
 3. In Supabase Authentication > URL Configuration, set your production Site URL and add your app callback URLs to Redirect URLs. For local development add `http://localhost:5173/auth/callback` and/or `http://127.0.0.1:5173/auth/callback`, using the same host you use to start sign-in. Add the production `https://YOUR_APP_DOMAIN/auth/callback` explicitly.
-4. Enable Azure (Microsoft), Google, and Apple under Authentication > Providers. Configure their provider application credentials in Supabase, not in the frontend. Use the Supabase callback URL shown in each provider's settings for the provider application, commonly `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`.
+4. Enable Google under Authentication > Providers. Configure their provider application credentials in Supabase, not in the frontend. Use the Supabase callback URL shown in each provider's settings for the provider application, commonly `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`.
 5. Restart Vite after changing environment variables. Production builds need the variables set at build time. Buttons stay disabled when no Supabase URL/key is configured. A provider must also be enabled in Supabase; errors from disabled/misconfigured providers appear in the sign-in flow.
-
-Microsoft uses Supabase's `azure` provider and requests the `email` scope. Apple requires a Services ID and the corresponding Apple configuration. Follow the provider-specific guides below for identifiers, allowed accounts/domains, secrets, and key rotation.
 
 ## Account type and sessions
 
@@ -34,4 +32,4 @@ The UI and demo identities are removed from production bundles by `import.meta.e
 - `scripts/check-supabase-auth.cjs`: mocked Supabase responses verify all three PKCE redirects, new-user onboarding, save failure/retry, and returning-user role restoration. It expects an isolated Vite instance on 5174 with `VITE_SUPABASE_URL=http://127.0.0.1:54321` and a test publishable key. These are test values, not deployable credentials.
 - Live OAuth sign-in, email confirmation, and database policies/triggers must be verified after connecting your actual Supabase project and applying the migration. No live project or external provider accounts were modified here.
 
-Official references: [Microsoft/Azure](https://supabase.com/docs/guides/auth/social-sign-in/auth-azure), [Google](https://supabase.com/docs/guides/auth/social-sign-in/auth-google), [Apple](https://supabase.com/docs/guides/auth/social-sign-in/auth-apple), [user profiles](https://supabase.com/docs/guides/auth/managing-user-data), [row level security](https://supabase.com/docs/guides/database/postgres/row-level-security).
+Official references: [Google](https://supabase.com/docs/guides/auth/social-sign-in/auth-google), [user profiles](https://supabase.com/docs/guides/auth/managing-user-data), [row level security](https://supabase.com/docs/guides/database/postgres/row-level-security).

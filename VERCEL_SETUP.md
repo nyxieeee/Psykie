@@ -36,7 +36,7 @@ Once Vercel gives you a URL such as `https://YOUR_APP.vercel.app`, open **Supaba
 - **Site URL:** `https://YOUR_APP.vercel.app`
 - **Redirect URL:** `https://YOUR_APP.vercel.app/auth/callback`
 
-Use your exact production/custom domain. Keep local callback URLs only if you still develop locally. Enable Microsoft/Azure, Google, and Apple separately under **Authentication > Providers**. Their provider application callback URL is the one shown by Supabase, not the frontend callback URL. See `SUPABASE_SETUP.md`.
+Use your exact production/custom domain. Keep local callback URLs only if you still develop locally. Enable Google under **Authentication > Providers**. Their provider application callback URL is the one shown by Supabase, not the frontend callback URL. See `SUPABASE_SETUP.md`.
 
 Preview deployments have different origins. To test OAuth or AI in a preview, add that exact preview callback to Supabase's allowed redirects and that exact origin to the function's allowed origins. Do not broadly allow all `vercel.app` tenants. Production is simplest to configure first.
 

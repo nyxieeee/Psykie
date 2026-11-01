@@ -18,7 +18,7 @@ Automated browser results: `artifacts/beta/results.json`. The main beta check ex
 
 ## Services not connected
 
-Microsoft, Google, and Apple OAuth are integrated through Supabase and require project keys, provider setup, and the profile migration before live use. See SUPABASE_SETUP.md. Mistral AI and curated research search are integrated and require deployed Edge Functions plus server secrets; see AI_SETUP.md. Notification delivery, password recovery UI, cloud content sync, and public sharing are not connected. No canned AI replies or simulated success responses replace these services.
+Google OAuth is integrated through Supabase and require project keys, provider setup, and the profile migration before live use. See SUPABASE_SETUP.md. Mistral AI and curated research search are integrated and require deployed Edge Functions plus server secrets; see AI_SETUP.md. Notification delivery, password recovery UI, cloud content sync, and public sharing are not connected. No canned AI replies or simulated success responses replace these services.
 
 With Supabase configured, authentication and account types use Supabase. Without it, browser-local accounts with salted PBKDF2 password hashes and one-click development accounts are available only in development. Production requires Supabase. Workspace content remains browser-local. Client-side route guards do not substitute for a backend. Content in browser storage is not encrypted. Use a backend with appropriate access controls before collecting real clinical records.
 

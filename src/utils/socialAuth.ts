@@ -1,9 +1,9 @@
 import type { User } from '../types'
 import { requireSupabase, supabaseConfigured } from './supabase'
-export type SocialProvider = 'microsoft' | 'google' | 'apple'
+export type SocialProvider = 'google'
 export const socialAuthConfigured = supabaseConfigured
 export async function startSocialSignIn(provider: SocialProvider) {
-  const { error } = await requireSupabase().auth.signInWithOAuth({ provider: provider === 'microsoft' ? 'azure' : provider, options: { redirectTo: window.location.origin + '/auth/callback', ...(provider === 'microsoft' ? { scopes: 'email' } : {}) } })
+  const { error } = await requireSupabase().auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin + '/auth/callback' } })
   if (error) throw error
 }
 export type SocialSession = { user: User }

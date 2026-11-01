@@ -1188,9 +1188,7 @@ select.input-solid { padding-right: 26px; }
 .ref-social-buttons { display: grid; gap: 9px; }
 .ref-social-button { display: flex; align-items: center; justify-content: center; gap: 11px; min-height: 43px; width: 100%; padding: 11px 15px; background: #fff; border: 1px solid #e5ddf0; border-radius: 10px; font-size: 13px; font-weight: 600; color: #342558; }
 .ref-social-button svg { flex-shrink: 0; }
-.ref-social-button.microsoft svg { color: #2968b4; }
 .ref-social-button.google svg { color: #4285f4; }
-.ref-social-button.apple { background: #18151e; border-color: #18151e; color: white; }
 .ref-social-button:hover:not(:disabled) { border-color: #c49be3; box-shadow: 0 2px 8px #9b71be12; }
 .ref-social-button:disabled { cursor: not-allowed; opacity: .55; }
 .ref-social-button:focus-visible { outline: 3px solid #ceacf0; outline-offset: 2px; }

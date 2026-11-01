@@ -44,7 +44,7 @@ npx supabase functions deploy psykie-ai
 npx supabase functions deploy psykie-research
 ```
 
-Microsoft, Google, and Apple need their own provider configuration under **Supabase > Authentication > Providers**. Add your app's `/auth/callback` URL under **Authentication > URL Configuration > Redirect URLs**. See [the authentication setup guide](SUPABASE_SETUP.md) for the exact steps. Email/password signup can be used independently of social-provider setup.
+Google needs provider configuration under **Supabase > Authentication > Providers**. Add your app's `/auth/callback` URL under **Authentication > URL Configuration > Redirect URLs**. See [the authentication setup guide](SUPABASE_SETUP.md) for the exact steps. Email/password signup can be used independently of social-provider setup.
 
 ## 3. Run the app
 
