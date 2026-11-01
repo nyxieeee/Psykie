@@ -15,6 +15,21 @@ const origins = (env.ALLOWED_ORIGINS || '').split(',').map(value => value.trim()
 report('Allowed app origins', origins.length > 0 && origins.every(origin => {try {const url=new URL(origin);return url.origin === origin && ['http:','https:'].includes(url.protocol)} catch {return false}}), 'Use exact origins separated by commas, such as http://localhost:5173.')
 const exposedSecrets = Object.keys(env).filter(key => key.startsWith('VITE_') && /MISTRAL|SERVICE_ROLE|SECRET/i.test(key) && env[key])
 report('Server secrets excluded from browser settings', exposedSecrets.length === 0, 'Remove secret values from VITE_-prefixed variables.')
+if ((process.argv.includes('--preflight') || process.argv.includes('--live')) && validUrl) {
+  for (const origin of origins) {
+    for (const name of ['psykie-ai', 'psykie-research']) {
+      try {
+        const response = await fetch(env.VITE_SUPABASE_URL.replace(/\/$/, '') + '/functions/v1/' + name, {
+          method: 'OPTIONS', headers: { Origin: origin, 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'authorization,apikey,x-client-info,content-type' }, signal: AbortSignal.timeout(15000),
+        })
+        const methods = (response.headers.get('access-control-allow-methods') || '').toUpperCase().split(',').map(value => value.trim())
+        const allowedHeaders = (response.headers.get('access-control-allow-headers') || '').toLowerCase().split(',').map(value => value.trim())
+        const ok = response.ok && response.headers.get('access-control-allow-origin') === origin && methods.includes('POST') && ['authorization','apikey','x-client-info','content-type'].every(header => allowedHeaders.includes(header))
+        report(`${name} preflight from ${origin}`, ok, response.status === 404 ? 'Function not deployed. Deploy it to this Supabase project; changing frontend CORS cannot fix a missing function.' : `HTTP ${response.status}. Set ALLOWED_ORIGINS in Supabase Edge Function secrets to include this exact origin, and deploy the function with verify_jwt=false.`)
+      } catch { report(`${name} preflight from ${origin}`, false, 'Could not reach the function. Check the project URL and network connection.') }
+    }
+  }
+}
 if (process.argv.includes('--live') && !failures) {
   for (const service of [
     { name: 'Supabase public API', url: env.VITE_SUPABASE_URL.replace(/\/$/,'')+'/auth/v1/settings', headers: {apikey:key} },
@@ -25,5 +40,6 @@ if (process.argv.includes('--live') && !failures) {
   }
 }
 console.log('\nNo key values were printed. This check does not deploy functions, apply migrations, or verify social provider setup.')
+console.log('Model names and API keys do not prove free billing. Confirm Free mode and disable pay-as-you-go in Mistral Admin; account limits determine model/tool access.')
 if (!process.argv.includes('--live')) console.log('After filling the values, optional credential check: npm run setup:check -- --live (no AI generation).')
 process.exitCode = failures ? 1 : 0

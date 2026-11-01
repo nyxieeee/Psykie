@@ -1,5 +1,33 @@
 # Mistral AI and trusted research
 
+## Live deployment and CORS
+
+Pushing to GitHub or deploying the Vite frontend to Vercel does not deploy Supabase Edge Functions. Both `psykie-ai` and `psykie-research` must exist in the same Supabase project used by the frontend. An OPTIONS response of HTTP 404 with `Requested function was not found` is a missing deployment, which browsers can report as a CORS preflight failure.
+
+The CLI can run through `npx` without a global `supabase` command. Sign in in your own terminal, complete the browser flow, and enter its verification code in that terminal:
+
+```powershell
+npx --yes supabase login --agent no --output-format text
+```
+
+Set `ALLOWED_ORIGINS` in Supabase Edge Function secrets to include `https://psykie.vercel.app`, then deploy both functions to project `uhgecdhbspnusyraegln`. Keep `verify_jwt = false` as configured; the handler validates signed-in users itself, after handling preflight.
+
+```powershell
+npx supabase functions deploy psykie-ai --project-ref uhgecdhbspnusyraegln
+npx supabase functions deploy psykie-research --project-ref uhgecdhbspnusyraegln
+npm run setup:check -- --preflight
+```
+
+The preflight check makes no AI generation requests and needs no private API key. It diagnoses missing functions separately from origin/header failures. Do not upload empty secret values over existing remote secrets; fill `MISTRAL_API_KEY` before uploading a complete environment file.
+
+## Free usage and billing
+
+`mistral-small-latest` and `mistral-medium-latest` are not promises of zero-cost API usage. Mistral's Free mode has included usage and model-specific limits; the organization plan and pay-as-you-go settings determine access and billing for every API key. To keep usage within the free allowance, use Free mode and disable pay-as-you-go in Mistral Admin. Check the Limits page for the actual models and tools included in your account. Research uses a model plus web-search tooling, so chat access alone does not establish Research access.
+
+The app cannot verify your billing plan from a normal API key, and local per-user quotas do not cap organization-wide bills. It does not enable paid billing or switch automatically to a different provider when requests fail. No live Mistral generation is performed by the setup checker.
+
+Official references: [usage and limits](https://docs.mistral.ai/admin/billing-usage/usage-limits), [API-key billing settings](https://docs.mistral.ai/admin/identity-access/api-keys), [API pricing](https://docs.mistral.ai/inference/pricing).
+
 ## Connect the services
 
 1. Complete `SUPABASE_SETUP.md`, including the account profile migration. AI requires a real signed-in Supabase user with a completed Student/Registered Psych account type. Development demo accounts remain available for UI work but cannot call paid AI services.
