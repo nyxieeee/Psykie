@@ -2,7 +2,7 @@ import { AuthCallbackPage } from './pages/auth/AuthCallbackPage'
 import { AccountTypePage } from './pages/auth/AccountTypePage'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Suspense, lazy, useEffect, useLayoutEffect, useRef } from 'react'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { useAuthStore, useIsAuthenticated } from './store'
 import { TransitionProvider, useTransitionStyle } from './context/TransitionContext'
 import { TRANSITIONS, DEFAULT_TRANSITION } from './utils/transitions'
@@ -140,21 +140,18 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
   }, [location.pathname])
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        className="route-content"
-        initial={reducedMotion ? false : variant.initial as any}
-        animate={{ ...variant.animate, transitionEnd: { ...variant.animate.transitionEnd, filter: 'none', transform: 'none', clipPath: 'none', willChange: 'auto' } }}
-        exit={variant.exit as any}
-        style={{
-          transformOrigin: 'center center',
-          width: '100%',
-        }}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <motion.div
+      key={location.pathname}
+      className="route-content"
+      initial={reducedMotion ? false : variant.initial as any}
+      animate={{ ...variant.animate, transitionEnd: { ...variant.animate.transitionEnd, filter: 'none', transform: 'none', clipPath: 'none', willChange: 'auto' } }}
+      style={{
+        transformOrigin: 'center center',
+        width: '100%',
+      }}
+    >
+      {children}
+    </motion.div>
   )
 }
 
