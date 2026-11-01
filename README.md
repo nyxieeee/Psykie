@@ -4,6 +4,8 @@ Psychology study and professional workspace built with React, TypeScript, Vite, 
 
 The frontend is implemented. Live authentication/AI require your own project configuration and deployment. Notes, files, cards, research saves, events, and client content currently stay in the browser; cloud content sync is not implemented.
 
+**Study Box** (`/library`) collects psychology readings, uploaded files, OCR text, saved-note snapshots, and AI summaries. Organize materials in folders with tags and favorites; select several sources for one quiz or flashcard deck. The document vault can send material to Study Box without duplicating its original file. See [study workflows](STUDY_WORKFLOWS.md).
+
 ## 1. Fill three values in one file
 
 Open `.env.local`. If it does not exist, copy `.env.example` to `.env.local`.

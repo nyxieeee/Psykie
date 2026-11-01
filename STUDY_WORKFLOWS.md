@@ -4,6 +4,16 @@ Adapted after reviewing the local France Notes by Uno project's Quiz page, quiz 
 
 ## Create practice from your material
 
+- Open **Study Box** in the sidebar, or **Library** in the mobile dock. `/study-box` also redirects to `/library`.
+- Add a file, paste text, or import a saved-note snapshot. Review extracted/OCR text before saving. Original files uploaded here are stored with the material, and the text can be reused without another OCR request.
+- Organize materials with folders, psychology subjects, tags, favorites, search, and sorting. Editing a material changes its saved text/metadata, not the original file bytes or the note it was imported from.
+- Select several materials to create one quiz, deck, or combined summary. Combined sources must fit 25,000 characters; over-limit selections show an error rather than silently dropping content.
+- Single-material summaries are saved in the reader's **AI summary** tab, preserving source text. A multi-material summary becomes a separate library item. Text and summaries can be saved into Notes; original files and text can be downloaded.
+- From **Documents**, **Save to Study Box** imports readable text and links to the existing original. Repeating this action opens the saved material without duplicating or rescanning it. Removing the library reference leaves the original vault document intact. Removing a file uploaded directly in Study Box also removes its owned file bytes. Removing a folder leaves its materials unfiled.
+- Quiz, card, and summary generators can also choose a saved Study Box material directly.
+
+Study Box metadata is isolated by account in browser storage; original file bytes use IndexedDB. It is not cloud synchronization, and clearing browser/site data removes this local library. Existing documents are available through **Open document vault**; they are not automatically read or sent to AI.
+
 - In **Quizzes**, choose **Create quiz**. Enter topics, paste material, select a saved note, or upload a PDF, DOCX, TXT, Markdown, CSV, JPEG, PNG, or WebP file.
 - In **Documents**, choose a stored file and **Quiz me on this**. Its readable text opens in quiz setup. **Make flashcards** and **Summarize** also use the document and preview drafts before saving. The saved note or deck opens after saving.
 - In **Notes**, **Quiz me on this** carries the current note to quiz setup. Source text is passed through navigation state rather than a URL query and the handoff is consumed once.
@@ -39,6 +49,7 @@ npm run check:functions
 npm run test:ai:backend
 node scripts/run-ai-ui.cjs scripts/check-psych-quiz.cjs
 node scripts/run-ai-ui.cjs
+node scripts/run-ai-ui.cjs scripts/check-library.cjs
 ```
 
 Browser and backend tests use mocked Supabase/Mistral responses. They test the application flow and validation, not live model accuracy or provider availability.

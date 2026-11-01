@@ -4,13 +4,15 @@ import { ViewportOverlay } from './ViewportOverlay'
 import { AIDraft, AITask, QuizOptions, extractImageText, generateAIDraft } from '../utils/ai'
 import { MAX_SOURCE_LENGTH, STUDY_UPLOAD_ACCEPT, readStudyUpload } from '../utils/studyUpload'
 import { useStudyStore } from '../store'
+import { readLibrary } from '../utils/studyLibrary'
 
 export type GenerationSettings = { category: string; quizOptions: QuizOptions; timerMinutes: number; sourceName: string }
 const subjects = ['General Psychology', 'Cognitive Psychology', 'Developmental Psychology', 'Abnormal Psychology', 'Social Psychology', 'Biological Psychology', 'Research Methods', 'Statistics', 'Psychological Assessment', 'Ethics', 'Board Exam']
-type Props = { task: AITask; initialText?: string; initialSourceName?: string; category?: string; onClose: () => void; onSave: (draft: AIDraft, settings: GenerationSettings) => void }
+type Props = { task: AITask; initialText?: string; initialSourceName?: string; category?: string; saveLabel?: string; saveError?: string; onClose: () => void; onSave: (draft: AIDraft, settings: GenerationSettings) => void }
 
-export function AIGenerator({ task, initialText = '', initialSourceName = '', category = 'General Psychology', onClose, onSave }: Props) {
+export function AIGenerator({ task, initialText = '', initialSourceName = '', category = 'General Psychology', saveLabel, saveError, onClose, onSave }: Props) {
   const notes = useStudyStore(state => state.notes)
+  const [libraryItems] = useState(readLibrary), [materialId, setMaterialId] = useState('')
   const [text, setText] = useState(initialText), [count, setCount] = useState(task === 'quiz' ? 5 : 8)
   const [loading, setLoading] = useState(false), [error, setError] = useState(''), [draft, setDraft] = useState<AIDraft | null>(null)
   const controller = useRef<AbortController | null>(null)
@@ -23,7 +25,7 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', ca
   const upload = async (file?: File) => {
     if (!file) return
     setReading(true); setError(''); setDraft(null); controller.current = new AbortController()
-    try { const extracted = await readStudyUpload(file, {ocr:ocrEnabled ? extractImageText : undefined, signal:controller.current.signal, onProgress:setReadProgress}); setText(extracted); setFileName(file.name); setNoteId('') }
+    try { const extracted = await readStudyUpload(file, {ocr:ocrEnabled ? extractImageText : undefined, signal:controller.current.signal, onProgress:setReadProgress}); setText(extracted); setFileName(file.name); setNoteId(''); setMaterialId('') }
     catch (error) { if (!controller.current.signal.aborted) setError(error instanceof Error ? error.message : 'Could not read this file. Try another document.') }
     finally { setReading(false); setReadProgress('') }
   }
@@ -42,11 +44,12 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', ca
       <div className="ref-panel-title"><h2>{title}</h2><button aria-label="Close AI generator" onClick={onClose}><X size={20}/></button></div>
       <p>Choose your topics, paste study material, or upload a document. Review the draft before saving.</p>
       <label>Topics and instructions<textarea aria-label="Topics and instructions" disabled={busy} rows={2} maxLength={2000} placeholder="e.g. Mood disorders: focus on symptoms and diagnostic criteria, beginner level" value={topic} onChange={event => { setTopic(event.target.value); setDraft(null) }}/></label>
-      {!!notes.length && <label>Use a saved note<select aria-label="Use a saved note" disabled={busy} value={noteId} onChange={event => { const note = notes.find(item => item.id === event.target.value); setNoteId(event.target.value); if (note) { setText(note.summary); setFileName(note.title); setSubject(note.category); setDraft(null) } }}><option value="">Choose a note or enter material below</option>{notes.map(note => <option key={note.id} value={note.id}>{note.title}</option>)}</select></label>}
+      {!!libraryItems.length && <label>Use a Study Box material<select aria-label="Use a Study Box material" disabled={busy} value={materialId} onChange={event => { const item=libraryItems.find(value=>value.id===event.target.value); setMaterialId(event.target.value); if(item){setText(item.text);setFileName(item.title);setSubject(item.category);setNoteId('');setDraft(null)} }}><option value="">Choose saved study material</option>{libraryItems.map(item=><option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}
+      {!!notes.length && <label>Use a saved note<select aria-label="Use a saved note" disabled={busy} value={noteId} onChange={event => { const note = notes.find(item => item.id === event.target.value); setNoteId(event.target.value); setMaterialId(''); if (note) { setText(note.summary); setFileName(note.title); setSubject(note.category); setDraft(null) } }}><option value="">Choose a note or enter material below</option>{notes.map(note => <option key={note.id} value={note.id}>{note.title}</option>)}</select></label>}
       <label className="study-ocr-toggle"><input type="checkbox" aria-label="Use AI OCR" disabled={busy} checked={ocrEnabled} onChange={event => setOCREnabled(event.target.checked)}/><span>Use AI OCR for photos and scanned pages<small>Sends images to Mistral when uploaded; uses your AI allowance. Up to 5 scanned pages per PDF. Review extracted text for errors.</small></span></label>
       <label className="ref-file-upload">Upload study material<input type="file" accept={STUDY_UPLOAD_ACCEPT} disabled={busy} onChange={event => { void upload(event.target.files?.[0]); event.target.value = '' }}/><small>PDF, Word, text, JPEG, PNG, WebP, up to 10 MB. Uploading replaces the material below.</small></label>
       {reading && <div><p role="status">{readProgress || 'Reading document...'}</p><button className="ref-text-action" onClick={() => controller.current?.abort()}>Cancel reading</button></div>}
-      {fileName && <p>Source: {fileName} <button className="ref-text-action" disabled={busy} onClick={() => {setText('');setFileName('');setNoteId('');setDraft(null)}}>Remove material</button></p>}
+      {fileName && <p>Source: {fileName} <button className="ref-text-action" disabled={busy} onClick={() => {setText('');setFileName('');setNoteId('');setMaterialId('');setDraft(null)}}>Remove material</button></p>}
       <label>Study material (optional)<textarea aria-label="Study material (optional)" disabled={busy} rows={5} maxLength={MAX_SOURCE_LENGTH} value={text} onChange={event => {setText(event.target.value);setDraft(null)}}/></label>
       <small>{source.length.toLocaleString()} / 25,000 characters. Generation sends this editable text to AI. Enabled OCR sends images when uploaded.</small>
       {source.length > MAX_SOURCE_LENGTH && <p role="alert" className="ref-form-error">Shorten the material or instructions to fit 25,000 characters.</p>}
@@ -58,11 +61,12 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', ca
       </div>}
       {task !== 'summary' && <label>Number of {task === 'quiz' ? 'questions' : 'cards'}<input aria-label={task === 'quiz' ? 'Number of questions' : 'Number of cards'} disabled={busy} type="number" min={1} max={task === 'quiz' ? 15 : 20} value={count} onChange={event => {setCount(Number(event.target.value));setDraft(null)}}/></label>}
       {error && <p role="alert" className="ref-form-error">{error}</p>}
+      {saveError && <p role="alert" className="ref-form-error">{saveError}</p>}
       <button className="ref-primary" disabled={busy || !source || source.length > MAX_SOURCE_LENGTH || !Number.isInteger(count) || count < 1 || count > (task === 'quiz' ? 15 : 20)} onClick={generate}>{loading ? <><Spinner className="animate-spin" size={18}/>Generating...</> : draft ? 'Generate again' : 'Generate draft'}</button>
       {draft && <section className="ai-draft-preview" aria-label="AI draft preview"><h3>{draft.title}</h3>
         {task === 'summary' ? <><p>{draft.summary}</p><ul>{draft.keyPoints.map((point,index) => <li key={index}>{point}</li>)}</ul></> : task === 'flashcards' ? <ol>{draft.cards.map((card,index) => <li key={index}><strong>{card.question}</strong><p>{card.answer}</p></li>)}</ol> : <ol>{draft.questions.map((question,index) => <li key={index}><strong>{question.question}</strong><ul>{question.options.map((option,answer) => <li key={answer}>{option}{answer === question.correct ? ' (correct)' : ''}</li>)}</ul><p>{question.explanation}</p></li>)}</ol>}
         <p className="ref-inline-notice">AI-generated draft. Check accuracy against your source material. Psychology practice is educational and does not replace an official exam or professional judgment.</p>
-        <button className="ref-primary ref-wide" onClick={() => onSave(draft, {category:subject, quizOptions, timerMinutes, sourceName:fileName || topic.trim().slice(0, 120) || 'Pasted study material'})}>Save {task === 'summary' ? 'as a new note' : task === 'quiz' ? 'quiz' : 'flashcards'}</button>
+        <button className="ref-primary ref-wide" onClick={() => onSave(draft, {category:subject, quizOptions, timerMinutes, sourceName:fileName || topic.trim().slice(0, 120) || 'Pasted study material'})}>{saveLabel || (task === 'summary' ? 'Save as a new note' : task === 'quiz' ? 'Save quiz' : 'Save flashcards')}</button>
       </section>}
     </section>
   </ViewportOverlay>

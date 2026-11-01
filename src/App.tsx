@@ -28,6 +28,7 @@ const ClientsPage    = lazy(() => import('./pages/ClientsPage').then(m => ({ def
 const SettingsPage   = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const HelpPage       = lazy(() => import('./pages/HelpPage').then(m => ({ default: m.HelpPage })))
 const DocumentsPage  = lazy(() => import('./pages/DocumentsPage').then(m => ({ default: m.DocumentsPage })))
+const StudyBoxPage = lazy(() => import('./pages/StudyBoxPage').then(m => ({ default: m.StudyBoxPage })))
 
 // Loading fallback
 function LoadingFallback() {
@@ -70,6 +71,7 @@ const PAGE_ORDER = [
   '/quizzes',
   '/research',
   '/documents',
+  '/library',
   '/calendar',
   '/clients',
   '/settings',
@@ -190,6 +192,8 @@ function InnerApp() {
             <Route path="/quizzes"    element={<RouteTransition><QuizzesPage /></RouteTransition>} />
             <Route path="/research"   element={<RouteTransition><ResearchPage /></RouteTransition>} />
             <Route path="/documents"  element={<RouteTransition><DocumentsPage /></RouteTransition>} />
+            <Route path="/library" element={<RouteTransition><StudyBoxPage /></RouteTransition>} />
+            <Route path="/study-box" element={<Navigate to="/library" replace />} />
             <Route path="/calendar"   element={<RouteTransition><CalendarPage /></RouteTransition>} />
             <Route path="/sessions"   element={<ClinicalRoute><RouteTransition><CalendarPage /></RouteTransition></ClinicalRoute>} />
             <Route path="/clients"    element={<ClinicalRoute><RouteTransition><ClientsPage /></RouteTransition></ClinicalRoute>} />

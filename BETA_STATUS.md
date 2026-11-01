@@ -11,6 +11,7 @@
 - Calendar: study/personal events for students; clinical categories for professionals; month/week/agenda navigation; saved events and removal. Dashboard upcoming events uses the saved calendar.
 - Research: curated Mistral web search with server-side source/relevance checks, a saved library, collections, personal references, and summaries from pasted text. See AI_SETUP.md.
 - Documents: empty folders/vault, folder creation, actual uploaded bytes in IndexedDB, preview where supported, bookmarks, downloads, and deletion of both metadata and bytes.
+- Study Box: account-scoped library of uploaded/OCR material, pasted text, note snapshots, folders, subjects, tags, favorites, and summaries. Supports combined-source quizzes/decks, source-size checks, editable text, original downloads, and safe document-vault references. Library data remains browser-local.
 - Settings: persisted profile/appearance, fixed account type, validation errors; unavailable delivery/sharing settings disabled.
 - Clients: empty initial list, actual entered client records and overview notes, persistence, and student route restrictions.
 
