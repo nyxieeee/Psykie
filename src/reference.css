@@ -4729,3 +4729,6 @@ body {
 .ref-editor-toolbar { flex-wrap:wrap; }
 @media(max-width:1100px) { .ref-quizzes-page .ref-quiz-layout { grid-template-columns:minmax(0,1fr); } }
 @media(max-width:480px) { .study-setup-grid { grid-template-columns:minmax(0,1fr); } .study-practice-panel { padding:14px; } .study-quiz-intro .study-actions { width:100%; } .study-quiz-intro .study-actions button { flex:1; } }
+.study-ocr-toggle { display:flex !important; align-items:flex-start; gap:9px; margin:14px 0; font-size:12px; line-height:1.6; }
+.study-ocr-toggle>input[type=checkbox] { width:16px !important; height:16px; padding:0; margin:3px 0 0; flex-shrink:0; accent-color:var(--ref-accent); }
+.study-ocr-toggle small { display:block; font-weight:400; color:var(--ref-muted); margin-top:4px; line-height:1.6; }

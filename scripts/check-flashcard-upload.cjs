@@ -28,7 +28,7 @@ let pdf='%PDF-1.4\n',offsets=[0];objects.forEach((obj,i)=>{offsets.push(Buffer.b
 await file.setInputFiles({name:'memory.pdf',mimeType:'application/pdf',buffer:Buffer.from(pdf)});
 await expectMaterial('PDF memory retrieval');
 await file.setInputFiles({name:'wrong.png',mimeType:'image/png',buffer:Buffer.from('image')});
-await p.getByRole('alert').filter({hasText:'Choose a PDF'}).waitFor();
+await p.getByRole('alert').filter({hasText:'Enable AI OCR'}).waitFor();
 await file.setInputFiles({name:'empty.txt',mimeType:'text/plain',buffer:Buffer.from(' ')});
 await p.getByRole('alert').filter({hasText:'No readable text'}).waitFor();
 await file.setInputFiles({name:'long.txt',mimeType:'text/plain',buffer:Buffer.from('a'.repeat(25001))});

@@ -52,7 +52,7 @@ No Mistral key, Supabase project credentials, or deployment access was supplied 
 
 ## What is connected
 
-The study generator accepts topics/instructions, pasted text, or one uploaded PDF, DOCX, TXT, Markdown, or CSV file. Combine topics with material to focus the generated cards on selected concepts. Files are parsed locally; only the editable extracted text and instructions are sent when Generate draft is clicked. Limits: 10 MB per file, 100 PDF pages, 25,000 combined characters, and 1–20 flashcards per request. Long documents are rejected rather than silently truncated. Scans without selectable text require OCR elsewhere before import. Uploading replaces the source material; changing inputs discards the previous draft. Preview and Save create a new study deck.
+The study generator accepts topics/instructions, pasted text, or one uploaded PDF, DOCX, TXT, Markdown, CSV, JPEG, PNG, or WebP file. Combine topics with material to focus the generated cards on selected concepts. Native text is parsed locally. Optional AI OCR sends normalized images/scanned pages to Mistral when a file is selected (or a document study action is chosen). The separate Generate draft action sends the editable extracted text and instructions. Limits: 10 MB per file, 100 PDF pages, 25,000 combined characters, and 1–20 flashcards per request. Long documents are rejected rather than silently truncated. Enable Use AI OCR for photos or PDF pages without a usable text layer. At most five scanned pages are accepted per PDF, checked before any OCR requests. Native-text pages do not use OCR. Uploading replaces the source material; changing inputs discards the previous draft. Preview and Save create a new study deck.
 
 After updating the generation prompt, redeploy `psykie-ai` with the command above. No new API keys or database migrations are required for document imports. Parser references: [PDF.js](https://mozilla.github.io/pdf.js/getting_started/) and [Mammoth raw text extraction](https://github.com/mwilliamson/mammoth.js#extractrawtextinput).
 
@@ -77,6 +77,16 @@ The initial source policy includes APA, APS, BPS, NIMH, WHO, NICE, NHS, PubMed/P
 Manual references appear only in the personal saved library; adding one does not make its domain approved for search. Saved references and study content remain browser-local; Supabase cloud content sync is not implemented by this change.
 
 ## Checks
+
+OCR follows France Notes' vision-chat approach, not the separately priced Mistral OCR endpoint. The authenticated `psykie-ai` action `ocr` uses Psykie's existing key and `MISTRAL_VISION_MODEL` (or `MISTRAL_MODEL`, default `ministral-8b-latest`). It transcribes readable text and labels, marks illegible passages, and does not add concept explanations. A vision-capable model and account allowance are required. France Notes' credentials are never reused.
+
+Photos are normalized to JPEG with a maximum 1600-pixel long edge and a 2,000,000-character data-URL limit. Scanned PDF pages are rendered with PDF.js before OCR. The server rejects remote image URLs and unsupported MIME types; authentication, account-type checks, and existing quotas apply to every OCR page. Failed, cancelled, or over-limit imports do not replace the current study material, and overlong or incomplete OCR output is rejected rather than silently saved. Blank OCR output prompts the user to choose a clearer source if the whole document has no readable text.
+
+```powershell
+node scripts/run-ai-ui.cjs scripts/check-ocr.cjs
+```
+
+This browser check covers opt-in image uploads, native/mixed/scanned PDFs, page-cap enforcement before network calls, editing and quiz creation, cancellation, quota errors, saved document handoffs, and four responsive widths. OCR responses are mocked; it does not verify live recognition accuracy or handwriting quality.
 
 ```powershell
 npx tsc --noEmit

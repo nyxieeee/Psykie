@@ -25,6 +25,11 @@ export async function chatWithMindy(messages: { role: 'user' | 'assistant'; cont
 export async function generateAIDraft(task: AITask, text: string, category: string, count: number, signal?: AbortSignal, quizOptions?: QuizOptions): Promise<AIDraft> {
   return validateDraft(await invoke('psykie-ai', { action: task, text, category, count, quizOptions }, signal), task)
 }
+export async function extractImageText(image: string, signal?: AbortSignal): Promise<string> {
+  const data = await invoke('psykie-ai', {action:'ocr', image}, signal)
+  if (typeof data?.text !== 'string' || data.text.length > 25000) throw new Error('OCR returned invalid text. Please try a clearer image.')
+  return data.text.trim()
+}
 export async function searchTrustedResearch(query: string, signal?: AbortSignal): Promise<ResearchResponse> {
   const data = await invoke('psykie-research', { query }, signal)
   if (!data || !Array.isArray(data.results) || typeof data.notice !== 'string') throw new Error('The search service returned an invalid response.')

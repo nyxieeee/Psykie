@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Spinner, X } from '@phosphor-icons/react'
 import { ViewportOverlay } from './ViewportOverlay'
-import { AIDraft, AITask, QuizOptions, generateAIDraft } from '../utils/ai'
-import { MAX_SOURCE_LENGTH, readStudyUpload } from '../utils/studyUpload'
+import { AIDraft, AITask, QuizOptions, extractImageText, generateAIDraft } from '../utils/ai'
+import { MAX_SOURCE_LENGTH, STUDY_UPLOAD_ACCEPT, readStudyUpload } from '../utils/studyUpload'
 import { useStudyStore } from '../store'
 
 export type GenerationSettings = { category: string; quizOptions: QuizOptions; timerMinutes: number; sourceName: string }
@@ -18,13 +18,14 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', ca
   const [subject, setSubject] = useState(category), [noteId, setNoteId] = useState('')
   const [quizOptions, setQuizOptions] = useState<QuizOptions>({style: 'multiple-choice', difficulty: 'medium'})
   const [timerMinutes, setTimerMinutes] = useState(0)
+  const [ocrEnabled, setOCREnabled] = useState(false), [readProgress, setReadProgress] = useState('')
   const source = [topic.trim() && `Requested topics and focus: ${topic.trim()}`, text.trim() && `Study material:\n${text.trim()}`].filter(Boolean).join('\n\n')
   const upload = async (file?: File) => {
     if (!file) return
-    setReading(true); setError(''); setDraft(null)
-    try { const extracted = await readStudyUpload(file); setText(extracted); setFileName(file.name); setNoteId('') }
-    catch (error) { setError(error instanceof Error ? error.message : 'Could not read this file. Try another document.') }
-    finally { setReading(false) }
+    setReading(true); setError(''); setDraft(null); controller.current = new AbortController()
+    try { const extracted = await readStudyUpload(file, {ocr:ocrEnabled ? extractImageText : undefined, signal:controller.current.signal, onProgress:setReadProgress}); setText(extracted); setFileName(file.name); setNoteId('') }
+    catch (error) { if (!controller.current.signal.aborted) setError(error instanceof Error ? error.message : 'Could not read this file. Try another document.') }
+    finally { setReading(false); setReadProgress('') }
   }
   useEffect(() => () => controller.current?.abort(), [])
   const generate = async () => {
@@ -42,11 +43,12 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', ca
       <p>Choose your topics, paste study material, or upload a document. Review the draft before saving.</p>
       <label>Topics and instructions<textarea aria-label="Topics and instructions" disabled={busy} rows={2} maxLength={2000} placeholder="e.g. Mood disorders: focus on symptoms and diagnostic criteria, beginner level" value={topic} onChange={event => { setTopic(event.target.value); setDraft(null) }}/></label>
       {!!notes.length && <label>Use a saved note<select aria-label="Use a saved note" disabled={busy} value={noteId} onChange={event => { const note = notes.find(item => item.id === event.target.value); setNoteId(event.target.value); if (note) { setText(note.summary); setFileName(note.title); setSubject(note.category); setDraft(null) } }}><option value="">Choose a note or enter material below</option>{notes.map(note => <option key={note.id} value={note.id}>{note.title}</option>)}</select></label>}
-      <label className="ref-file-upload">Upload study material<input type="file" accept=".pdf,.docx,.txt,.md,.csv" disabled={busy} onChange={event => { void upload(event.target.files?.[0]); event.target.value = '' }}/><small>PDF, Word (.docx), TXT, Markdown, CSV, up to 10 MB. Uploading replaces the material below.</small></label>
-      {reading && <p role="status">Reading document...</p>}
+      <label className="study-ocr-toggle"><input type="checkbox" aria-label="Use AI OCR" disabled={busy} checked={ocrEnabled} onChange={event => setOCREnabled(event.target.checked)}/><span>Use AI OCR for photos and scanned pages<small>Sends images to Mistral when uploaded; uses your AI allowance. Up to 5 scanned pages per PDF. Review extracted text for errors.</small></span></label>
+      <label className="ref-file-upload">Upload study material<input type="file" accept={STUDY_UPLOAD_ACCEPT} disabled={busy} onChange={event => { void upload(event.target.files?.[0]); event.target.value = '' }}/><small>PDF, Word, text, JPEG, PNG, WebP, up to 10 MB. Uploading replaces the material below.</small></label>
+      {reading && <div><p role="status">{readProgress || 'Reading document...'}</p><button className="ref-text-action" onClick={() => controller.current?.abort()}>Cancel reading</button></div>}
       {fileName && <p>Source: {fileName} <button className="ref-text-action" disabled={busy} onClick={() => {setText('');setFileName('');setNoteId('');setDraft(null)}}>Remove material</button></p>}
       <label>Study material (optional)<textarea aria-label="Study material (optional)" disabled={busy} rows={5} maxLength={MAX_SOURCE_LENGTH} value={text} onChange={event => {setText(event.target.value);setDraft(null)}}/></label>
-      <small>{source.length.toLocaleString()} / 25,000 characters. Extracted text is sent to AI only when you generate.</small>
+      <small>{source.length.toLocaleString()} / 25,000 characters. Generation sends this editable text to AI. Enabled OCR sends images when uploaded.</small>
       {source.length > MAX_SOURCE_LENGTH && <p role="alert" className="ref-form-error">Shorten the material or instructions to fit 25,000 characters.</p>}
       {task === 'quiz' && <div className="study-setup-grid">
         <label>Subject<select aria-label="Generation subject" disabled={busy} value={subject} onChange={e => {setSubject(e.target.value);setDraft(null)}}>{[...new Set([...subjects, category, subject])].map(value => <option key={value}>{value}</option>)}</select></label>
