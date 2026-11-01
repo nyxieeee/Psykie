@@ -17,7 +17,7 @@ async function mistral(rt: Runtime, path: string, payload: unknown) {
   return response.json()
 }
 async function structured(rt: Runtime, name: string, schema: unknown, instruction: string, input: unknown) {
-  const data = await mistral(rt, 'chat/completions', { model: rt.env('MISTRAL_MODEL') || 'mistral-small-latest', messages: [{ role: 'system', content: SYSTEM + '\n' + instruction }, { role: 'user', content: JSON.stringify(input) }], response_format: { type: 'json_schema', json_schema: { name, schema, strict: true } }, max_tokens: 6000, temperature: 0.2 })
+  const data = await mistral(rt, 'chat/completions', { model: rt.env('MISTRAL_MODEL') || 'ministral-8b-latest', messages: [{ role: 'system', content: SYSTEM + '\n' + instruction }, { role: 'user', content: JSON.stringify(input) }], response_format: { type: 'json_schema', json_schema: { name, schema, strict: true } }, max_tokens: 6000, temperature: 0.2 })
   const choice = data.choices?.[0]
   if (choice?.finish_reason !== 'stop' || typeof choice.message?.content !== 'string') throw new RequestError(502, 'The AI response was incomplete. Please try again with less text.')
   try { return JSON.parse(choice.message.content) } catch { throw new RequestError(502, 'The AI returned an unreadable response. Please try again.') }
@@ -32,7 +32,7 @@ async function generate(rt: Runtime, body: Record<string, unknown>) {
       return { role: message.role, content }
     })
     if (size > 30000) throw new RequestError(400, 'The conversation is too long. Start a new chat.')
-    const data = await mistral(rt, 'chat/completions', { model: rt.env('MISTRAL_MODEL') || 'mistral-small-latest', messages: [{ role: 'system', content: SYSTEM + '\nYou have no live search in this conversation. Direct requests for current research to the Research search page. Do not fabricate source links.' }, ...messages], max_tokens: 2500, temperature: 0.3 })
+    const data = await mistral(rt, 'chat/completions', { model: rt.env('MISTRAL_MODEL') || 'ministral-8b-latest', messages: [{ role: 'system', content: SYSTEM + '\nYou have no live search in this conversation. Direct requests for current research to the Research search page. Do not fabricate source links.' }, ...messages], max_tokens: 2500, temperature: 0.3 })
     const answer = data.choices?.[0]?.message?.content
     if (typeof answer !== 'string' || !answer.trim() || data.choices[0].finish_reason !== 'stop') throw new RequestError(502, 'The AI response was incomplete. Try a shorter question.')
     return { answer }

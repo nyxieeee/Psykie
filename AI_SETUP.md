@@ -22,7 +22,9 @@ The preflight check makes no AI generation requests and needs no private API key
 
 ## Free usage and billing
 
-`mistral-small-latest` and `mistral-medium-latest` are not promises of zero-cost API usage. Mistral's Free mode has included usage and model-specific limits; the organization plan and pay-as-you-go settings determine access and billing for every API key. To keep usage within the free allowance, use Free mode and disable pay-as-you-go in Mistral Admin. Check the Limits page for the actual models and tools included in your account. Research uses a model plus web-search tooling, so chat access alone does not establish Research access.
+`ministral-8b-latest`, `mistral-small-latest`, and `mistral-medium-latest` are not promises of zero-cost API usage. Mistral's Free mode has included usage and model-specific limits; the organization plan and pay-as-you-go settings determine access and billing for every API key. To keep usage within the free allowance, use Free mode and disable pay-as-you-go in Mistral Admin. Check the Limits page for the actual models and tools included in your account. Research uses a model plus web-search tooling, so chat access alone does not establish Research access.
+
+Psykie uses `ministral-8b-latest` for chat and structured study generation, a lighter model supported by Mistral's [custom structured-output example](https://docs.mistral.ai/studio/conversations/structured-output/custom). This is a candidate for account-included usage, not a verified free entitlement. France Notes uses `mistral-small-latest` for chat/quizzes and has different credentials; its API key was not copied into Psykie. Its legacy `open-mistral-nemo` configuration was absent from the inspected model catalog and was not adopted. Research retains `mistral-medium-latest` for web-search tooling; its allowance must be checked separately. No automatic model fallback or paid billing activation is used.
 
 The app cannot verify your billing plan from a normal API key, and local per-user quotas do not cap organization-wide bills. It does not enable paid billing or switch automatically to a different provider when requests fail. No live Mistral generation is performed by the setup checker.
 
@@ -35,7 +37,7 @@ Official references: [usage and limits](https://docs.mistral.ai/admin/billing-us
 1. Complete `SUPABASE_SETUP.md`, including the account profile migration. AI requires a real signed-in Supabase user with a completed Student/Registered Psych account type. Development demo accounts remain available for UI work but cannot call paid AI services.
 2. Apply `supabase/migrations/202611010002_ai_limits.sql`. It adds atomic per-user limits: 8 requests per UTC minute and 60 per UTC day. Search may make multiple Mistral calls within one request. Adjust limits in the database function to fit your beta budget; monitor your Mistral account usage too.
 3. Get a Mistral API key from your Mistral account. Add the key to `MISTRAL_API_KEY` in the root `.env.local`, alongside your Supabase settings. There is one actual environment file; `.env.example` is its blank template. These values are **server secrets**, not frontend `VITE_` variables. Never use the Supabase service-role key in the browser.
-4. Set `ALLOWED_ORIGINS` to your exact app origins, comma-separated, including your production HTTPS origin. Do not use `*`. Local origins are needed only while testing locally. The models are configurable with `MISTRAL_MODEL` and `MISTRAL_SEARCH_MODEL`; defaults are `mistral-small-latest` and `mistral-medium-latest`.
+4. Set `ALLOWED_ORIGINS` to your exact app origins, comma-separated, including your production HTTPS origin. Do not use `*`. Local origins are needed only while testing locally. The models are configurable with `MISTRAL_MODEL` and `MISTRAL_SEARCH_MODEL`; defaults are `ministral-8b-latest` and `mistral-medium-latest`.
 5. With the Supabase CLI authenticated and your project linked, run:
 
 ```powershell

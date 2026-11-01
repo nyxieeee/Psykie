@@ -47,7 +47,7 @@ Apply the profile and AI-limit migrations and deploy the two functions using the
 | Name | Value |
 | --- | --- |
 | `MISTRAL_API_KEY` | Your Mistral API key |
-| `MISTRAL_MODEL` | `mistral-small-latest` |
+| `MISTRAL_MODEL` | `ministral-8b-latest` |
 | `MISTRAL_SEARCH_MODEL` | `mistral-medium-latest` |
 | `ALLOWED_ORIGINS` | Your exact Vercel app origin, e.g. `https://YOUR_APP.vercel.app` |
 
