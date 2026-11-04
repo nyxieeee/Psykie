@@ -17,8 +17,8 @@ async function invoke(name: string, body: Record<string, unknown>, signal?: Abor
   if (data?.error) throw new Error(data.error)
   return data
 }
-export async function chatWithMindy(messages: { role: 'user' | 'assistant'; content: string }[], signal?: AbortSignal): Promise<string> {
-  const data = await invoke('psykie-ai', { action: 'chat', messages }, signal)
+export async function chatWithMindy(messages: { role: 'user' | 'assistant'; content: string }[], signal?: AbortSignal, liveResearch?: boolean): Promise<string> {
+  const data = await invoke('psykie-ai', { action: 'chat', messages, liveResearch }, signal)
   if (typeof data?.answer !== 'string' || !data.answer.trim()) throw new Error('Mindy returned an empty response. Please try again.')
   return data.answer
 }

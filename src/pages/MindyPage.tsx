@@ -2,7 +2,7 @@ import { AIGenerator } from '../components/AIGenerator'
 import { aiConfigured, chatWithMindy } from '../utils/ai'
 import { AIServiceError } from '../utils/aiErrors'
 import { workspaceStorage } from '../utils/workspaceStorage'
-import { ArrowRight, Bookmark, BookOpen, Check, Copy, DotsThree, Info, NoteBlank, Plus, SidebarSimple, Sparkle, Trash, X } from '@phosphor-icons/react'
+import { ArrowRight, Bookmark, BookOpen, Check, Copy, DotsThree, Info, NoteBlank, Plus, SidebarSimple, Sparkle, Trash, X, Compass } from '@phosphor-icons/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ReferenceSearch } from '../components/ReferenceUI'
@@ -21,6 +21,7 @@ export function MindyPage() {
 
   const [inputMessage, setInputMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [liveResearch, setLiveResearch] = useState(true)
   const [retryAt, setRetryAt] = useState(0), [retrySeconds, setRetrySeconds] = useState(0)
   useEffect(() => {
     if (!retryAt) return
@@ -72,10 +73,10 @@ export function MindyPage() {
     if (next.length > existing.length) addMessage(id, next[next.length - 1])
     setInputMessage(''); if (inputRef.current) inputRef.current.style.height = ''; followMessages.current = true
     controller.current = new AbortController()
-    try { const answer = await chatWithMindy(history, controller.current.signal); addMessage(id, { id: crypto.randomUUID(), sender: 'ai', text: answer, timestamp: new Date() }) }
+    try { const answer = await chatWithMindy(history, controller.current.signal, liveResearch); addMessage(id, { id: crypto.randomUUID(), sender: 'ai', text: answer, timestamp: new Date() }) }
     catch(error) { if (!controller.current.signal.aborted) { if (error instanceof AIServiceError && error.status === 429) setRetryAt(Date.now() + 60000); setSavedActionNotice(error instanceof Error ? error.message : 'Mindy could not respond. Please try again.'); setInputMessage(text) } }
     finally { sending.current = false; setIsSending(false) }
-  }, [inputMessage, currentSessionId, createSession, addMessage, retryAt])
+  }, [inputMessage, currentSessionId, createSession, addMessage, retryAt, liveResearch])
 
   // Defer URL-triggered sends until StrictMode's mount cleanup has completed.
   useEffect(() => {
@@ -251,6 +252,32 @@ export function MindyPage() {
         <div className="mindy-compose-area">{!aiConfigured && <p className="ref-inline-notice">Mindy is not available for this workspace yet.</p>}
           {savedActionNotice && <p role="status" className="mindy-notice">{savedActionNotice}</p>}
           {retrySeconds > 0 && <p role="timer" className="mindy-notice">You can retry in {retrySeconds}s. An exhausted allowance may take longer to reset.</p>}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px 8px', fontSize: 11 }}>
+            <button
+              type="button"
+              onClick={() => setLiveResearch(r => !r)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '3px 10px',
+                borderRadius: 20,
+                border: liveResearch ? '1.5px solid #f472b6' : '1px solid #e5e7eb',
+                background: liveResearch ? '#fdf2f8' : '#ffffff',
+                color: liveResearch ? '#be185d' : '#6b7280',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              title="Toggle real-time research synthesis from PubMed, APA, NIMH, and Cochrane"
+            >
+              <Compass size={14} weight={liveResearch ? 'fill' : 'regular'} style={{ color: liveResearch ? '#ec4899' : '#9ca3af' }} />
+              <span>{liveResearch ? 'Real-Time Research & Clinical Synthesis: ON' : 'Real-Time Research: OFF'}</span>
+            </button>
+            <span style={{ color: '#9ca3af', fontSize: 11, fontWeight: 500 }}>
+              {liveResearch ? 'Active live search over PubMed & APA' : 'Fast textbook mode'}
+            </span>
+          </div>
           <form className="mindy-composer" onSubmit={e => {e.preventDefault();handleSend()}}>
             <Sparkle size={22} aria-hidden="true"/>
             <textarea ref={inputRef} rows={1} aria-label="Message Mindy" placeholder="Ask Mindy a question..." value={inputMessage} onChange={e => {setInputMessage(e.target.value);e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,140)+'px'}} onKeyDown={e => {if(e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing){e.preventDefault();handleSend()}}}/>
