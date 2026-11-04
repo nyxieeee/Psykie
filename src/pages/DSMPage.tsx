@@ -1101,26 +1101,41 @@ export function DSMPage() {
 
       <div className="flex gap-5">
         {/* Chapter sidebar */}
-        <aside style={{ width: 220, flexShrink: 0 }}>
-          <div className="ref-panel p-3 sticky top-4">
-            <h2 className="text-xs font-black text-neutral-500 uppercase tracking-wider mb-3 px-1">Chapters</h2>
+        <aside style={{ width: 240, flexShrink: 0 }}>
+          <div
+            className="ref-panel p-3 sticky top-4 flex flex-col"
+            style={{
+              maxHeight: 'calc(100vh - 110px)',
+              overflowY: 'auto',
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#f472b6 #fdf2f8',
+            }}
+          >
+            <div className="sticky top-0 bg-white/95 backdrop-blur z-10 pb-2 mb-1 border-b border-pink-100/60 flex items-center justify-between">
+              <h2 className="text-xs font-black text-neutral-500 uppercase tracking-wider px-1">Chapters</h2>
+              <span className="text-[10px] font-bold text-neutral-400 px-1.5 py-0.5 rounded-full bg-pink-50">
+                {DSM5_TR.length}
+              </span>
+            </div>
             <button
               onClick={() => setSelectedChapter(null)}
-              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold mb-1 transition-colors ${!selectedChapter ? 'bg-pink-100 text-pink-700' : 'text-neutral-600 hover:bg-pink-50'}`}
+              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold mb-1 transition-colors flex-shrink-0 ${!selectedChapter ? 'bg-pink-100 text-pink-700' : 'text-neutral-600 hover:bg-pink-50'}`}
             >
               All chapters
             </button>
-            {DSM5_TR.map(ch => (
-              <button
-                key={ch.id}
-                onClick={() => setSelectedChapter(ch.id === selectedChapter ? null : ch.id)}
-                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold mb-0.5 transition-colors flex items-center gap-2 ${selectedChapter === ch.id ? 'text-white' : 'text-neutral-600 hover:bg-pink-50'}`}
-                style={selectedChapter === ch.id ? { background: ch.color } : {}}
-              >
-                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: ch.color }} />
-                <span className="line-clamp-2 leading-tight">{ch.title}</span>
-              </button>
-            ))}
+            <div className="space-y-0.5 overflow-y-visible">
+              {DSM5_TR.map(ch => (
+                <button
+                  key={ch.id}
+                  onClick={() => setSelectedChapter(ch.id === selectedChapter ? null : ch.id)}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 ${selectedChapter === ch.id ? 'text-white' : 'text-neutral-600 hover:bg-pink-50'}`}
+                  style={selectedChapter === ch.id ? { background: ch.color } : {}}
+                >
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: ch.color }} />
+                  <span className="line-clamp-2 leading-tight">{ch.title}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </aside>
 
