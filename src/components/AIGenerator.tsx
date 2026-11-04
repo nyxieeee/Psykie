@@ -7,7 +7,29 @@ import { useStudyStore } from '../store'
 import { readLibrary } from '../utils/studyLibrary'
 
 export type GenerationSettings = { category: string; quizOptions: QuizOptions; timerMinutes: number; sourceName: string }
-const subjects = ['General Psychology', 'Cognitive Psychology', 'Developmental Psychology', 'Abnormal Psychology', 'Social Psychology', 'Biological Psychology', 'Research Methods', 'Statistics', 'Psychological Assessment', 'Ethics', 'Board Exam']
+export const PSYCHOLOGY_SUBJECTS = [
+  'General Psychology',
+  'Cognitive Psychology',
+  'Developmental Psychology',
+  'Abnormal & Clinical Psychology',
+  'Biological Psychology & Neuroscience',
+  'Social Psychology',
+  'Personality Psychology',
+  'Research Methods & Statistics',
+  'Psychological Assessment & Testing',
+  'Learning & Behavioral Psychology',
+  'Sensation & Perception',
+  'Health Psychology',
+  'Industrial-Organizational Psychology',
+  'Educational Psychology',
+  'Forensic Psychology',
+  'Neuropsychology',
+  'Psychopathology & DSM-5-TR',
+  'Theories of Psychotherapy',
+  'Ethics & Professional Practice',
+  'Board Exam & Licensure Prep',
+]
+const subjects = PSYCHOLOGY_SUBJECTS
 type Props = { task: AITask; initialText?: string; initialSourceName?: string; category?: string; saveLabel?: string; saveError?: string; onClose: () => void; onSave: (draft: AIDraft, settings: GenerationSettings) => void }
 
 export function AIGenerator({ task, initialText = '', initialSourceName = '', category = 'General Psychology', saveLabel, saveError, onClose, onSave }: Props) {

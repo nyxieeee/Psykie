@@ -181,7 +181,62 @@ export function MindyPage() {
           if (feed) followMessages.current = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 90
         }}>
           <div className="mindy-conversation">
-            {!messages.length && <div className="mindy-empty"><img src="/mindy-mascot.png" alt=""/><h2>A curious mind has good company.</h2><p>Ask a question, untangle an idea, or plan your next study session.</p><div><button className="ref-secondary" onClick={() => handleSend('Explain a psychology concept with a simple example')}>Explain a concept</button><button className="ref-secondary" onClick={() => handleSend('Help me plan a study session')}>Plan a study session</button></div></div>}
+            {!messages.length && (
+              <div className="mindy-empty">
+                <img src="/mindy-mascot.png" alt=""/>
+                <h2>A curious mind has good company.</h2>
+                <p>Ask a question, untangle a tricky theory, or explore any field of psychology.</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', maxWidth: 640, margin: '14px auto 8px' }}>
+                  <button className="ref-secondary" onClick={() => handleSend('Explain a complex psychology concept using a simple real-world analogy')}>Explain a concept</button>
+                  <button className="ref-secondary" onClick={() => handleSend('Quiz me on DSM-5-TR diagnostic criteria for major psychological disorders')}>Quiz me on DSM-5-TR</button>
+                  <button className="ref-secondary" onClick={() => handleSend('Walk me through hypothesis testing and variables in psychological research methods')}>Research methods</button>
+                  <button className="ref-secondary" onClick={() => handleSend('Compare cognitive vs behavioral perspectives on anxiety and depression')}>Cognitive vs Behavioral</button>
+                  <button className="ref-secondary" onClick={() => handleSend('Help me structure an active recall study schedule for my psychology exams')}>Plan study schedule</button>
+                  <button className="ref-secondary" onClick={() => handleSend('Explain neurotransmitters and neural transmission in biological psychology')}>Neurotransmitters</button>
+                </div>
+                <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(244, 114, 182, 0.2)', width: '100%', maxWidth: 680 }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary, #6b7280)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                    Explore All Psychology Subjects
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
+                    {[
+                      'Cognitive Psychology',
+                      'Abnormal & Clinical',
+                      'Developmental Psychology',
+                      'Biopsychology & Neuroscience',
+                      'Social Psychology',
+                      'Personality Theories',
+                      'Research Methods & Stats',
+                      'Psychological Assessment',
+                      'Learning & Behaviorism',
+                      'Sensation & Perception',
+                      'Health Psychology',
+                      'I/O Psychology',
+                      'Forensic Psychology',
+                    ].map(sub => (
+                      <button
+                        key={sub}
+                        type="button"
+                        onClick={() => handleSend(`Teach me the core foundational theories and high-yield concepts in ${sub}.`)}
+                        style={{
+                          fontSize: 11.5,
+                          fontWeight: 600,
+                          padding: '4px 10px',
+                          borderRadius: 20,
+                          border: '1px solid rgba(244, 114, 182, 0.4)',
+                          background: 'rgba(255, 255, 255, 0.8)',
+                          color: '#be185d',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {sub}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
             {messages.map(msg => msg.sender === 'user' ? <div className="mindy-user-message" key={msg.id}><span className="ref-avatar tint-2">{initials}</span><p>{msg.text}</p></div> : <article key={msg.id} className="mindy-response">
               <div className="mindy-response-heading"><img src="/mindy-mascot.png" alt=""/><strong>Mindy</strong><time>{new Date(msg.timestamp).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}</time></div>
               <div className="mindy-response-content"><p>{msg.text}</p>
