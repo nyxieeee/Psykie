@@ -184,11 +184,13 @@ function DisorderCard({ disorder, chapterColor }: { disorder: DSMDisorder; chapt
 function BookSheet({
   page,
   isLeftPage,
+  isSpread,
   paperTheme,
   fontSizeMultiplier,
 }: {
   page: BookPage
   isLeftPage?: boolean
+  isSpread?: boolean
   paperTheme: 'cream' | 'rose' | 'slate'
   fontSizeMultiplier: number
 }) {
@@ -201,14 +203,22 @@ function BookSheet({
     ? 'bg-[#FFF9FB] text-[#2c242a] border-[#FCE7F3]'
     : 'bg-[#FAF7F2] text-[#2c2825] border-[#E8E2D9]'
 
-  const gutterShadow = isLeftPage
-    ? 'shadow-[inset_-12px_0_18px_rgba(0,0,0,0.05),-2px_4px_16px_rgba(0,0,0,0.06)]'
-    : 'shadow-[inset_12px_0_18px_rgba(0,0,0,0.05),2px_4px_16px_rgba(0,0,0,0.06)]'
+  const roundedCorners = isSpread
+    ? isLeftPage
+      ? 'rounded-l-3xl rounded-r-md'
+      : 'rounded-r-3xl rounded-l-md'
+    : 'rounded-3xl'
+
+  const gutterShadow = isSpread
+    ? isLeftPage
+      ? 'shadow-[inset_-16px_0_24px_rgba(0,0,0,0.06),-4px_6px_20px_rgba(0,0,0,0.07)]'
+      : 'shadow-[inset_16px_0_24px_rgba(0,0,0,0.06),4px_6px_20px_rgba(0,0,0,0.07)]'
+    : 'shadow-xl shadow-neutral-900/5'
 
   const boxBg = isSlate
-    ? 'bg-[#292524] border-[#44403C] text-[#F5F5F4]'
+    ? 'bg-[#262220] border-[#3f3a36] text-[#F5F5F4]'
     : isRose
-    ? 'bg-[#FDF2F8] border-[#F9A8D4] text-[#2c242a]'
+    ? 'bg-[#FDF2F8]/90 border-[#F9A8D4] text-[#2c242a]'
     : 'bg-[#F4EFE6] border-[#D6CDBC] text-[#2c2825]'
 
   const headingColor = isSlate ? 'text-white' : isRose ? 'text-[#831843]' : 'text-[#1c1917]'
@@ -217,43 +227,43 @@ function BookSheet({
 
   return (
     <div
-      className={`p-7 sm:p-10 border rounded-2xl flex flex-col justify-between transition-all select-text w-full ${bgClass} ${gutterShadow}`}
+      className={`p-8 sm:p-11 border flex flex-col justify-between transition-all select-text w-full h-full ${bgClass} ${roundedCorners} ${gutterShadow}`}
       style={{
-        minHeight: 660,
+        minHeight: 700,
         fontSize: `${fontSizeMultiplier * 13.5}px`,
-        lineHeight: 1.8,
+        lineHeight: 1.85,
         fontFamily: 'Georgia, Cambria, "Times New Roman", serif',
       }}
     >
       <div>
         {/* Running Header Folio */}
-        <div className={`flex items-center justify-between border-b pb-2.5 mb-6 text-[10.5px] font-sans tracking-widest uppercase ${folioColor} ${isSlate ? 'border-neutral-800' : 'border-neutral-200/80'}`}>
-          <span className="truncate max-w-[65%]">{isLeftPage ? page.sectionTitle : page.chapterTitle}</span>
-          <span className="font-mono font-bold tracking-normal">DSM-5-TR · p. {page.pageNumber}</span>
+        <div className={`flex items-center justify-between border-b pb-3 mb-7 text-[10.5px] font-sans tracking-widest uppercase ${folioColor} ${isSlate ? 'border-neutral-800' : 'border-neutral-200/80'}`}>
+          <span className="truncate max-w-[65%] font-medium">{isLeftPage ? page.sectionTitle : page.chapterTitle}</span>
+          <span className="font-mono font-bold tracking-normal text-pink-600">DSM-5-TR · p. {page.pageNumber}</span>
         </div>
 
         {/* Chapter / Heading Header */}
-        <div className="mb-5 font-sans">
+        <div className="mb-6 font-sans">
           <span className={`text-[11px] font-black tracking-wider uppercase ${accentColor}`}>
             {page.chapterTitle}
           </span>
-          <h2 className={`text-xl sm:text-2xl font-black mt-1 font-serif leading-snug ${headingColor}`}>
+          <h2 className={`text-xl sm:text-2xl font-black mt-1 font-serif leading-snug tracking-tight ${headingColor}`}>
             {page.heading}
           </h2>
           {page.subheading && (
-            <p className={`text-xs mt-1 italic font-serif ${isSlate ? 'text-neutral-400' : 'text-neutral-600'}`}>
+            <p className={`text-xs mt-1.5 italic font-serif ${isSlate ? 'text-neutral-400' : 'text-neutral-600'}`}>
               {page.subheading}
             </p>
           )}
         </div>
 
-        {/* Body Paragraphs */}
-        <div className="space-y-3.5">
+        {/* Body Paragraphs with clean spacing */}
+        <div className="space-y-4">
           {page.paragraphs.map((p, idx) => (
-            <p key={idx} className="whitespace-pre-line leading-relaxed text-justify">
+            <p key={idx} className="whitespace-pre-line leading-relaxed text-left">
               {idx === 0 && page.isChapterOpening ? (
                 <span>
-                  <span className={`float-left text-4xl sm:text-5xl font-black font-serif leading-none pr-2.5 pt-1 ${accentColor}`}>
+                  <span className={`float-left text-4xl sm:text-5xl font-black font-serif leading-none pr-3 pt-1 ${accentColor}`}>
                     {p.charAt(0)}
                   </span>
                   {p.slice(1)}
@@ -267,26 +277,26 @@ function BookSheet({
 
         {/* Diagnostic Criteria Box */}
         {page.criteriaBox && (
-          <div className={`mt-6 p-4 rounded-xl border font-sans ${boxBg}`}>
-            <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-black/10">
+          <div className={`mt-7 p-4 sm:p-5 rounded-2xl border font-sans ${boxBg}`}>
+            <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-black/10">
               <span className="text-[10px] font-black uppercase tracking-wider text-pink-700">
                 Official Diagnostic Criteria Box
               </span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-pink-500 text-white shadow-xs">
+              <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-pink-500 text-white shadow-xs">
                 {page.criteriaBox.code}
               </span>
             </div>
-            <h4 className="text-xs font-bold mb-2 font-serif">{page.criteriaBox.title}</h4>
-            <div className="space-y-2 text-xs">
+            <h4 className="text-xs font-bold mb-2.5 font-serif">{page.criteriaBox.title}</h4>
+            <div className="space-y-2.5 text-xs">
               {page.criteriaBox.items.map((item, i) => (
-                <div key={i} className="pl-2.5 border-l-2 border-pink-400">
-                  <strong className="block text-[11px] uppercase tracking-wide opacity-90">{item.label}</strong>
+                <div key={i} className="pl-3 border-l-2 border-pink-400">
+                  <strong className="block text-[11px] uppercase tracking-wide opacity-90 mb-0.5">{item.label}</strong>
                   <p className="whitespace-pre-line leading-relaxed opacity-95">{item.text}</p>
                 </div>
               ))}
             </div>
             {page.criteriaBox.notes && (
-              <p className="mt-3 text-[11px] italic pt-2 border-t border-black/10 opacity-80">
+              <p className="mt-3.5 text-[11px] italic pt-2.5 border-t border-black/10 opacity-80">
                 {page.criteriaBox.notes}
               </p>
             )}
@@ -295,17 +305,17 @@ function BookSheet({
 
         {/* Clinical Pearls / Guidance Box */}
         {page.clinicalPearl && (
-          <div className={`mt-5 p-3 rounded-lg border-l-3 border-pink-500 font-sans text-xs ${isSlate ? 'bg-neutral-800/60 text-neutral-300' : 'bg-pink-50/50 text-neutral-700'}`}>
-            <strong className="text-pink-600 font-black uppercase tracking-wider text-[10px] block mb-0.5">
+          <div className={`mt-6 p-3.5 rounded-xl border-l-4 border-pink-500 font-sans text-xs ${isSlate ? 'bg-neutral-800/70 text-neutral-300' : 'bg-pink-50/60 text-neutral-700'}`}>
+            <strong className="text-pink-600 font-black uppercase tracking-wider text-[10px] block mb-1">
               Clinical Formulation Pearl
             </strong>
-            {page.clinicalPearl}
+            <p className="leading-relaxed">{page.clinicalPearl}</p>
           </div>
         )}
       </div>
 
       {/* Running Bottom Folio */}
-      <div className={`mt-8 pt-3 border-t flex items-center justify-between text-[11px] font-sans ${folioColor} ${isSlate ? 'border-neutral-800' : 'border-neutral-200/80'}`}>
+      <div className={`mt-10 pt-3.5 border-t flex items-center justify-between text-[11px] font-sans ${folioColor} ${isSlate ? 'border-neutral-800' : 'border-neutral-200/80'}`}>
         <span>American Psychiatric Association (2022)</span>
         <span className="font-bold text-xs tracking-wider">— {page.pageNumber} —</span>
       </div>
@@ -391,7 +401,7 @@ export function DSMPage() {
   }
 
   return (
-    <div className="reference-page" style={{ maxWidth: 1140 }}>
+    <div className="reference-page" style={{ maxWidth: 1220 }}>
       {/* Header Banner */}
       <div className="ref-panel" style={{ marginBottom: 20, background: 'linear-gradient(135deg, #fdf2f8 0%, #f5f3ff 100%)', borderColor: '#f9a8d4' }}>
         <div className="flex items-start gap-4 flex-wrap sm:flex-nowrap">
@@ -571,163 +581,172 @@ export function DSMPage() {
       {/* ── TAB 2: Authentic Paginated Book Reader (Pages 1 to 1,050) ───────── */}
       {activeTab === 'reader' && (
         <div className="space-y-4">
-          {/* Reader Top Controls Toolbar */}
-          <div className="ref-panel p-3.5 bg-white border border-pink-100 shadow-sm rounded-2xl flex items-center justify-between gap-3 flex-wrap">
-            {/* Page Step Buttons & Current Page Indicator */}
-            <div className="flex items-center gap-2">
-              <button
-                disabled={currentPageNumber <= 1}
-                onClick={() => setCurrentPageNumber(p => Math.max(1, p - (spreadMode === 'spread' ? 2 : 1)))}
-                className="p-2 rounded-xl text-neutral-600 hover:bg-pink-50 disabled:opacity-30 transition-colors"
-                title="Previous page (Left Arrow)"
-              >
-                <CaretLeft size={20} weight="bold" />
-              </button>
+          {/* Reader Top Controls Toolbar (Clean 2-Tier Layout) */}
+          <div className="ref-panel p-4 bg-white border border-pink-100 shadow-sm rounded-3xl space-y-3">
+            {/* Top Row: Page Turn Buttons, Current Chapter Info, Jump Form */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={currentPageNumber <= 1}
+                  onClick={() => setCurrentPageNumber(p => Math.max(1, p - (spreadMode === 'spread' ? 2 : 1)))}
+                  className="w-9 h-9 rounded-xl border border-pink-200 text-neutral-600 hover:bg-pink-50 hover:text-pink-600 disabled:opacity-30 transition-all flex items-center justify-center shadow-2xs"
+                  title="Previous page (Left Arrow)"
+                >
+                  <CaretLeft size={18} weight="bold" />
+                </button>
 
-              <div className="text-center min-w-32">
-                <span className="text-xs font-bold text-neutral-800">
-                  Page <strong className="text-pink-600">{currentPageNumber}</strong>
-                  {spreadMode === 'spread' && currentPageNumber < TOTAL_DSM5_PAGES && (
-                    <span>–{Math.min(TOTAL_DSM5_PAGES, currentPageNumber + 1)}</span>
-                  )}{' '}
-                  of {TOTAL_DSM5_PAGES}
-                </span>
-                <span className="block text-[10px] font-semibold text-neutral-400 truncate max-w-[140px]">
-                  {getDSMPage(currentPageNumber).chapterTitle}
-                </span>
+                <div className="px-3.5 py-1 rounded-xl bg-pink-50/70 border border-pink-100/80 text-center min-w-36">
+                  <span className="text-xs font-black text-neutral-800">
+                    Page <strong className="text-pink-600">{currentPageNumber}</strong>
+                    {spreadMode === 'spread' && currentPageNumber < TOTAL_DSM5_PAGES && (
+                      <span>–{Math.min(TOTAL_DSM5_PAGES, currentPageNumber + 1)}</span>
+                    )}{' '}
+                    <span className="text-neutral-400 font-normal">/ {TOTAL_DSM5_PAGES}</span>
+                  </span>
+                  <span className="block text-[10px] font-semibold text-pink-700/80 truncate max-w-[150px] mx-auto">
+                    {getDSMPage(currentPageNumber).chapterTitle}
+                  </span>
+                </div>
+
+                <button
+                  disabled={currentPageNumber >= TOTAL_DSM5_PAGES}
+                  onClick={() => setCurrentPageNumber(p => Math.min(TOTAL_DSM5_PAGES, p + (spreadMode === 'spread' ? 2 : 1)))}
+                  className="w-9 h-9 rounded-xl border border-pink-200 text-neutral-600 hover:bg-pink-50 hover:text-pink-600 disabled:opacity-30 transition-all flex items-center justify-center shadow-2xs"
+                  title="Next page (Right Arrow)"
+                >
+                  <CaretRight size={18} weight="bold" />
+                </button>
               </div>
 
-              <button
-                disabled={currentPageNumber >= TOTAL_DSM5_PAGES}
-                onClick={() => setCurrentPageNumber(p => Math.min(TOTAL_DSM5_PAGES, p + (spreadMode === 'spread' ? 2 : 1)))}
-                className="p-2 rounded-xl text-neutral-600 hover:bg-pink-50 disabled:opacity-30 transition-colors"
-                title="Next page (Right Arrow)"
-              >
-                <CaretRight size={20} weight="bold" />
-              </button>
+              {/* Jump to Page */}
+              <form onSubmit={handleJumpToPage} className="flex items-center gap-2">
+                <span className="text-xs font-bold text-neutral-500">Go to page:</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={TOTAL_DSM5_PAGES}
+                  placeholder="1–1050"
+                  value={jumpPageInput}
+                  onChange={e => setJumpPageInput(e.target.value)}
+                  className="w-20 px-2.5 py-1.5 text-xs border border-pink-200 rounded-xl text-center outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400 bg-white font-bold text-neutral-800 shadow-2xs"
+                />
+                <button
+                  type="submit"
+                  className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-pink-500 to-rose-400 hover:from-pink-600 hover:to-rose-500 rounded-xl shadow-xs shadow-pink-200 transition-all"
+                >
+                  Turn
+                </button>
+              </form>
             </div>
 
-            {/* Jump to Page Form */}
-            <form onSubmit={handleJumpToPage} className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-neutral-500">Go to p.</span>
+            {/* Middle Row: Continuous Scrubber Slider */}
+            <div className="pt-1">
+              <div className="flex items-center justify-between text-[11px] font-semibold text-neutral-500 mb-1.5 px-0.5">
+                <span>p. 1 (Basics)</span>
+                <span className="text-pink-600 font-bold truncate max-w-sm text-center">
+                  p. {currentPageNumber} · {getDSMPage(currentPageNumber).heading}
+                </span>
+                <span>p. 1,050 (Index)</span>
+              </div>
               <input
-                type="number"
+                type="range"
                 min={1}
                 max={TOTAL_DSM5_PAGES}
-                placeholder="1–1050"
-                value={jumpPageInput}
-                onChange={e => setJumpPageInput(e.target.value)}
-                className="w-20 px-2 py-1 text-xs border border-pink-200 rounded-lg text-center outline-none focus:ring-1 focus:ring-pink-400"
+                value={currentPageNumber}
+                onChange={e => setCurrentPageNumber(parseInt(e.target.value, 10))}
+                className="w-full accent-pink-500 cursor-pointer h-2 bg-pink-100/90 rounded-lg"
               />
-              <button type="submit" className="px-2.5 py-1 text-xs font-bold text-white bg-pink-500 rounded-lg hover:bg-pink-600">
-                Go
-              </button>
-            </form>
-
-            {/* Format: Single Page vs Two-Page Spread */}
-            <div className="flex items-center gap-1 bg-pink-50/70 p-1 rounded-xl border border-pink-100">
-              <button
-                onClick={() => setSpreadMode('single')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                  spreadMode === 'single' ? 'bg-white text-pink-700 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
-                }`}
-                title="Single Page view"
-              >
-                <Rows size={14} />Single
-              </button>
-              <button
-                onClick={() => setSpreadMode('spread')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                  spreadMode === 'spread' ? 'bg-white text-pink-700 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
-                }`}
-                title="Two-Page Spread (Open Book view)"
-              >
-                <BookOpen size={14} />Open Book
-              </button>
             </div>
 
-            {/* Paper Theme Picker */}
-            <div className="flex items-center gap-1 bg-pink-50/80 p-1 rounded-xl border border-pink-200/60 shadow-2xs">
-              <button
-                onClick={() => setPaperTheme('cream')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                  paperTheme === 'cream' ? 'bg-white text-amber-900 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
-                }`}
-                title="Classic Ivory / Cream Paper"
-              >
-                <span>📜</span>Cream
-              </button>
-              <button
-                onClick={() => setPaperTheme('rose')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                  paperTheme === 'rose' ? 'bg-white text-pink-700 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
-                }`}
-                title="Psykie Blush Rose"
-              >
-                <span>🌸</span>Rose
-              </button>
-              <button
-                onClick={() => setPaperTheme('slate')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                  paperTheme === 'slate' ? 'bg-neutral-800 text-white shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
-                }`}
-                title="Midnight Dark Mode"
-              >
-                <span>🌙</span>Slate
-              </button>
-            </div>
+            {/* Bottom Row: View mode, Themes, Contents, Zoom */}
+            <div className="pt-2.5 border-t border-pink-100/80 flex items-center justify-between gap-3 flex-wrap">
+              {/* View Mode */}
+              <div className="flex items-center gap-1 bg-pink-50/80 p-1 rounded-xl border border-pink-200/60 shadow-2xs">
+                <button
+                  onClick={() => setSpreadMode('single')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    spreadMode === 'single' ? 'bg-white text-pink-700 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
+                  }`}
+                  title="Single Page view"
+                >
+                  <Rows size={14} />Single
+                </button>
+                <button
+                  onClick={() => setSpreadMode('spread')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    spreadMode === 'spread' ? 'bg-white text-pink-700 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
+                  }`}
+                  title="Two-Page Spread (Open Book view)"
+                >
+                  <BookOpen size={14} />Open Book
+                </button>
+              </div>
 
-            {/* Table of Contents Drawer Trigger Dropdown Button */}
-            <button
-              onClick={() => setShowTOC(o => !o)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border shadow-xs ${
-                showTOC
-                  ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white border-transparent shadow-pink-300'
-                  : 'bg-white hover:bg-pink-50/80 text-pink-700 border-pink-200'
-              }`}
-              aria-expanded={showTOC}
-            >
-              <BookBookmark size={15} weight="bold" />
-              <span>Contents</span>
-              <CaretDown size={14} weight="bold" className={`transition-transform duration-200 ${showTOC ? 'rotate-180' : 'rotate-0'}`} />
-            </button>
+              {/* Paper Theme Picker */}
+              <div className="flex items-center gap-1 bg-pink-50/80 p-1 rounded-xl border border-pink-200/60 shadow-2xs">
+                <button
+                  onClick={() => setPaperTheme('cream')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                    paperTheme === 'cream' ? 'bg-white text-amber-900 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
+                  }`}
+                  title="Classic Ivory / Cream Paper"
+                >
+                  <span>📜</span>Cream
+                </button>
+                <button
+                  onClick={() => setPaperTheme('rose')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                    paperTheme === 'rose' ? 'bg-white text-pink-700 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
+                  }`}
+                  title="Psykie Blush Rose"
+                >
+                  <span>🌸</span>Rose
+                </button>
+                <button
+                  onClick={() => setPaperTheme('slate')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                    paperTheme === 'slate' ? 'bg-neutral-800 text-white shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
+                  }`}
+                  title="Midnight Dark Mode"
+                >
+                  <span>🌙</span>Slate
+                </button>
+              </div>
 
-            {/* Font Zoom Controls */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setFontSizeMultiplier(f => Math.max(0.85, f - 0.1))}
-                className="w-7 h-7 rounded-lg border border-pink-100 flex items-center justify-center text-xs font-bold text-neutral-600 hover:bg-pink-50"
-                title="Decrease font size"
-              >
-                A-
-              </button>
-              <button
-                onClick={() => setFontSizeMultiplier(f => Math.min(1.35, f + 0.1))}
-                className="w-7 h-7 rounded-lg border border-pink-100 flex items-center justify-center text-xs font-bold text-neutral-600 hover:bg-pink-50"
-                title="Increase font size"
-              >
-                A+
-              </button>
-            </div>
-          </div>
+              {/* Contents & Font Size */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowTOC(o => !o)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border shadow-xs ${
+                    showTOC
+                      ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white border-transparent shadow-pink-300'
+                      : 'bg-white hover:bg-pink-50/80 text-pink-700 border-pink-200'
+                  }`}
+                  aria-expanded={showTOC}
+                >
+                  <BookBookmark size={15} weight="bold" />
+                  <span>Contents</span>
+                  <CaretDown size={14} weight="bold" className={`transition-transform duration-200 ${showTOC ? 'rotate-180' : 'rotate-0'}`} />
+                </button>
 
-          {/* Quick Scrubber Slider (Pages 1 to 1,050) */}
-          <div className="ref-panel p-3 bg-white/90 border border-pink-100 rounded-2xl shadow-xs">
-            <div className="flex items-center justify-between text-[11px] font-semibold text-neutral-500 mb-1 px-1">
-              <span>p. 1 (Section I)</span>
-              <span className="text-pink-600 font-bold">
-                Page {currentPageNumber} of {TOTAL_DSM5_PAGES} · {getDSMPage(currentPageNumber).heading}
-              </span>
-              <span>p. 1,050 (Index)</span>
+                <div className="flex items-center gap-1 border border-pink-200/80 bg-white rounded-xl p-0.5 shadow-2xs">
+                  <button
+                    onClick={() => setFontSizeMultiplier(f => Math.max(0.85, f - 0.1))}
+                    className="w-7 h-7 rounded-lg text-xs font-bold text-neutral-600 hover:bg-pink-50 hover:text-pink-600 transition-colors flex items-center justify-center"
+                    title="Decrease font size"
+                  >
+                    A-
+                  </button>
+                  <button
+                    onClick={() => setFontSizeMultiplier(f => Math.min(1.35, f + 0.1))}
+                    className="w-7 h-7 rounded-lg text-xs font-bold text-neutral-600 hover:bg-pink-50 hover:text-pink-600 transition-colors flex items-center justify-center"
+                    title="Increase font size"
+                  >
+                    A+
+                  </button>
+                </div>
+              </div>
             </div>
-            <input
-              type="range"
-              min={1}
-              max={TOTAL_DSM5_PAGES}
-              value={currentPageNumber}
-              onChange={e => setCurrentPageNumber(parseInt(e.target.value, 10))}
-              className="w-full accent-pink-500 cursor-pointer h-2 bg-pink-100/80 rounded-lg"
-            />
           </div>
 
           {/* Table of Contents Floating Popover / Drawer */}
@@ -755,9 +774,9 @@ export function DSMPage() {
                       setCurrentPageNumber(item.page)
                       setShowTOC(false)
                     }}
-                    className={`w-full text-left p-2 rounded-xl text-xs transition-all flex items-center justify-between ${
+                    className={`w-full text-left p-2.5 rounded-xl text-xs transition-all flex items-center justify-between ${
                       currentPageNumber >= item.page && (idx === DSM_BOOK_TOC.length - 1 || currentPageNumber < DSM_BOOK_TOC[idx + 1].page)
-                        ? 'bg-pink-100 text-pink-800 font-bold'
+                        ? 'bg-pink-100 text-pink-800 font-bold shadow-2xs'
                         : 'hover:bg-pink-50/70 text-neutral-700'
                     }`}
                   >
@@ -777,22 +796,23 @@ export function DSMPage() {
           {/* Authentic Book Spread / Single Page View */}
           {spreadMode === 'spread' ? (
             // Two-Page Open Book Spread
-            <div className="flex flex-col md:flex-row gap-0 max-w-6xl mx-auto rounded-3xl overflow-hidden shadow-2xl border border-neutral-300/80 bg-neutral-900/5 p-2 transition-all">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-stretch gap-0 max-w-6xl mx-auto rounded-3xl overflow-hidden shadow-2xl border border-neutral-300/80 bg-neutral-900/5 p-2 transition-all">
               {/* Left Page (Even Page Number) */}
-              <div className="flex-1 min-w-0 pr-0 md:pr-1">
+              <div className="min-w-0 flex">
                 <BookSheet
                   page={getDSMPage(currentPageNumber % 2 === 0 ? currentPageNumber : Math.max(1, currentPageNumber - 1))}
                   isLeftPage={true}
+                  isSpread={true}
                   paperTheme={paperTheme}
                   fontSizeMultiplier={fontSizeMultiplier}
                 />
               </div>
 
               {/* Central Spine Fold / Gutter Crease */}
-              <div className="hidden md:block w-3.5 flex-shrink-0 bg-gradient-to-r from-neutral-300/60 via-neutral-400/80 to-neutral-300/60 shadow-inner rounded-xs my-4 opacity-75" />
+              <div className="hidden md:block w-3.5 flex-shrink-0 bg-gradient-to-r from-neutral-300/60 via-neutral-400/80 to-neutral-300/60 shadow-inner rounded-xs my-6 opacity-75" />
 
               {/* Right Page (Odd Page Number) */}
-              <div className="flex-1 min-w-0 pl-0 md:pl-1 mt-3 md:mt-0">
+              <div className="min-w-0 flex mt-3 md:mt-0">
                 <BookSheet
                   page={getDSMPage(
                     Math.min(
@@ -801,6 +821,7 @@ export function DSMPage() {
                     )
                   )}
                   isLeftPage={false}
+                  isSpread={true}
                   paperTheme={paperTheme}
                   fontSizeMultiplier={fontSizeMultiplier}
                 />
@@ -808,10 +829,11 @@ export function DSMPage() {
             </div>
           ) : (
             // Single Page View
-            <div className="max-w-2xl mx-auto transition-all shadow-xl rounded-2xl">
+            <div className="max-w-2xl mx-auto transition-all shadow-xl rounded-3xl">
               <BookSheet
                 page={getDSMPage(currentPageNumber)}
                 isLeftPage={currentPageNumber % 2 === 0}
+                isSpread={false}
                 paperTheme={paperTheme}
                 fontSizeMultiplier={fontSizeMultiplier}
               />
