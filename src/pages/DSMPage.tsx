@@ -374,43 +374,73 @@ export function DSMPage() {
       {activeTab === 'criteria' && (
         <div className="flex gap-5">
           {/* Scrollable Chapter Sidebar */}
-          <aside style={{ width: 240, flexShrink: 0 }}>
+          <aside style={{ width: 260, flexShrink: 0 }}>
             <div
-              className="ref-panel p-3 sticky top-4 flex flex-col"
-              style={{
-                maxHeight: 'calc(100vh - 110px)',
-                overflowY: 'auto',
-                scrollbarWidth: 'thin',
-                scrollbarColor: '#f472b6 #fdf2f8',
-              }}
+              className="rounded-3xl bg-white/95 backdrop-blur-md border border-pink-100 p-3.5 shadow-sm sticky top-4 flex flex-col"
+              style={{ maxHeight: 'calc(100vh - 100px)' }}
             >
-              <div className="sticky top-0 bg-white/95 backdrop-blur z-10 pb-2 mb-1 border-b border-pink-100/60 flex items-center justify-between">
-                <h2 className="text-xs font-black text-neutral-500 uppercase tracking-wider px-1">All 20 Chapters</h2>
-                <span className="text-[10px] font-bold text-neutral-400 px-1.5 py-0.5 rounded-full bg-pink-50">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 mb-2.5 border-b border-pink-100/70 px-1 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
+                  <h2 className="text-[11px] font-black uppercase tracking-wider text-neutral-600">Chapters</h2>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-50 text-pink-600 border border-pink-200/50">
                   {DSM5_TR_CHAPTERS.length}
                 </span>
               </div>
+
+              {/* All chapters filter button */}
               <button
                 onClick={() => setSelectedChapter(null)}
-                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold mb-1 transition-colors flex-shrink-0 ${!selectedChapter ? 'bg-pink-100 text-pink-700' : 'text-neutral-600 hover:bg-pink-50'}`}
+                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold mb-2 transition-all flex items-center justify-between flex-shrink-0 ${
+                  !selectedChapter
+                    ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-sm'
+                    : 'text-neutral-700 hover:bg-pink-50/80 bg-neutral-50/70 border border-neutral-100'
+                }`}
               >
-                All 20 Classes ({totalDisorders})
+                <span>All 20 Classes</span>
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    !selectedChapter ? 'bg-white/20 text-white' : 'bg-neutral-200/70 text-neutral-600'
+                  }`}
+                >
+                  {totalDisorders}
+                </span>
               </button>
-              <div className="space-y-0.5 overflow-y-visible">
-                {DSM5_TR_CHAPTERS.map(ch => (
-                  <button
-                    key={ch.id}
-                    onClick={() => setSelectedChapter(ch.id === selectedChapter ? null : ch.id)}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 ${selectedChapter === ch.id ? 'text-white' : 'text-neutral-600 hover:bg-pink-50'}`}
-                    style={selectedChapter === ch.id ? { background: ch.color } : {}}
-                  >
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: ch.color }} />
-                    <span className="line-clamp-2 leading-tight flex-1">{ch.title}</span>
-                    <small className={`text-[10px] font-mono ${selectedChapter === ch.id ? 'text-white/80' : 'text-neutral-400'}`}>
-                      {ch.disorders.length}
-                    </small>
-                  </button>
-                ))}
+
+              {/* Scrollable list of chapters with sleek, non-intrusive scrollbar */}
+              <div
+                className="space-y-1 overflow-y-auto flex-1 pr-1"
+                style={{
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#fbcfe8 transparent',
+                }}
+              >
+                {DSM5_TR_CHAPTERS.map(ch => {
+                  const isSelected = selectedChapter === ch.id
+                  return (
+                    <button
+                      key={ch.id}
+                      onClick={() => setSelectedChapter(isSelected ? null : ch.id)}
+                      className={`w-full text-left p-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2.5 ${
+                        isSelected
+                          ? 'bg-pink-100/90 text-pink-700 font-bold shadow-xs'
+                          : 'text-neutral-700 hover:bg-pink-50/70'
+                      }`}
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: ch.color }} />
+                      <span className="line-clamp-2 leading-tight flex-1">{ch.title}</span>
+                      <span
+                        className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                          isSelected ? 'bg-white text-pink-700 font-bold' : 'bg-neutral-100 text-neutral-400'
+                        }`}
+                      >
+                        {ch.disorders.length}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </aside>
