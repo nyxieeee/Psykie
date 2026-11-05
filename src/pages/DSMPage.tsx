@@ -1,10 +1,12 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   MagnifyingGlass, CaretRight, CaretDown, BookOpen, Warning, Info,
-  ArrowRight, Sparkle, Bookmarks, CaretLeft, FilePdf, UploadSimple, X
+  ArrowRight, Sparkle, Bookmarks, CaretLeft, FilePdf, UploadSimple, X,
+  Rows, BookBookmark
 } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
 import { DSM5_TR_CHAPTERS, DSMDisorder, DSMCriterion } from '../data/dsm5Data'
+import { getDSMPage, TOTAL_DSM5_PAGES, DSM_BOOK_TOC, BookPage } from '../data/dsm5BookEngine'
 
 // Re-export for compatibility with AppLayout and global search
 export const DSM5_TR = DSM5_TR_CHAPTERS
@@ -153,90 +155,139 @@ function DisorderCard({ disorder, chapterColor }: { disorder: DSMDisorder; chapt
   )
 }
 
-// ─── Paginated Textbook Reader View ──────────────────────────────────────────
+// ─── Paginated Authentic Book Component ──────────────────────────────────────
 
-interface BookPage {
-  pageNumber: number
-  sectionTitle: string
-  chapterTitle: string
-  heading: string
-  content: string[]
-  diagnosticSummary?: {
-    code: string
-    title: string
-    keyPoints: string[]
-  }
-  clinicalPearls?: string
+function BookSheet({
+  page,
+  isLeftPage,
+  paperTheme,
+  fontSizeMultiplier,
+}: {
+  page: BookPage
+  isLeftPage?: boolean
+  paperTheme: 'cream' | 'rose' | 'slate'
+  fontSizeMultiplier: number
+}) {
+  const isSlate = paperTheme === 'slate'
+  const isRose = paperTheme === 'rose'
+
+  const bgClass = isSlate
+    ? 'bg-[#1C1917] text-[#E7E5E4] border-[#292524]'
+    : isRose
+    ? 'bg-[#FFF9FB] text-[#2c242a] border-[#FCE7F3]'
+    : 'bg-[#FAF7F2] text-[#2c2825] border-[#E8E2D9]'
+
+  const gutterShadow = isLeftPage
+    ? 'shadow-[inset_-12px_0_18px_rgba(0,0,0,0.05),-2px_4px_16px_rgba(0,0,0,0.06)]'
+    : 'shadow-[inset_12px_0_18px_rgba(0,0,0,0.05),2px_4px_16px_rgba(0,0,0,0.06)]'
+
+  const boxBg = isSlate
+    ? 'bg-[#292524] border-[#44403C] text-[#F5F5F4]'
+    : isRose
+    ? 'bg-[#FDF2F8] border-[#F9A8D4] text-[#2c242a]'
+    : 'bg-[#F4EFE6] border-[#D6CDBC] text-[#2c2825]'
+
+  const headingColor = isSlate ? 'text-white' : isRose ? 'text-[#831843]' : 'text-[#1c1917]'
+  const accentColor = isSlate ? 'text-pink-400' : 'text-pink-600'
+  const folioColor = isSlate ? 'text-neutral-400' : 'text-neutral-500'
+
+  return (
+    <div
+      className={`p-7 sm:p-10 border rounded-2xl flex flex-col justify-between transition-all select-text w-full ${bgClass} ${gutterShadow}`}
+      style={{
+        minHeight: 660,
+        fontSize: `${fontSizeMultiplier * 13.5}px`,
+        lineHeight: 1.8,
+        fontFamily: 'Georgia, Cambria, "Times New Roman", serif',
+      }}
+    >
+      <div>
+        {/* Running Header Folio */}
+        <div className={`flex items-center justify-between border-b pb-2.5 mb-6 text-[10.5px] font-sans tracking-widest uppercase ${folioColor} ${isSlate ? 'border-neutral-800' : 'border-neutral-200/80'}`}>
+          <span className="truncate max-w-[65%]">{isLeftPage ? page.sectionTitle : page.chapterTitle}</span>
+          <span className="font-mono font-bold tracking-normal">DSM-5-TR · p. {page.pageNumber}</span>
+        </div>
+
+        {/* Chapter / Heading Header */}
+        <div className="mb-5 font-sans">
+          <span className={`text-[11px] font-black tracking-wider uppercase ${accentColor}`}>
+            {page.chapterTitle}
+          </span>
+          <h2 className={`text-xl sm:text-2xl font-black mt-1 font-serif leading-snug ${headingColor}`}>
+            {page.heading}
+          </h2>
+          {page.subheading && (
+            <p className={`text-xs mt-1 italic font-serif ${isSlate ? 'text-neutral-400' : 'text-neutral-600'}`}>
+              {page.subheading}
+            </p>
+          )}
+        </div>
+
+        {/* Body Paragraphs */}
+        <div className="space-y-3.5">
+          {page.paragraphs.map((p, idx) => (
+            <p key={idx} className="whitespace-pre-line leading-relaxed text-justify">
+              {idx === 0 && page.isChapterOpening ? (
+                <span>
+                  <span className={`float-left text-4xl sm:text-5xl font-black font-serif leading-none pr-2.5 pt-1 ${accentColor}`}>
+                    {p.charAt(0)}
+                  </span>
+                  {p.slice(1)}
+                </span>
+              ) : (
+                p
+              )}
+            </p>
+          ))}
+        </div>
+
+        {/* Diagnostic Criteria Box */}
+        {page.criteriaBox && (
+          <div className={`mt-6 p-4 rounded-xl border font-sans ${boxBg}`}>
+            <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-black/10">
+              <span className="text-[10px] font-black uppercase tracking-wider text-pink-700">
+                Official Diagnostic Criteria Box
+              </span>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-pink-500 text-white shadow-xs">
+                {page.criteriaBox.code}
+              </span>
+            </div>
+            <h4 className="text-xs font-bold mb-2 font-serif">{page.criteriaBox.title}</h4>
+            <div className="space-y-2 text-xs">
+              {page.criteriaBox.items.map((item, i) => (
+                <div key={i} className="pl-2.5 border-l-2 border-pink-400">
+                  <strong className="block text-[11px] uppercase tracking-wide opacity-90">{item.label}</strong>
+                  <p className="whitespace-pre-line leading-relaxed opacity-95">{item.text}</p>
+                </div>
+              ))}
+            </div>
+            {page.criteriaBox.notes && (
+              <p className="mt-3 text-[11px] italic pt-2 border-t border-black/10 opacity-80">
+                {page.criteriaBox.notes}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Clinical Pearls / Guidance Box */}
+        {page.clinicalPearl && (
+          <div className={`mt-5 p-3 rounded-lg border-l-3 border-pink-500 font-sans text-xs ${isSlate ? 'bg-neutral-800/60 text-neutral-300' : 'bg-pink-50/50 text-neutral-700'}`}>
+            <strong className="text-pink-600 font-black uppercase tracking-wider text-[10px] block mb-0.5">
+              Clinical Formulation Pearl
+            </strong>
+            {page.clinicalPearl}
+          </div>
+        )}
+      </div>
+
+      {/* Running Bottom Folio */}
+      <div className={`mt-8 pt-3 border-t flex items-center justify-between text-[11px] font-sans ${folioColor} ${isSlate ? 'border-neutral-800' : 'border-neutral-200/80'}`}>
+        <span>American Psychiatric Association (2022)</span>
+        <span className="font-bold text-xs tracking-wider">— {page.pageNumber} —</span>
+      </div>
+    </div>
+  )
 }
-
-function generateBookPages(): BookPage[] {
-  const pages: BookPage[] = [
-    {
-      pageNumber: 1,
-      sectionTitle: 'DSM-5-TR Classification',
-      chapterTitle: 'Front Matter',
-      heading: 'Preface and Introduction to the Text Revision',
-      content: [
-        'The Diagnostic and Statistical Manual of Mental Disorders, Fifth Edition, Text Revision (DSM-5-TR), represents the most comprehensive update to the psychiatric classification system since the publication of DSM-5 in 2013.',
-        'This Text Revision features fully updated text incorporating advances from over a thousand biological, epidemiological, and cross-cultural studies, as well as the addition of Prolonged Grief Disorder and updated terminology reflecting nonstigmatizing, inclusive language.',
-        'The manual is divided into three sections: Section I (Basics and guidance for clinical use), Section II (Diagnostic criteria and codes across 20 diagnostic classes), and Section III (Emerging measures and models, including cultural formulation).',
-      ],
-      clinicalPearls: 'The DSM-5-TR is designed as a practical clinical, research, and educational guide. Diagnosis requires clinical judgment and should not be applied mechanistically.',
-    },
-    {
-      pageNumber: 2,
-      sectionTitle: 'Section I: DSM-5-TR Basics',
-      chapterTitle: 'Clinical Judgment & Guidelines',
-      heading: 'Use of the Manual and Cautionary Statement',
-      content: [
-        'A mental disorder is a syndrome characterized by clinically significant disturbance in an individual\'s cognition, emotion regulation, or behavior that reflects a dysfunction in the psychological, biological, or developmental processes underlying mental functioning.',
-        'An expectable or culturally approved response to a common stressor or loss, such as the death of a loved one, is not a mental disorder. Socially deviant behavior (e.g., political, religious, or sexual) and conflicts that are primarily between the individual and society are not mental disorders unless the deviance or conflict results from a dysfunction in the individual.',
-        'Diagnostic criteria are offered as guidelines for making diagnoses, and their use should be informed by clinical training and comprehensive assessment.',
-      ],
-    },
-  ]
-
-  // Convert each disorder into authentic textbook pages
-  let currentPage = 35
-  for (const chapter of DSM5_TR_CHAPTERS) {
-    // Chapter Title / Overview Page
-    pages.push({
-      pageNumber: currentPage++,
-      sectionTitle: 'Section II: Diagnostic Criteria and Codes',
-      chapterTitle: chapter.title,
-      heading: `Chapter Overview: ${chapter.title} (${chapter.pageRange})`,
-      content: [
-        chapter.description,
-        `This section contains the official criteria for all recognized disorders within the class of ${chapter.title}.`,
-        'Each disorder entry details essential diagnostic features, associated features supporting diagnosis, prevalence rates, development and course, risk and prognostic factors, culture- and gender-related diagnostic issues, and differential diagnosis.',
-      ],
-      clinicalPearls: `Review all diagnostic exclusions, organic medical mimics, and duration thresholds prior to establishing a primary diagnosis in this class.`,
-    })
-
-    // Individual disorder pages
-    for (const disorder of chapter.disorders) {
-      pages.push({
-        pageNumber: disorder.pageNumber || currentPage++,
-        sectionTitle: chapter.title,
-        chapterTitle: disorder.name,
-        heading: `Diagnostic Criteria: ${disorder.name} (${disorder.icdCode || 'ICD-10'})`,
-        content: disorder.criteriaGroups.map(g => `${g.label}:\n${g.description}`),
-        diagnosticSummary: {
-          code: disorder.icdCode || 'ICD-10',
-          title: disorder.name,
-          keyPoints: disorder.specifiers || [
-            disorder.clinicalNote || 'Criteria must cause clinically significant distress or functional impairment.',
-          ],
-        },
-        clinicalPearls: disorder.clinicalNote,
-      })
-    }
-  }
-
-  return pages.sort((a, b) => a.pageNumber - b.pageNumber)
-}
-
-const ALL_BOOK_PAGES = generateBookPages()
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
@@ -245,10 +296,30 @@ export function DSMPage() {
   const [search, setSearch] = useState('')
   const [selectedChapter, setSelectedChapter] = useState<string | null>(null)
 
-  // Reader state
-  const [pageIndex, setPageIndex] = useState(0)
+  // Reader state (Contiguous 1 to 1,050 Pages)
+  const [currentPageNumber, setCurrentPageNumber] = useState(1)
   const [jumpPageInput, setJumpPageInput] = useState('')
   const [fontSizeMultiplier, setFontSizeMultiplier] = useState(1)
+  const [spreadMode, setSpreadMode] = useState<'single' | 'spread'>('single')
+  const [paperTheme, setPaperTheme] = useState<'cream' | 'rose' | 'slate'>('cream')
+  const [showTOC, setShowTOC] = useState(false)
+
+  // Keyboard navigation for authentic book flipping
+  useEffect(() => {
+    if (activeTab !== 'reader') return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        setCurrentPageNumber(p => Math.max(1, p - (spreadMode === 'spread' ? 2 : 1)))
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        setCurrentPageNumber(p => Math.min(TOTAL_DSM5_PAGES, p + (spreadMode === 'spread' ? 2 : 1)))
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [activeTab, spreadMode])
 
   // PDF file upload state
   const [customPdfUrl, setCustomPdfUrl] = useState<string | null>(null)
@@ -286,15 +357,11 @@ export function DSMPage() {
     setActiveTab('pdf')
   }
 
-  const currentPage = ALL_BOOK_PAGES[pageIndex] || ALL_BOOK_PAGES[0]
-
   const handleJumpToPage = (e: React.FormEvent) => {
     e.preventDefault()
     const num = parseInt(jumpPageInput, 10)
-    if (!isNaN(num)) {
-      const idx = ALL_BOOK_PAGES.findIndex(p => p.pageNumber >= num)
-      if (idx !== -1) setPageIndex(idx)
-      else setPageIndex(ALL_BOOK_PAGES.length - 1)
+    if (!isNaN(num) && num >= 1 && num <= TOTAL_DSM5_PAGES) {
+      setCurrentPageNumber(num)
       setJumpPageInput('')
     }
   }
@@ -477,30 +544,40 @@ export function DSMPage() {
         </div>
       )}
 
-      {/* ── TAB 2: Paginated Book Reader (Page-by-Page) ──────────────────────── */}
+      {/* ── TAB 2: Authentic Paginated Book Reader (Pages 1 to 1,050) ───────── */}
       {activeTab === 'reader' && (
         <div className="space-y-4">
-          {/* Reader Top Controls */}
-          <div className="ref-panel p-3 flex items-center justify-between gap-4 flex-wrap bg-white border border-pink-100 shadow-sm">
+          {/* Reader Top Controls Toolbar */}
+          <div className="ref-panel p-3.5 bg-white border border-pink-100 shadow-sm rounded-2xl flex items-center justify-between gap-3 flex-wrap">
+            {/* Page Step Buttons & Current Page Indicator */}
             <div className="flex items-center gap-2">
               <button
-                disabled={pageIndex <= 0}
-                onClick={() => setPageIndex(p => Math.max(0, p - 1))}
+                disabled={currentPageNumber <= 1}
+                onClick={() => setCurrentPageNumber(p => Math.max(1, p - (spreadMode === 'spread' ? 2 : 1)))}
                 className="p-2 rounded-xl text-neutral-600 hover:bg-pink-50 disabled:opacity-30 transition-colors"
-                title="Previous page"
+                title="Previous page (Left Arrow)"
               >
                 <CaretLeft size={20} weight="bold" />
               </button>
 
-              <span className="text-xs font-bold text-neutral-700 min-w-28 text-center">
-                Page <strong className="text-pink-600">{currentPage.pageNumber}</strong> of {ALL_BOOK_PAGES[ALL_BOOK_PAGES.length - 1].pageNumber}
-              </span>
+              <div className="text-center min-w-32">
+                <span className="text-xs font-bold text-neutral-800">
+                  Page <strong className="text-pink-600">{currentPageNumber}</strong>
+                  {spreadMode === 'spread' && currentPageNumber < TOTAL_DSM5_PAGES && (
+                    <span>–{Math.min(TOTAL_DSM5_PAGES, currentPageNumber + 1)}</span>
+                  )}{' '}
+                  of {TOTAL_DSM5_PAGES}
+                </span>
+                <span className="block text-[10px] font-semibold text-neutral-400 truncate max-w-[140px]">
+                  {getDSMPage(currentPageNumber).chapterTitle}
+                </span>
+              </div>
 
               <button
-                disabled={pageIndex >= ALL_BOOK_PAGES.length - 1}
-                onClick={() => setPageIndex(p => Math.min(ALL_BOOK_PAGES.length - 1, p + 1))}
+                disabled={currentPageNumber >= TOTAL_DSM5_PAGES}
+                onClick={() => setCurrentPageNumber(p => Math.min(TOTAL_DSM5_PAGES, p + (spreadMode === 'spread' ? 2 : 1)))}
                 className="p-2 rounded-xl text-neutral-600 hover:bg-pink-50 disabled:opacity-30 transition-colors"
-                title="Next page"
+                title="Next page (Right Arrow)"
               >
                 <CaretRight size={20} weight="bold" />
               </button>
@@ -512,8 +589,8 @@ export function DSMPage() {
               <input
                 type="number"
                 min={1}
-                max={947}
-                placeholder="1–947"
+                max={TOTAL_DSM5_PAGES}
+                placeholder="1–1050"
                 value={jumpPageInput}
                 onChange={e => setJumpPageInput(e.target.value)}
                 className="w-20 px-2 py-1 text-xs border border-pink-200 rounded-lg text-center outline-none focus:ring-1 focus:ring-pink-400"
@@ -523,115 +600,215 @@ export function DSMPage() {
               </button>
             </form>
 
-            {/* Font Zoom */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-neutral-400">Text size:</span>
+            {/* Format: Single Page vs Two-Page Spread */}
+            <div className="flex items-center gap-1 bg-pink-50/70 p-1 rounded-xl border border-pink-100">
+              <button
+                onClick={() => setSpreadMode('single')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  spreadMode === 'single' ? 'bg-white text-pink-700 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
+                }`}
+                title="Single Page view"
+              >
+                <Rows size={14} />Single
+              </button>
+              <button
+                onClick={() => setSpreadMode('spread')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  spreadMode === 'spread' ? 'bg-white text-pink-700 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
+                }`}
+                title="Two-Page Spread (Open Book view)"
+              >
+                <BookOpen size={14} />Open Book
+              </button>
+            </div>
+
+            {/* Paper Theme Picker */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setPaperTheme('cream')}
+                className={`px-2 py-1 rounded-lg text-[11px] font-bold border transition-all ${
+                  paperTheme === 'cream' ? 'bg-[#FAF7F2] border-amber-300 text-amber-900 shadow-xs' : 'bg-white border-neutral-200 text-neutral-500'
+                }`}
+                title="Classic Ivory / Cream Paper"
+              >
+                📜 Cream
+              </button>
+              <button
+                onClick={() => setPaperTheme('rose')}
+                className={`px-2 py-1 rounded-lg text-[11px] font-bold border transition-all ${
+                  paperTheme === 'rose' ? 'bg-[#FFF9FB] border-pink-300 text-pink-700 shadow-xs' : 'bg-white border-neutral-200 text-neutral-500'
+                }`}
+                title="Psykie Blush Rose"
+              >
+                🌸 Rose
+              </button>
+              <button
+                onClick={() => setPaperTheme('slate')}
+                className={`px-2 py-1 rounded-lg text-[11px] font-bold border transition-all ${
+                  paperTheme === 'slate' ? 'bg-[#1C1917] border-neutral-600 text-neutral-100 shadow-xs' : 'bg-white border-neutral-200 text-neutral-500'
+                }`}
+                title="Midnight Dark Mode"
+              >
+                🌙 Slate
+              </button>
+            </div>
+
+            {/* Table of Contents Drawer Trigger */}
+            <button
+              onClick={() => setShowTOC(o => !o)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                showTOC ? 'bg-pink-500 text-white' : 'bg-pink-50 text-pink-700 hover:bg-pink-100/70 border border-pink-200/50'
+              }`}
+            >
+              <BookBookmark size={15} />Contents
+            </button>
+
+            {/* Font Zoom Controls */}
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => setFontSizeMultiplier(f => Math.max(0.85, f - 0.1))}
                 className="w-7 h-7 rounded-lg border border-pink-100 flex items-center justify-center text-xs font-bold text-neutral-600 hover:bg-pink-50"
+                title="Decrease font size"
               >
                 A-
               </button>
               <button
                 onClick={() => setFontSizeMultiplier(f => Math.min(1.35, f + 0.1))}
                 className="w-7 h-7 rounded-lg border border-pink-100 flex items-center justify-center text-xs font-bold text-neutral-600 hover:bg-pink-50"
+                title="Increase font size"
               >
                 A+
               </button>
             </div>
           </div>
 
-          {/* Book Page Sheet */}
-          <div
-            className="ref-panel bg-white p-8 sm:p-12 shadow-lg border border-neutral-200/80 rounded-2xl mx-auto transition-all"
-            style={{
-              maxWidth: 820,
-              minHeight: 640,
-              fontSize: `${fontSizeMultiplier * 14}px`,
-              lineHeight: 1.8,
-              fontFamily: 'Georgia, Cambria, "Times New Roman", serif',
-            }}
-          >
-            {/* Header / Page Folio */}
-            <div className="flex items-center justify-between border-b border-neutral-200 pb-3 mb-6 text-xs font-sans tracking-wide uppercase text-neutral-400">
-              <span>{currentPage.sectionTitle}</span>
-              <span>DSM-5-TR · Page {currentPage.pageNumber}</span>
-            </div>
-
-            {/* Chapter and Heading */}
-            <div className="mb-6 font-sans">
-              <span className="text-xs font-bold text-pink-600 tracking-wider uppercase">
-                {currentPage.chapterTitle}
+          {/* Quick Scrubber Slider (Pages 1 to 1,050) */}
+          <div className="ref-panel p-3 bg-white/90 border border-pink-100 rounded-2xl shadow-xs">
+            <div className="flex items-center justify-between text-[11px] font-semibold text-neutral-500 mb-1 px-1">
+              <span>p. 1 (Section I)</span>
+              <span className="text-pink-600 font-bold">
+                Page {currentPageNumber} of {TOTAL_DSM5_PAGES} · {getDSMPage(currentPageNumber).heading}
               </span>
-              <h2 className="text-2xl font-black text-neutral-900 mt-1 font-serif">
-                {currentPage.heading}
-              </h2>
+              <span>p. 1,050 (Index)</span>
             </div>
-
-            {/* Page Body Content */}
-            <div className="space-y-4 text-neutral-800">
-              {currentPage.content.map((paragraph, idx) => (
-                <p key={idx} className="whitespace-pre-line leading-relaxed">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-
-            {/* Diagnostic Box if present */}
-            {currentPage.diagnosticSummary && (
-              <div className="mt-8 p-5 rounded-xl border border-pink-200 bg-pink-50/40 font-sans">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-xs font-black uppercase text-pink-700 tracking-wider">
-                    Diagnostic Criteria Box
-                  </h4>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-pink-100 text-pink-800">
-                    {currentPage.diagnosticSummary.code}
-                  </span>
-                </div>
-                <p className="text-sm font-bold text-neutral-900 mb-2 font-serif">
-                  {currentPage.diagnosticSummary.title}
-                </p>
-                <ul className="text-xs text-neutral-700 space-y-1 list-disc list-inside">
-                  {currentPage.diagnosticSummary.keyPoints.map((point, i) => (
-                    <li key={i}>{point}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Clinical Pearls Footnote */}
-            {currentPage.clinicalPearls && (
-              <div className="mt-8 pt-4 border-t border-neutral-200 font-sans text-xs text-neutral-500">
-                <strong className="text-neutral-700">Clinical Formulation & Guidance: </strong>
-                {currentPage.clinicalPearls}
-              </div>
-            )}
-
-            {/* Bottom Page Number */}
-            <div className="mt-12 pt-4 border-t border-neutral-200 flex items-center justify-between text-xs text-neutral-400 font-sans">
-              <span>American Psychiatric Association</span>
-              <span className="font-bold text-neutral-600">{currentPage.pageNumber}</span>
-            </div>
+            <input
+              type="range"
+              min={1}
+              max={TOTAL_DSM5_PAGES}
+              value={currentPageNumber}
+              onChange={e => setCurrentPageNumber(parseInt(e.target.value, 10))}
+              className="w-full accent-pink-500 cursor-pointer h-2 bg-pink-100/80 rounded-lg"
+            />
           </div>
 
-          {/* Quick Page Navigator Buttons */}
-          <div className="flex items-center justify-between max-w-3xl mx-auto pt-2">
+          {/* Table of Contents Floating Popover / Drawer */}
+          {showTOC && (
+            <div className="ref-panel p-4 bg-white border border-pink-200 rounded-2xl shadow-xl max-h-96 overflow-y-auto animate-in fade-in duration-150">
+              <div className="flex items-center justify-between pb-2 mb-3 border-b border-pink-100">
+                <div className="flex items-center gap-2">
+                  <BookBookmark size={18} className="text-pink-500" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-neutral-700">
+                    DSM-5-TR Table of Contents (Pages 1–1,050)
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowTOC(false)}
+                  className="p-1 text-neutral-400 hover:text-neutral-600 rounded-lg"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {DSM_BOOK_TOC.map((item, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setCurrentPageNumber(item.page)
+                      setShowTOC(false)
+                    }}
+                    className={`w-full text-left p-2 rounded-xl text-xs transition-all flex items-center justify-between ${
+                      currentPageNumber >= item.page && (idx === DSM_BOOK_TOC.length - 1 || currentPageNumber < DSM_BOOK_TOC[idx + 1].page)
+                        ? 'bg-pink-100 text-pink-800 font-bold'
+                        : 'hover:bg-pink-50/70 text-neutral-700'
+                    }`}
+                  >
+                    <div className="min-w-0 pr-2">
+                      <p className="font-bold truncate">{item.title}</p>
+                      <span className="text-[10px] text-neutral-400">{item.section}</span>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white border border-pink-200/80 text-pink-600 flex-shrink-0">
+                      p. {item.page}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Authentic Book Spread / Single Page View */}
+          {spreadMode === 'spread' ? (
+            // Two-Page Open Book Spread
+            <div className="flex flex-col md:flex-row gap-0 max-w-6xl mx-auto rounded-3xl overflow-hidden shadow-2xl border border-neutral-300/80 bg-neutral-900/5 p-2 transition-all">
+              {/* Left Page (Even Page Number) */}
+              <div className="flex-1 min-w-0 pr-0 md:pr-1">
+                <BookSheet
+                  page={getDSMPage(currentPageNumber % 2 === 0 ? currentPageNumber : Math.max(1, currentPageNumber - 1))}
+                  isLeftPage={true}
+                  paperTheme={paperTheme}
+                  fontSizeMultiplier={fontSizeMultiplier}
+                />
+              </div>
+
+              {/* Central Spine Fold / Gutter Crease */}
+              <div className="hidden md:block w-3.5 flex-shrink-0 bg-gradient-to-r from-neutral-300/60 via-neutral-400/80 to-neutral-300/60 shadow-inner rounded-xs my-4 opacity-75" />
+
+              {/* Right Page (Odd Page Number) */}
+              <div className="flex-1 min-w-0 pl-0 md:pl-1 mt-3 md:mt-0">
+                <BookSheet
+                  page={getDSMPage(
+                    Math.min(
+                      TOTAL_DSM5_PAGES,
+                      currentPageNumber % 2 === 0 ? currentPageNumber + 1 : currentPageNumber
+                    )
+                  )}
+                  isLeftPage={false}
+                  paperTheme={paperTheme}
+                  fontSizeMultiplier={fontSizeMultiplier}
+                />
+              </div>
+            </div>
+          ) : (
+            // Single Page View
+            <div className="max-w-2xl mx-auto transition-all shadow-xl rounded-2xl">
+              <BookSheet
+                page={getDSMPage(currentPageNumber)}
+                isLeftPage={currentPageNumber % 2 === 0}
+                paperTheme={paperTheme}
+                fontSizeMultiplier={fontSizeMultiplier}
+              />
+            </div>
+          )}
+
+          {/* Quick Bottom Flip Bar */}
+          <div className="flex items-center justify-between max-w-3xl mx-auto pt-3">
             <button
-              disabled={pageIndex <= 0}
-              onClick={() => setPageIndex(p => Math.max(0, p - 1))}
-              className="flex items-center gap-1 text-xs font-bold text-pink-600 hover:text-pink-700 bg-pink-50 px-4 py-2 rounded-xl disabled:opacity-40"
+              disabled={currentPageNumber <= 1}
+              onClick={() => setCurrentPageNumber(p => Math.max(1, p - (spreadMode === 'spread' ? 2 : 1)))}
+              className="flex items-center gap-1.5 text-xs font-bold text-pink-600 hover:text-pink-700 bg-pink-50 px-4 py-2.5 rounded-xl disabled:opacity-40 transition-colors shadow-xs"
             >
-              <CaretLeft size={16} />Previous Page
+              <CaretLeft size={16} />Previous {spreadMode === 'spread' ? 'Spread' : 'Page'}
             </button>
-            <span className="text-xs text-neutral-400">
-              Use arrow keys or jump above to navigate all pages
+
+            <span className="text-[11px] text-neutral-400 text-center hidden sm:inline">
+              Flip pages with Left/Right arrow keys or use the Table of Contents above
             </span>
+
             <button
-              disabled={pageIndex >= ALL_BOOK_PAGES.length - 1}
-              onClick={() => setPageIndex(p => Math.min(ALL_BOOK_PAGES.length - 1, p + 1))}
-              className="flex items-center gap-1 text-xs font-bold text-pink-600 hover:text-pink-700 bg-pink-50 px-4 py-2 rounded-xl disabled:opacity-40"
+              disabled={currentPageNumber >= TOTAL_DSM5_PAGES}
+              onClick={() => setCurrentPageNumber(p => Math.min(TOTAL_DSM5_PAGES, p + (spreadMode === 'spread' ? 2 : 1)))}
+              className="flex items-center gap-1.5 text-xs font-bold text-pink-600 hover:text-pink-700 bg-pink-50 px-4 py-2.5 rounded-xl disabled:opacity-40 transition-colors shadow-xs"
             >
-              Next Page<CaretRight size={16} />
+              Next {spreadMode === 'spread' ? 'Spread' : 'Page'}<CaretRight size={16} />
             </button>
           </div>
         </div>
