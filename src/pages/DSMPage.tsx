@@ -28,32 +28,47 @@ function CriteriaGroup({ group, chapterColor }: { group: DSMDisorder['criteriaGr
   const [open, setOpen] = useState(false)
   if (!group.criteria) {
     return (
-      <div className="mb-3 px-4 py-3 rounded-xl bg-white border border-pink-100/70 shadow-xs">
+      <div className="mb-2.5 px-4 py-3 rounded-2xl bg-white border border-pink-100 shadow-2xs">
         <p className="text-xs font-black text-neutral-800 mb-1">{group.label}</p>
         <p className="text-xs text-neutral-600 leading-relaxed">{group.description}</p>
-        {group.note && <p className="mt-2 text-[11px] text-pink-600 italic bg-pink-50/60 px-2.5 py-1 rounded-md">{group.note}</p>}
+        {group.note && <p className="mt-2 text-[11px] text-pink-600 italic bg-pink-50/70 px-2.5 py-1 rounded-xl border border-pink-100">{group.note}</p>}
       </div>
     )
   }
   return (
-    <div className="mb-3 rounded-xl border border-pink-100/70 overflow-hidden shadow-xs">
+    <div className="mb-2.5 rounded-2xl border border-pink-100/90 overflow-hidden shadow-2xs bg-white transition-all">
       <button
-        className="w-full flex items-center justify-between gap-2 px-4 py-3 bg-white hover:bg-pink-50/40 transition-colors text-left"
+        className="w-full flex items-center justify-between gap-3 px-4 py-3.5 bg-gradient-to-r from-pink-50/40 via-white to-purple-50/20 hover:from-pink-50/80 hover:to-purple-50/50 transition-all text-left group"
         onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
       >
-        <div>
-          <p className="text-xs font-black text-neutral-800">{group.label}</p>
-          {!open && <p className="text-[11px] text-neutral-500 mt-0.5">{group.description.slice(0, 85)}…</p>}
+        <div className="flex-1 min-w-0 pr-2">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: chapterColor }} />
+            <p className="text-xs font-black text-neutral-800 tracking-tight">{group.label}</p>
+          </div>
+          {!open && <p className="text-[11px] text-neutral-500 mt-0.5 line-clamp-1">{group.description}</p>}
         </div>
-        {open ? <CaretDown size={16} style={{ color: chapterColor, flexShrink: 0 }} /> : <CaretRight size={16} className="text-neutral-400 flex-shrink-0" />}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-white text-pink-600 border border-pink-200/80 shadow-2xs">
+            {group.criteria.length} criteria
+          </span>
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 border ${
+            open
+              ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white border-transparent shadow-xs rotate-180'
+              : 'bg-pink-50 text-pink-600 border-pink-200/70 group-hover:bg-pink-100 group-hover:scale-105'
+          }`}>
+            <CaretDown size={14} weight="bold" />
+          </div>
+        </div>
       </button>
       {open && (
-        <div className="px-4 pb-4 bg-white/70">
+        <div className="px-4 pb-4 pt-2 bg-white border-t border-pink-100/70">
           <p className="text-xs text-neutral-600 mb-3 leading-relaxed">{group.description}</p>
-          <ul className="list-none space-y-0.5">
+          <ul className="list-none space-y-1">
             {group.criteria.map(c => <CriterionRow key={c.code} c={c} />)}
           </ul>
-          {group.note && <p className="mt-3 text-[11px] text-pink-600 italic bg-pink-50 px-3 py-2 rounded-lg">{group.note}</p>}
+          {group.note && <p className="mt-3 text-[11px] text-pink-600 italic bg-pink-50 px-3 py-2 rounded-xl border border-pink-100">{group.note}</p>}
         </div>
       )}
     </div>
@@ -65,16 +80,19 @@ function DisorderCard({ disorder, chapterColor }: { disorder: DSMDisorder; chapt
   const navigate = useNavigate()
 
   return (
-    <div className="rounded-2xl border border-pink-100/80 bg-white shadow-sm shadow-pink-100/40 overflow-hidden mb-3">
+    <div className={`rounded-3xl border bg-white transition-all duration-200 mb-3.5 overflow-hidden ${
+      expanded ? 'border-pink-300 shadow-md shadow-pink-100/70' : 'border-pink-100/90 shadow-sm shadow-pink-100/30 hover:border-pink-200'
+    }`}>
       <button
-        className="w-full flex items-start gap-3 px-5 py-4 hover:bg-pink-50/30 transition-colors text-left"
+        className="w-full flex items-start justify-between gap-3 px-5 py-4 hover:bg-pink-50/30 transition-colors text-left group"
         onClick={() => setExpanded(e => !e)}
+        aria-expanded={expanded}
       >
-        <div className="flex-1">
+        <div className="flex-1 min-w-0 pr-2">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-sm font-extrabold text-neutral-800">{disorder.name}</h3>
             {disorder.icdCode && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border" style={{ color: chapterColor, borderColor: chapterColor + '33', background: chapterColor + '11' }}>
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border shadow-2xs" style={{ color: chapterColor, borderColor: chapterColor + '44', background: chapterColor + '14' }}>
                 ICD: {disorder.icdCode}
               </span>
             )}
@@ -85,10 +103,16 @@ function DisorderCard({ disorder, chapterColor }: { disorder: DSMDisorder; chapt
             )}
           </div>
           {!expanded && disorder.criteriaGroups[0] && (
-            <p className="text-xs text-neutral-500 mt-1 line-clamp-2">{disorder.criteriaGroups[0].description}</p>
+            <p className="text-xs text-neutral-500 mt-1.5 line-clamp-2 leading-relaxed">{disorder.criteriaGroups[0].description}</p>
           )}
         </div>
-        {expanded ? <CaretDown size={18} style={{ color: chapterColor }} className="mt-0.5 flex-shrink-0" /> : <CaretRight size={18} className="text-neutral-400 mt-0.5 flex-shrink-0" />}
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 border ${
+          expanded
+            ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white border-transparent shadow-xs shadow-pink-300 rotate-180'
+            : 'bg-pink-50/80 text-pink-600 border-pink-200/70 group-hover:bg-pink-100 group-hover:scale-105'
+        }`}>
+          <CaretDown size={16} weight="bold" />
+        </div>
       </button>
 
       {expanded && (
@@ -623,44 +647,49 @@ export function DSMPage() {
             </div>
 
             {/* Paper Theme Picker */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 bg-pink-50/80 p-1 rounded-xl border border-pink-200/60 shadow-2xs">
               <button
                 onClick={() => setPaperTheme('cream')}
-                className={`px-2 py-1 rounded-lg text-[11px] font-bold border transition-all ${
-                  paperTheme === 'cream' ? 'bg-[#FAF7F2] border-amber-300 text-amber-900 shadow-xs' : 'bg-white border-neutral-200 text-neutral-500'
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                  paperTheme === 'cream' ? 'bg-white text-amber-900 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
                 }`}
                 title="Classic Ivory / Cream Paper"
               >
-                📜 Cream
+                <span>📜</span>Cream
               </button>
               <button
                 onClick={() => setPaperTheme('rose')}
-                className={`px-2 py-1 rounded-lg text-[11px] font-bold border transition-all ${
-                  paperTheme === 'rose' ? 'bg-[#FFF9FB] border-pink-300 text-pink-700 shadow-xs' : 'bg-white border-neutral-200 text-neutral-500'
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                  paperTheme === 'rose' ? 'bg-white text-pink-700 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
                 }`}
                 title="Psykie Blush Rose"
               >
-                🌸 Rose
+                <span>🌸</span>Rose
               </button>
               <button
                 onClick={() => setPaperTheme('slate')}
-                className={`px-2 py-1 rounded-lg text-[11px] font-bold border transition-all ${
-                  paperTheme === 'slate' ? 'bg-[#1C1917] border-neutral-600 text-neutral-100 shadow-xs' : 'bg-white border-neutral-200 text-neutral-500'
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                  paperTheme === 'slate' ? 'bg-neutral-800 text-white shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
                 }`}
                 title="Midnight Dark Mode"
               >
-                🌙 Slate
+                <span>🌙</span>Slate
               </button>
             </div>
 
-            {/* Table of Contents Drawer Trigger */}
+            {/* Table of Contents Drawer Trigger Dropdown Button */}
             <button
               onClick={() => setShowTOC(o => !o)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                showTOC ? 'bg-pink-500 text-white' : 'bg-pink-50 text-pink-700 hover:bg-pink-100/70 border border-pink-200/50'
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border shadow-xs ${
+                showTOC
+                  ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white border-transparent shadow-pink-300'
+                  : 'bg-white hover:bg-pink-50/80 text-pink-700 border-pink-200'
               }`}
+              aria-expanded={showTOC}
             >
-              <BookBookmark size={15} />Contents
+              <BookBookmark size={15} weight="bold" />
+              <span>Contents</span>
+              <CaretDown size={14} weight="bold" className={`transition-transform duration-200 ${showTOC ? 'rotate-180' : 'rotate-0'}`} />
             </button>
 
             {/* Font Zoom Controls */}
