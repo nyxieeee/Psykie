@@ -95,7 +95,7 @@ export function QuizzesPage() {
     const item: StudyQuiz = {id:'quiz-'+crypto.randomUUID(),title:cardTitle.trim() || cardCategory+' practice',category:cardCategory,difficulty:'medium',questionsCount:questions.length,passingScore:70,questions,createdAt:new Date().toISOString(),sourceName:'Your flashcards',mode:'study'}
     setQuizzes(previous => [item,...previous]); setShowCards(false); setError(''); setCategory('all'); setSearch(''); setView('mine'); begin(item)
   }
-  return <div className="reference-page ref-quizzes-page">
+  return <div className="reference-page ref-quizzes-page" data-focused-reader={!!(showPractice&&(session||result))}>
     <ReferenceHeader title="Quizzes" subtitle="Create practice from your readings, notes, or a psychology topic." action={showPractice&&(session||result)?undefined:"Create quiz"} onAction={openGenerator}/>
     {!(showPractice&&(session||result))&&<div className="quiz-browser-actions"><button className="ref-secondary" onClick={()=>{setError('');setShowCards(true)}}><Brain size={18}/>Practice from flashcards</button></div>}
     {!showPractice&&session&&<div className="quiz-resume ref-panel"><div><strong>{quiz?.title}</strong><p>Question {session.index+1} of {session.questions.length}. Your answers are saved.</p></div><button className="ref-primary" onClick={()=>{setShowPractice(true);setResult(null)}}>Resume quiz<ArrowRight size={16}/></button></div>}

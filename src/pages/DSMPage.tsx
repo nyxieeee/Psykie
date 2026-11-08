@@ -351,6 +351,7 @@ export function DSMPage() {
   const [wideReader,setWideReader]=useState(()=>matchMedia('(min-width:1100px)').matches)
   useEffect(()=>{const media=matchMedia('(min-width:1100px)');const change=()=>setWideReader(media.matches);media.addEventListener('change',change);return()=>media.removeEventListener('change',change)},[])
   const openSpread=spreadMode==='spread'&&wideReader
+  const readerFontScale=fontSizeMultiplier*(wideReader?1:16/13.5)
 
   const previousReaderPage = useCallback(() => setCurrentPageNumber(page => Math.max(1, page - (openSpread ? (page === 2 ? 1 : 2) : 1))), [openSpread])
   const nextReaderPage = useCallback(() => setCurrentPageNumber(page => Math.min(TOTAL_DSM5_PAGES, page + (openSpread ? (page === 1 ? 1 : 2) : 1))), [openSpread])
@@ -627,7 +628,7 @@ export function DSMPage() {
           {/* Authentic Book Spread / Single Page View */}
           {openSpread && currentPageNumber > 1 && currentPageNumber < TOTAL_DSM5_PAGES ? (
             // Two-Page Open Book Spread
-            <BookSpreadTurn page={currentPageNumber} left={<BookSheet page={getDSMPage(currentPageNumber-currentPageNumber%2)} isLeftPage={true} isSpread={true} paperTheme={paperTheme} fontSizeMultiplier={fontSizeMultiplier}/>} right={<BookSheet page={getDSMPage(Math.min(TOTAL_DSM5_PAGES,currentPageNumber-currentPageNumber%2+1))} isLeftPage={false} isSpread={true} paperTheme={paperTheme} fontSizeMultiplier={fontSizeMultiplier}/>}/>
+            <BookSpreadTurn page={currentPageNumber} left={<BookSheet page={getDSMPage(currentPageNumber-currentPageNumber%2)} isLeftPage={true} isSpread={true} paperTheme={paperTheme} fontSizeMultiplier={readerFontScale}/>} right={<BookSheet page={getDSMPage(Math.min(TOTAL_DSM5_PAGES,currentPageNumber-currentPageNumber%2+1))} isLeftPage={false} isSpread={true} paperTheme={paperTheme} fontSizeMultiplier={readerFontScale}/>}/>
           ) : (
             // Single Page View
             <div className="dsm-book-single"><BookTurn page={currentPageNumber}>
@@ -636,7 +637,7 @@ export function DSMPage() {
                 isLeftPage={currentPageNumber % 2 === 0}
                 isSpread={false}
                 paperTheme={paperTheme}
-                fontSizeMultiplier={fontSizeMultiplier}
+                fontSizeMultiplier={readerFontScale}
               />
             </BookTurn></div>
           )}

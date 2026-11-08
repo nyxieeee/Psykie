@@ -134,7 +134,7 @@ export function StudyBoxPage() {
     }
     setDeletion(null);setModal(null)
   }
-  return <div className="reference-page study-library-page">
+  return <div className="reference-page study-library-page" data-focused-reader={!!active}>
     <ReferenceHeader title="Library" subtitle="Your readings and notes, ready to turn into practice." action="Add material" onAction={()=>openMaterial()} actions={<button className="ref-secondary" onClick={()=>{setError('');setGeneration({task:'reviewer',text:'',category:'General Psychology',sourceName:'',ids:[]})}}><Sparkle size={17}/>Create reviewer</button>}/>
     {!active&&<div className="library-intro"><p><BookOpen size={18}/>{items.length} materials <span>|</span> {folders.length} folders <span>|</span> {items.filter(item=>item.favorite).length} favorites</p><button className="ref-secondary" onClick={()=>navigate('/documents')}>Open document vault</button></div>}
     {error&&!modal&&!generation&&<p role="alert" className="ref-form-error">{error}</p>}{notice&&<p role="status" className="ref-inline-notice">{notice}</p>}

@@ -120,7 +120,7 @@ export function FlashcardsPage() {
   const visibleDecks = decks.filter(deck => deck.id !== 'deck-all' && (deckView === 'all' || cards.some(card => card.deckId === deck.id && card.dueDate <= todayStr)))
   const selectedDeck = decks.find(deck => deck.id === selectedDeckId)
   return (
-    <div className="reference-page ref-flashcards-page">
+    <div className="reference-page ref-flashcards-page" data-focused-reader={!!selectedDeck}>
       <header className="ref-page-header"><div><h1>Flashcards</h1><p>{selectedDeck?'One question at a time. Reveal, recall, and rate your answer.':'Keep your concepts together. Choose a deck when you are ready to practice.'}</p></div><div className="flashcard-actions"><button className="ref-secondary" onClick={()=>setShowAI(true)}><Sparkle size={17}/>Generate with AI</button><button className="ref-primary" onClick={()=>setShowCreateDeckModal(true)}><Plus size={18}/>Create deck</button></div></header>
       <div className="ref-flashcards-layout" data-view={selectedDeck?'study':'decks'}>
         {!selectedDeck&&<section className="ref-deck-browser">

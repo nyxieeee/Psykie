@@ -1,0 +1,80 @@
+/* Mobile is a reading and touch layout, rather than a reduced desktop canvas. */
+@media(max-width:800px), (max-width:1024px) and (pointer:coarse) {
+  :root[data-psykie-theme] body .psykie-frame { grid-template-columns:minmax(0,1fr); }
+  :root[data-psykie-theme] body .ref-sidebar { display:none; }
+  :root[data-psykie-theme] body .ref-mobile-menu { display:grid; place-items:center; }
+  :root[data-psykie-theme] body .ref-breadcrumb { display:none; }
+  :root[data-psykie-theme] body .ref-topbar { min-height:64px; gap:10px; padding:10px max(14px,env(safe-area-inset-right)) 10px max(14px,env(safe-area-inset-left)); }
+  :root[data-psykie-theme] body .ref-main-content { padding:20px max(14px,env(safe-area-inset-right)) calc(100px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left)); }
+  :root[data-psykie-theme] body .ref-global-search { flex:1; min-width:0; min-height:42px; padding:10px 12px; }
+  :root[data-psykie-theme] body .ref-global-search span { font-size:13px; }
+  :root[data-psykie-theme] body .ref-global-search kbd { display:none; }
+  :root[data-psykie-theme] body :is(.ref-mobile-menu,.ref-notification-button) { min-height:44px; min-width:40px; flex-shrink:0; }
+  :root[data-psykie-theme] body .ref-page-header { flex-direction:column; align-items:stretch; gap:16px; padding-bottom:18px; }
+  :root[data-psykie-theme] body .ref-page-header h1 { font-size:27px; line-height:1.25; }
+  :root[data-psykie-theme] body [data-focused-reader=true]>.ref-page-header { padding:0; margin:0; border:0; gap:0; }
+  :root[data-psykie-theme] body [data-focused-reader=true]>.ref-page-header h1 { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+  :root[data-psykie-theme] body [data-focused-reader=true]>.ref-page-header :is(p,.page-header-actions,.flashcard-actions) { display:none; }
+  :root[data-psykie-theme] body :is(.ref-page-header,.overview-heading) p { font-size:14px; line-height:1.65; }
+  :root[data-psykie-theme] body :is(.ref-primary,.ref-secondary) { min-height:44px; font-size:14px; padding:10px 16px; line-height:1.4; }
+  :root[data-psykie-theme] body :is(.page-header-actions,.flashcard-actions) { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; width:100%; }
+  :root[data-psykie-theme] body :is(.page-header-actions,.flashcard-actions)>button:only-child { grid-column:1/-1; }
+  :root[data-psykie-theme] body :is(.reference-page,.viewport-overlay,.mindy-workspace,.ref-auth-card) :is(input,textarea,select):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]) { font-size:16px; line-height:1.5; min-height:44px; }
+  :root[data-psykie-theme] body .ref-main-content small { font-size:12px; line-height:1.5; }
+  :root[data-psykie-theme] body .ref-social-button { min-height:46px; font-size:14px; }
+  :root[data-psykie-theme] body .ref-editor-content>[contenteditable] { font-size:16px; line-height:1.85; }
+  :root[data-psykie-theme] body :is(.ref-help-page .ref-faq p,.ref-help-categories p,.ref-help-support p,.research-result>p,.research-relevance p) { font-size:15px; line-height:1.8; }
+  :root[data-psykie-theme] body .overview-page :is(.empty-copy,.study-start p) { font-size:14px; line-height:1.75; }
+  :root[data-psykie-theme] body .ref-tabs.motion-tabs { gap:4px; }
+  :root[data-psykie-theme] body .ref-tabs.motion-tabs>button { min-height:42px; font-size:13px; padding:9px 12px; }
+  :root[data-psykie-theme] body .ref-mobile-dock { display:flex; position:fixed; z-index:50; justify-content:space-around; align-items:center; bottom:0; left:0; right:0; height:auto; min-height:calc(70px + env(safe-area-inset-bottom)); padding:6px max(8px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left)); }
+  :root[data-psykie-theme] body .ref-mobile-dock>button { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; min-height:54px; gap:5px; padding:6px 2px; }
+  :root[data-psykie-theme] body .ref-mobile-dock>button>span { font-size:11px; font-weight:750; }
+  :root[data-psykie-theme] body .ref-mobile-dock>button>svg { width:23px; height:23px; }
+  :root[data-psykie-theme] body .ref-mobile-sidebar :is(.ref-main-nav,.ref-sidebar-bottom nav) button { min-height:48px; font-size:15px; }
+  :root[data-psykie-theme] body .viewport-overlay.ref-drawer-overlay { padding:0; justify-content:flex-start; align-items:stretch; }
+  :root[data-psykie-theme] body .ref-mobile-sidebar { display:flex; flex-direction:column; position:relative; width:min(320px,calc(100vw - 36px)); height:100dvh; overflow-y:auto; padding:24px 14px calc(20px + env(safe-area-inset-bottom)); }
+  :root[data-psykie-theme] body .viewport-overlay:not(.ref-drawer-overlay) { padding:12px 0 0; align-items:flex-end; }
+  :root[data-psykie-theme] body .viewport-overlay:not(.ref-drawer-overlay)>:is(.glass-modal,.ref-form-dialog) { width:100%; max-width:100%; max-height:calc(100dvh - 12px); margin:0; border-radius:22px 22px 0 0; padding-bottom:calc(20px + env(safe-area-inset-bottom)); }
+  :root[data-psykie-theme] body .viewport-overlay>.ai-draft-dialog { height:calc(100dvh - 12px); padding:0; }
+  :root[data-psykie-theme] body .draft-save-bar { padding-bottom:calc(14px + env(safe-area-inset-bottom)); }
+  :root[data-psykie-theme] body .ai-generator-body { padding:18px; }
+  :root[data-psykie-theme] body .ai-generator-body>p { font-size:14px; }
+  :root[data-psykie-theme] body .study-file-picker>label { padding:22px 16px; }
+  :root[data-psykie-theme] body .study-file-picker small { font-size:12px; }
+  :root[data-psykie-theme] body .study-library-page .library-reader { padding:18px 16px; border-radius:18px; }
+  :root[data-psykie-theme] body .study-library-page .library-reader>.ref-panel-title h2 { font-size:22px; line-height:1.4; }
+  :root[data-psykie-theme] body :is(.library-reading,.reviewer-guide p) { font-size:16px; line-height:1.85; }
+  :root[data-psykie-theme] body .study-library-page .library-source-name { font-size:12px; }
+  :root[data-psykie-theme] body .library-reader-footer { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  :root[data-psykie-theme] body .library-reader-footer>button { justify-content:center; min-height:44px; font-size:13px; border:1px solid var(--ref-border); border-radius:999px; padding:8px; }
+  :root[data-psykie-theme] body .library-reader-footer>button:nth-child(3) { grid-column:1/-1; }
+  :root[data-psykie-theme] body .library-reader>.ref-panel-title>button { min-height:40px; min-width:36px; }
+  :root[data-psykie-theme] body .mindy-message-actions>button { min-height:40px; font-size:13px; }
+  :root[data-psykie-theme] body .study-library-page .library-study-actions>.study-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  :root[data-psykie-theme] body .study-library-page .library-study-actions button { width:100%; justify-content:center; font-size:13px; }
+  :root[data-psykie-theme] body .reviewer-content>.ref-tabs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  :root[data-psykie-theme] body .reviewer-content>.ref-tabs>button { justify-content:center; }
+  :root[data-psykie-theme] body .reviewer-guide h3 { font-size:16px; margin-top:24px; }
+  :root[data-psykie-theme] body .reviewer-points li { padding:14px; gap:10px; }
+  :root[data-psykie-theme] body :is(.reviewer-points p,.reviewer-self-test li,.reviewer-self-test p) { font-size:15px; }
+  :root[data-psykie-theme] body .ref-quizzes-page .ref-question-panel { padding:18px 16px; }
+  :root[data-psykie-theme] body .ref-quizzes-page .ref-answer-options label { font-size:16px; min-height:56px; }
+  :root[data-psykie-theme] body .study-practice-panel>.study-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  :root[data-psykie-theme] body .study-practice-panel>.study-actions>.ref-primary { grid-column:1/-1; justify-content:center; }
+  :root[data-psykie-theme] body .ref-settings-layout { display:block; }
+  :root[data-psykie-theme] body .ref-settings-nav { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; margin-bottom:18px; }
+  :root[data-psykie-theme] body .ref-settings-nav button { font-size:13px; min-height:44px; padding:10px; }
+  :root[data-psykie-theme] body .ref-settings-card-grid { grid-template-columns:minmax(0,1fr); }
+  :root[data-psykie-theme] body .mindy-workspace { margin:-20px -14px -100px; height:calc(100dvh - 140px - env(safe-area-inset-bottom)); }
+  :root[data-psykie-theme] body .mindy-header { padding:14px; }
+  :root[data-psykie-theme] body :is(.mindy-response-content,.mindy-user-message) p { font-size:16px; line-height:1.8; }
+  :root[data-psykie-theme] body .mindy-composer { margin:0 12px; }
+  :root[data-psykie-theme] body .mindy-composer textarea { font-size:16px; }
+  :root[data-psykie-theme] body .ref-overview-stat small,.overview-tool small { font-size:12px; }
+}
+@media(max-width:380px) {
+  :root[data-psykie-theme] body :is(.page-header-actions,.flashcard-actions) { grid-template-columns:minmax(0,1fr); }
+  :root[data-psykie-theme] body .ref-global-search span { font-size:12px; }
+  :root[data-psykie-theme] body .ref-settings-nav { grid-template-columns:minmax(0,1fr); }
+}
