@@ -13,7 +13,7 @@ if(await p.getByRole('region',{name:'AI draft preview'}).count())throw Error('Up
 await p.getByRole('button',{name:'Generate draft',exact:true}).click();
 await p.getByRole('region',{name:'AI draft preview'}).waitFor();
 if(!draftBodies.at(-1).text.includes('Retrieval is accessing')||!draftBodies.at(-1).text.includes('beginner level'))throw Error('Combined topic/source missing');
-await p.getByRole('button',{name:'Save flashcards',exact:true}).click();
+await p.getByRole('button',{name:'Save deck',exact:true}).click();
 await p.locator('.ref-deck').waitFor();
 await launch();
 const zip=new(require('jszip'))();

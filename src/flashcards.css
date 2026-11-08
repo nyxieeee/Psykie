@@ -21,6 +21,7 @@ body .ref-flashcards-page .flashcard-welcome h2 { font-size:27px; font-weight:80
 .flashcard-welcome li>span { display:grid; place-items:center; width:24px; height:24px; border-radius:50%; background:var(--ref-soft); color:var(--ref-accent); font-weight:800; }
 body .ref-flashcards-page .ref-study-preview { max-width:820px; width:100%; margin:0 auto; padding:24px; }
 .flashcard-study-navigation { display:flex; justify-content:space-between; gap:12px; margin-bottom:24px; }
+.flashcard-deck-tools { display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-top:1px solid var(--ref-border); padding-top:16px; margin-top:16px; }
 body .ref-flashcards-page .ref-study-preview>.ref-panel-title h2 { font-size:22px; }
 body .ref-flashcards-page .ref-cloud-card { padding:18px; margin-top:18px; }
 body .ref-flashcards-page .ref-study-options { margin-top:18px; }

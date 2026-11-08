@@ -2,7 +2,7 @@ import { AIGenerator } from '../components/AIGenerator'
 import {
   ArrowLeft, Brain, CaretLeft,
   CaretRight, Check, Cards as Layers,
-  Plus, Shuffle, Sparkle, X
+  Plus, Shuffle, Sparkle, X, DownloadSimple, ChartBar
 } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
@@ -19,6 +19,7 @@ export function FlashcardsPage() {
   const [selectedDeckId, setSelectedDeckId] = useState<string>('')
   const location = useLocation(), navigate = useNavigate()
   const [showAI, setShowAI] = useState(false)
+  const [deckError,setDeckError]=useState('')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
 
@@ -129,12 +130,14 @@ export function FlashcardsPage() {
           </>:<section className="flashcard-welcome"><span className="flashcard-welcome-icon"><Layers size={38} weight="duotone"/></span><h2>Your first deck starts here</h2><p>A deck keeps related questions together. Add your own cards, or let AI draft them from a topic, a note, or an uploaded reading.</p><button className="ref-primary" onClick={()=>setShowCreateDeckModal(true)}>Create your first deck</button><ol><li><span>1</span>Create a deck</li><li><span>2</span>Add questions and answers</li><li><span>3</span>Flip, recall, repeat</li></ol></section>}
         </section>}
         {selectedDeck&&<section className="ref-panel ref-study-preview">
+          {deckError&&<p role="alert" className="ref-form-error">{deckError}</p>}
           <div className="flashcard-study-navigation"><button className="ref-secondary" onClick={()=>{setSelectedDeckId('');setIsFlipped(false);setSessionReviewedCount(0)}}><ArrowLeft size={16}/>All decks</button><button className="ref-secondary" onClick={()=>setShowAddCardModal(true)}><Plus size={16}/>Add card</button></div>
 
           <div className="ref-panel-title"><span className="ref-icon tint-0"><Brain size={24} /></span><h2>{selectedDeck?.name || 'All decks'}</h2><span className="ref-tag tint-0">{selectedDeck?.category || 'General'}</span></div>
           <div className="ref-cloud-card">{totalCards>0&&<div className="ref-study-count"><button aria-label="Previous card" disabled={totalCards < 2} onClick={handlePrev}><CaretLeft size={17} /></button><span>{totalCards ? currentIndex % totalCards + 1 : 0} of {totalCards}</span><button aria-label="Next card" disabled={totalCards < 2} onClick={handleNext}><CaretRight size={17} /></button></div>}{currentCard ? <StudyFlashcard key={currentCard.id} question={currentCard.question} answer={currentCard.answer} category={currentCard.category} flipped={isFlipped} showHints={showHints} onFlip={() => setIsFlipped(value => !value)} onDelete={() => deleteCard(currentCard.id)} /> : <ReferenceStart icon={<Brain size={28}/>} title="Your practice space" action="Add card" onAction={()=>setShowAddCardModal(true)}>Add a question and answer to start. Reveal the answer, then rate your recall to schedule your next review.</ReferenceStart>}</div>
           {isFlipped && currentCard && <div className="ref-review-ratings">{(['again', 'hard', 'good', 'easy'] as const).map(rating => <button key={rating} className={rating} onClick={() => handleRating(rating)}>{rating}<small>{rating === 'again' ? 'Try again' : rating === 'hard' ? 'A little unsure' : rating === 'good' ? 'Got it' : 'Easy recall'}</small></button>)}</div>}
           {currentCard&&<div className="ref-study-footer"><button className="ref-secondary" disabled={totalCards < 2} onClick={() => { setCurrentIndex(Math.floor(Math.random() * Math.max(1, totalCards))); setIsFlipped(false) }}><Shuffle size={19} />Shuffle</button><button className="ref-secondary" onClick={handleEndStudySession}>Finish session</button></div>}
+          {totalCards>0&&<div className="flashcard-deck-tools"><button className="ref-secondary" onClick={()=>{const text=activeDeckCards.map((card,index)=>(index+1)+'. '+card.question+'\n'+card.answer).join('\n\n');if(text.length>24500){setDeckError('This deck is too long for one quiz request. Use a smaller deck or a shorter excerpt.');return}navigate('/quizzes',{state:{studyText:text,sourceName:selectedDeck?.name||'Flashcards',category:selectedDeck?.category||'General Psychology'}})}}><ChartBar size={17}/>Quiz me on this deck</button><button className="ref-secondary" onClick={()=>{const data={version:1,name:selectedDeck?.name||'Flashcards',category:selectedDeck?.category,cards:activeDeckCards.map(({question,answer})=>({question,answer}))},url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})),link=document.createElement('a');link.href=url;link.download=(selectedDeck?.name||'flashcards').replace(/[^a-zA-Z0-9_-]/g,'_')+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}}><DownloadSimple size={17}/>Download deck</button></div>}
           {totalCards>0&&<details className="ref-study-options"><summary>Study options · {overallPercentage}% mastered</summary><label><input type="checkbox" checked={showHints} onChange={e => setShowHints(e.target.checked)} />Show hints</label><p>Your ratings automatically schedule the next review using spaced repetition.</p><p>{masteredCardsCount} mastered · {learningCardsCount} learning · {dueCardsCount} due</p></details>}
         </section>}
       </div>

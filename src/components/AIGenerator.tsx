@@ -1,3 +1,4 @@
+import { FlashcardDraftReview } from './FlashcardDraftReview'
 import { StudyFilePicker } from './StudyFilePicker'
 import { useEffect, useRef, useState } from 'react'
 import { BookOpen, FileText, Sparkle, Spinner, UploadSimple, X } from '@phosphor-icons/react'
@@ -60,7 +61,7 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', ca
   useEffect(() => () => controller.current?.abort(), [])
   const generate = async () => {
     if (!source || loading || reading || source.length > MAX_SOURCE_LENGTH) return
-    setError(''); setDraft(null); setLoading(true); controller.current = new AbortController()
+    setError(''); setLoading(true); controller.current = new AbortController()
     try { setDraft(await generateAIDraft(task, source, subject, count, controller.current.signal, task === 'quiz' ? quizOptions : undefined)) }
     catch(error) { if (!controller.current.signal.aborted) setError(error instanceof Error ? error.message : 'Generation failed. Please try again.') }
     finally { setLoading(false) }
@@ -70,7 +71,7 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', ca
   return <ViewportOverlay onDismiss={onClose}>
     <section className="glass-modal ref-form-dialog ai-draft-dialog">
       <div className="ref-panel-title"><h2>{title}</h2><button aria-label="Close AI generator" onClick={onClose}><X size={20}/></button></div>
-      <p>Choose what to study, set your preferences, then review the draft.</p>
+      <div className="ai-generator-body"><p>{draft?(task==='flashcards'?'Review your draft before saving. You can edit each flashcard.':'Review your draft before saving.'):'Choose what to study, set your preferences, then review the draft.'}</p>
       {!draft&&<><section className="ai-setup-section"><h3><span>1</span>What would you like to study?</h3><div className="ai-source-options" role="group" aria-label="Study source">{[{id:'topic',label:'Type a topic',icon:Sparkle},{id:'upload',label:'Upload a file',icon:UploadSimple},{id:'saved',label:'Saved material',icon:BookOpen},{id:'text',label:'Paste text',icon:FileText}].map(item=><button key={item.id} disabled={busy} aria-pressed={sourceMode===item.id} onClick={()=>chooseSource(item.id)}><item.icon size={23}/>{item.label}</button>)}</div><div className="ai-source-content">
       {sourceMode==='topic'&&<label>Topics and instructions<textarea aria-label="Topics and instructions" disabled={busy} rows={2} maxLength={2000} placeholder="e.g. Mood disorders: focus on symptoms and diagnostic criteria, beginner level" value={topic} onChange={event => { setTopic(event.target.value); setDraft(null) }}/></label>}
       {sourceMode==='saved'&&<>{!!libraryItems.length && <label>Use a Library material<select aria-label="Use a Library material" disabled={busy} value={materialId} onChange={event => { const item=libraryItems.find(value=>value.id===event.target.value); setMaterialId(event.target.value); if(item){setText(item.text);setFileName(item.title);setSubject(item.category);setNoteId('');setDraft(null)} }}><option value="">Choose saved study material</option>{libraryItems.map(item=><option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}{!!notes.length && <label>Use a saved note<select aria-label="Use a saved note" disabled={busy} value={noteId} onChange={event => { const note = notes.find(item => item.id === event.target.value); setNoteId(event.target.value); setMaterialId(''); if (note) { setText(note.summary); setFileName(note.title); setSubject(note.category); setDraft(null) } }}><option value="">Choose a note or enter material below</option>{notes.map(note => <option key={note.id} value={note.id}>{note.title}</option>)}</select></label>}{!libraryItems.length&&!notes.length&&<p>No saved materials yet. Upload a file or paste your reading to get started.</p>}</>}
@@ -89,13 +90,13 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', ca
       </section></>}
       {error && <p role="alert" className="ref-form-error">{error}</p>}
       {saveError && <p role="alert" className="ref-form-error">{saveError}</p>}
-      {draft&&<button className="ref-secondary" onClick={()=>setDraft(null)}>Edit source and settings</button>}
-      <button className="ref-primary" disabled={busy || !source || source.length > MAX_SOURCE_LENGTH || !Number.isInteger(count) || count < 1 || count > (task === 'quiz' ? 15 : 20)} onClick={generate}>{loading ? <><Spinner className="animate-spin" size={18}/>Generating...</> : draft ? 'Generate again' : 'Generate draft'}</button>
-      {draft && <section className="ai-draft-preview" aria-label="AI draft preview"><h3>{draft.title}</h3>
-        {task === 'summary' ? <><p>{draft.summary}</p><ul>{draft.keyPoints.map((point,index) => <li key={index}>{point}</li>)}</ul></> : task === 'flashcards' ? <ol>{draft.cards.map((card,index) => <li key={index}><strong>{card.question}</strong><p>{card.answer}</p></li>)}</ol> : <ol>{draft.questions.map((question,index) => <li key={index}><strong>{question.question}</strong><ul>{question.options.map((option,answer) => <li key={answer}>{option}{answer === question.correct ? ' (correct)' : ''}</li>)}</ul><p>{question.explanation}</p></li>)}</ol>}
-        <p className="ref-inline-notice">AI-generated draft. Check accuracy against your source material. Psychology practice is educational and does not replace an official exam or professional judgment.</p>
-        <button className="ref-primary ref-wide" onClick={() => onSave(draft, {category:subject, quizOptions, timerMinutes, questionSeconds, mode, sourceName:fileName || topic.trim().slice(0, 120) || 'Pasted study material'})}>{saveLabel || (task === 'summary' ? 'Save as a new note' : task === 'quiz' ? 'Save quiz' : 'Save flashcards')}</button>
+      {!draft&&<button className="ref-primary ref-wide" disabled={busy || !source || source.length > MAX_SOURCE_LENGTH || !Number.isInteger(count) || count < 1 || count > (task === 'quiz' ? 15 : 20)} onClick={generate}>{loading?<><Spinner className="animate-spin" size={18}/>Generating...</>:'Generate draft'}</button>}
+      {draft&&<section className="ai-draft-preview" aria-label="AI draft preview">
+        {task==='flashcards'?<FlashcardDraftReview draft={draft} category={subject} onChange={setDraft} disabled={busy}/>:<><h3>{draft.title}</h3>{task==='summary'?<><p>{draft.summary}</p><ul>{draft.keyPoints.map((point,index)=><li key={index}>{point}</li>)}</ul></>:<ol>{draft.questions.map((question,index)=><li key={index}><strong>{question.question}</strong><ul>{question.options.map((option,answer)=><li key={answer}>{option}{answer===question.correct?' (correct)':''}</li>)}</ul><p>{question.explanation}</p></li>)}</ol>}</>}
+        <p className="ref-inline-notice">AI-generated draft. Check the content against your study material before saving.</p>
       </section>}
+      </div>
+      {draft&&<footer className="draft-save-bar"><div className="draft-save-meta"><strong>{task==='flashcards'?draft.cards.length+' cards ready':task==='quiz'?draft.questions.length+' questions ready':'Summary ready'}</strong><button className="ref-text-action" disabled={busy} onClick={()=>setDraft(null)}>Edit source and settings</button></div><div className="draft-save-actions"><button className="ref-secondary" disabled={busy} onClick={generate}>{loading?'Generating...':'Generate again'}</button><button className="ref-primary" disabled={busy||!draft.title.trim()||task==='flashcards'&&draft.cards.some(card=>!card.question.trim()||!card.answer.trim())} onClick={()=>onSave(draft,{category:subject,quizOptions,timerMinutes,questionSeconds,mode,sourceName:fileName||topic.trim().slice(0,120)||'Pasted study material'})}>{saveLabel||(task==='summary'?'Save as a new note':task==='quiz'?'Save quiz':'Save deck')}</button></div></footer>}
     </section>
   </ViewportOverlay>
 }

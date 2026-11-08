@@ -56,6 +56,30 @@ body .ref-quizzes-page .ref-answer-options .answer-incorrect { border-color:var(
 body .quiz-choice-chips button { min-height:38px; padding:9px 14px; border:1px solid var(--ref-border); border-radius:999px; color:var(--ref-muted); background:var(--ref-surface); font-size:12px; }
 body .quiz-choice-chips button[aria-pressed=true] { border-color:var(--ref-accent); background:var(--ref-soft); color:var(--ref-accent); font-weight:800; }
 .quiz-choice-chips button:disabled { opacity:.5; }
+body .ai-draft-dialog { display:flex; flex-direction:column; padding:0; gap:0; overflow:hidden; max-height:calc(100dvh - 32px); width:min(680px,100%); }
+body .ai-draft-dialog>.ref-panel-title { padding:22px 24px; margin:0; flex-shrink:0; border-bottom:1px solid var(--ref-border); }
+.ai-generator-body { overflow-y:auto; min-height:0; padding:20px 24px; overscroll-behavior:contain; }
+.ai-generator-body>p { color:var(--ref-muted); font-size:13px; line-height:1.8; margin-bottom:18px; }
+.draft-save-bar { flex-shrink:0; padding:16px 24px; border-top:1px solid var(--ref-border); background:var(--ref-surface); }
+.draft-save-meta,.draft-save-actions { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+.draft-save-meta { font-size:12px; margin-bottom:12px; }
+.draft-save-meta>strong { color:var(--ref-muted); }
+.draft-save-actions>.ref-primary { flex:1; justify-content:center; }
+.draft-card-navigation { display:flex; align-items:center; justify-content:space-between; gap:14px; margin:18px 0; font-size:13px; }
+.draft-card-tools { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin:18px 0 0; }
+body .flashcard-draft-review .flashcard-scene { min-height:310px; height:310px; }
+body .flashcard-draft-review .flashcard-rotator { height:100%; }
+body .flashcard-draft-review .flashcard-face { height:100%; min-height:0; overflow:hidden; }
+body .flashcard-draft-review .flashcard-face-content { padding:24px; min-height:0; height:100%; gap:14px; }
+body .flashcard-draft-review :is(.flashcard-mascot,.flashcard-star) { display:none; }
+body .flashcard-draft-review .flashcard-body { display:block; flex:1; min-height:0; margin:0; overflow-y:auto; }
+body .flashcard-draft-review .flashcard-category { display:block; margin-bottom:14px; }
+body .flashcard-draft-review .flashcard-flip-label { flex-shrink:0; padding:9px 16px; font-size:12px; }
+body .flashcard-draft-review .flashcard-answer { font-size:15px; line-height:1.8; }
+body .flashcard-draft-review .flashcard-question { font-size:18px; line-height:1.6; }
+.draft-card-editor label { margin-bottom:16px; }
+.flashcard-draft-review>label,.draft-card-editor label,.ai-generator-body .ai-setup-section>label { display:block; font-size:12px; font-weight:700; margin-bottom:14px; }
+@media(max-width:480px) { body .ai-draft-dialog>.ref-panel-title { padding:18px; } .ai-generator-body { padding:18px; } .draft-save-bar { padding:14px 18px; } .draft-save-meta { align-items:flex-start; } .draft-save-actions { flex-direction:column-reverse; align-items:stretch; } .draft-save-actions>button { width:100%; justify-content:center; } }
 .ai-source-options { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
 body .ai-source-options button { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:14px 8px; border:1px solid var(--ref-border); border-radius:14px; font-size:12px; background:var(--ref-surface); }
 body .ai-source-options button[aria-pressed=true] { border-color:var(--ref-accent); color:var(--ref-accent); background:var(--ref-soft); }
