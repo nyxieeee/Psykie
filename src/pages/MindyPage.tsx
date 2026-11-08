@@ -228,7 +228,29 @@ export function MindyPage() {
             {messages.map(msg => msg.sender === 'user' ? <div className="mindy-user-message" key={msg.id}><span className="ref-avatar tint-2">{initials}</span><p>{msg.text}</p></div> : <article key={msg.id} className="mindy-response">
               <div className="mindy-response-heading"><img src="/mindy-mascot.png" alt=""/><strong>Mindy</strong><time>{new Date(msg.timestamp).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}</time></div>
               <div className="mindy-response-content"><p>{msg.text}</p>{msg.research&&msg.research.status!=='off'&&<div className="mindy-research-results"><small>{msg.research.status==='used'?'Sources retrieved for this answer':msg.research.status==='empty'?'No matching sources were retrieved. This answer uses model knowledge.':'Research lookup was unavailable. This answer uses model knowledge.'}</small>{msg.research.sources.map(source=><a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer">{source.title}<span>{source.source}</span></a>)}</div>}
-<div className="mindy-response-footer"><button className="mindy-references" onClick={() => navigate('/research')}><BookOpen size={17}/> Find research sources</button><div className="mindy-message-actions"><button onClick={() => handleCopy(msg.id,msg.text)}>{copiedId === msg.id ? <Check size={16}/> : <Copy size={16}/>}<span>{copiedId === msg.id ? 'Copied' : 'Copy'}</span></button><button onClick={() => handleSaveToNotes(msg.text)}><Bookmark size={16}/><span>Save</span></button><details className="mindy-more"><summary aria-label="More study actions"><DotsThree size={20}/></summary><div><button onClick={() => handleCreateFlashcardFromChat(msg.text)}>Make flashcard</button><button onClick={() => handleRetry(msg.text)}>Try another explanation</button><button onClick={() => toggleLike(msg.id)}>{likedMap[msg.id] ? 'Liked' : 'Like response'}</button></div></details></div></div>
+                <div className="mindy-response-footer">
+                  <button className="mindy-references" onClick={() => navigate('/research')}><BookOpen size={17}/><span>Find research sources</span></button>
+                  <div className="mindy-message-actions" role="group" aria-label="Response actions">
+                    <button onClick={() => handleCopy(msg.id,msg.text)}>{copiedId === msg.id ? <Check size={16}/> : <Copy size={16}/>}<span>{copiedId === msg.id ? 'Copied' : 'Copy'}</span></button>
+                    <button onClick={() => handleSaveToNotes(msg.text)}><Bookmark size={16}/><span>Save</span></button>
+                    <details className="mindy-more" onToggle={event => {
+                      const menu=event.currentTarget
+                      if(!menu.open)return
+                      const feed=feedRef.current?.getBoundingClientRect(),anchor=menu.getBoundingClientRect()
+                      menu.dataset.placement=feed&&feed.bottom-anchor.bottom<160&&anchor.top-feed.top>160?'above':'below'
+                      const popup=menu.querySelector('div')
+                      if(popup){
+                        popup.style.transform='none'
+                        const bounds=popup.getBoundingClientRect(),left=(feed?.left||0)+8,right=(feed?.right||window.innerWidth)-8
+                        const shift=Math.max(left-bounds.left,Math.min(0,right-bounds.right))
+                        popup.style.transform=`translateX(${shift}px)`
+                      }
+                    }}>
+                      <summary aria-label="More study actions"><DotsThree size={20}/></summary>
+                      <div><button onClick={() => handleCreateFlashcardFromChat(msg.text)}>Make flashcard</button><button onClick={() => handleRetry(msg.text)}>Try another explanation</button><button onClick={() => toggleLike(msg.id)}>{likedMap[msg.id] ? 'Liked' : 'Like response'}</button></div>
+                    </details>
+                  </div>
+                </div>
               </div>
             </article>)}
             {isSending && <p className="mindy-typing" role="status">Mindy is thinking<span>...</span></p>}
