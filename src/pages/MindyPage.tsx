@@ -1,3 +1,4 @@
+import { plainText } from '../../supabase/functions/_shared/plainText'
 import { AIGenerator } from '../components/AIGenerator'
 import { aiConfigured, chatWithMindy } from '../utils/ai'
 import { AIServiceError } from '../utils/aiErrors'
@@ -104,7 +105,7 @@ export function MindyPage() {
   }, [currentSessionId, currentSession?.messages, isSending])
 
   const handleCopy = (id: string, text: string) => {
-    navigator.clipboard.writeText(text)
+    navigator.clipboard.writeText(plainText(text))
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
   }
@@ -119,6 +120,7 @@ export function MindyPage() {
 
   // Real action: Save AI response directly to Smart Notes
   const handleSaveToNotes = (text: string) => {
+    text=plainText(text)
     const titleSnippet = text.split('\n')[0].replace(/[^a-zA-Z0-9 ]/g, '').substring(0, 36) || 'Mindy AI Synthesis'
     addNote({
       title: titleSnippet,
@@ -135,7 +137,7 @@ export function MindyPage() {
   }
 
   // Real action: Turn AI response into a Flashcard
-  const handleCreateFlashcardFromChat = (text: string) => setCardSource(text)
+  const handleCreateFlashcardFromChat = (text: string) => setCardSource(plainText(text))
 
   const handleCreateNewChat = () => {
     const newSession = createSession()
@@ -227,7 +229,7 @@ export function MindyPage() {
             )}
             {messages.map(msg => msg.sender === 'user' ? <div className="mindy-user-message" key={msg.id}><span className="ref-avatar tint-2">{initials}</span><p>{msg.text}</p></div> : <article key={msg.id} className="mindy-response">
               <div className="mindy-response-heading"><img src="/mindy-mascot.png" alt=""/><strong>Mindy</strong><time>{new Date(msg.timestamp).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}</time></div>
-              <div className="mindy-response-content"><p>{msg.text}</p>{msg.research&&msg.research.status!=='off'&&<div className="mindy-research-results"><small>{msg.research.status==='used'?'Sources retrieved for this answer':msg.research.status==='empty'?'No matching sources were retrieved. This answer uses model knowledge.':'Research lookup was unavailable. This answer uses model knowledge.'}</small>{msg.research.sources.map(source=><a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer">{source.title}<span>{source.source}</span></a>)}</div>}
+              <div className="mindy-response-content"><p>{plainText(msg.text)}</p>{msg.research&&msg.research.status!=='off'&&<div className="mindy-research-results"><small>{msg.research.status==='used'?'Sources retrieved for this answer':msg.research.status==='empty'?'No matching sources were retrieved. This answer uses model knowledge.':'Research lookup was unavailable. This answer uses model knowledge.'}</small>{msg.research.sources.map(source=><a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer">{source.title}<span>{source.source}</span></a>)}</div>}
                 <div className="mindy-response-footer">
                   <button className="mindy-references" onClick={() => navigate('/research')}><BookOpen size={17}/><span>Find research sources</span></button>
                   <div className="mindy-message-actions" role="group" aria-label="Response actions">

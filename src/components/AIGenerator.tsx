@@ -1,3 +1,5 @@
+import { plainText } from '../../supabase/functions/_shared/plainText'
+import { validateDraft } from '../../supabase/functions/_shared/contracts'
 import { ReviewerContent } from './ReviewerContent'
 import { FlashcardDraftReview } from './FlashcardDraftReview'
 import { StudyFilePicker } from './StudyFilePicker'
@@ -68,6 +70,7 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', ca
     catch(error) { if (!controller.current.signal.aborted) setError(error instanceof Error ? error.message : 'Generation failed. Please try again.') }
     finally { setLoading(false) }
   }
+  const saveDraft=()=>{if(!draft)return;try{onSave(validateDraft(draft,task),{category:subject,quizOptions,timerMinutes,questionSeconds,mode,sourceText:text,sourceFile:uploadedFile,sourceName:fileName||topic.trim().slice(0,120)||'Pasted study material'})}catch(error){setError(error instanceof Error?error.message:'Complete the draft before saving.')}}
   const title = task==='reviewer'?'Create a psychology reviewer':task === 'summary' ? 'Create a study summary' : task === 'flashcards' ? 'Create flashcards' : 'Create a quiz'
   const busy = loading || reading || saving
   return <ViewportOverlay onDismiss={onClose}>
@@ -94,11 +97,11 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', ca
       {saveError && <p role="alert" className="ref-form-error">{saveError}</p>}
       {!draft&&<button className="ref-primary ref-wide" disabled={busy || !source || source.length > MAX_SOURCE_LENGTH || !Number.isInteger(count) || count < 1 || count > (task === 'quiz' ? 15 : 20)} onClick={generate}>{loading?<><Spinner className="animate-spin" size={18}/>Generating...</>:'Generate draft'}</button>}
       {draft&&<section className="ai-draft-preview" aria-label="AI draft preview">
-        {task==='reviewer'?<><h3>{draft.title}</h3><ReviewerContent draft={draft} category={subject}/></>:task==='flashcards'?<FlashcardDraftReview draft={draft} category={subject} onChange={setDraft} disabled={busy}/>:<><h3>{draft.title}</h3>{task==='summary'?<><p>{draft.summary}</p><ul>{draft.keyPoints.map((point,index)=><li key={index}>{point}</li>)}</ul></>:<ol>{draft.questions.map((question,index)=><li key={index}><strong>{question.question}</strong><ul>{question.options.map((option,answer)=><li key={answer}>{option}{answer===question.correct?' (correct)':''}</li>)}</ul><p>{question.explanation}</p></li>)}</ol>}</>}
+        {task==='reviewer'?<><h3>{plainText(draft.title)}</h3><ReviewerContent draft={draft} category={subject}/></>:task==='flashcards'?<FlashcardDraftReview draft={draft} category={subject} onChange={setDraft} disabled={busy}/>:<><h3>{plainText(draft.title)}</h3>{task==='summary'?<><p>{plainText(draft.summary)}</p><ul>{draft.keyPoints.map((point,index)=><li key={index}>{plainText(point)}</li>)}</ul></>:<ol>{draft.questions.map((question,index)=><li key={index}><strong>{plainText(question.question)}</strong><ul>{question.options.map((option,answer)=><li key={answer}>{plainText(option)}{answer===question.correct?' (correct)':''}</li>)}</ul><p>{plainText(question.explanation)}</p></li>)}</ol>}</>}
         <p className="ref-inline-notice">AI-generated draft. Check the content against your study material before saving.</p>
       </section>}
       </div>
-      {draft&&<footer className="draft-save-bar"><div className="draft-save-meta"><strong>{task==='flashcards'?draft.cards.length+' cards ready':task==='quiz'?draft.questions.length+' questions ready':task==='reviewer'?'Reviewer ready':'Summary ready'}</strong><button className="ref-text-action" disabled={busy} onClick={()=>setDraft(null)}>Edit source and settings</button></div><div className="draft-save-actions"><button className="ref-secondary" disabled={busy} onClick={generate}>{loading?'Generating...':'Generate again'}</button><button className="ref-primary" disabled={busy||!draft.title.trim()||task==='flashcards'&&draft.cards.some(card=>!card.question.trim()||!card.answer.trim())} onClick={()=>onSave(draft,{category:subject,quizOptions,timerMinutes,questionSeconds,mode,sourceText:text,sourceFile:uploadedFile,sourceName:fileName||topic.trim().slice(0,120)||'Pasted study material'})}>{saving?'Saving...':saveLabel||(task==='reviewer'?'Save reviewer':task==='summary'?'Save as a new note':task==='quiz'?'Save quiz':'Save deck')}</button></div></footer>}
+      {draft&&<footer className="draft-save-bar"><div className="draft-save-meta"><strong>{task==='flashcards'?draft.cards.length+' cards ready':task==='quiz'?draft.questions.length+' questions ready':task==='reviewer'?'Reviewer ready':'Summary ready'}</strong><button className="ref-text-action" disabled={busy} onClick={()=>setDraft(null)}>Edit source and settings</button></div><div className="draft-save-actions"><button className="ref-secondary" disabled={busy} onClick={generate}>{loading?'Generating...':'Generate again'}</button><button className="ref-primary" disabled={busy||!draft.title.trim()||task==='flashcards'&&draft.cards.some(card=>!card.question.trim()||!card.answer.trim())} onClick={saveDraft}>{saving?'Saving...':saveLabel||(task==='reviewer'?'Save reviewer':task==='summary'?'Save as a new note':task==='quiz'?'Save quiz':'Save deck')}</button></div></footer>}
     </section>
   </ViewportOverlay>
 }

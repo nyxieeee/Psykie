@@ -1,3 +1,4 @@
+import { plainText } from './plainText.ts'
 export type AITask = 'summary' | 'flashcards' | 'quiz' | 'reviewer'
 export type AIQuestion = { question: string; options: string[]; correct: number; explanation: string }
 export type QuizOptions = { style: 'multiple-choice' | 'true-false' | 'scenario' | 'mixed'; difficulty: 'easy' | 'medium' | 'hard' | 'board' }
@@ -33,5 +34,8 @@ export function validateDraft(value: unknown, task: AITask): AIDraft {
   if (data.questions.length > 15 || data.questions.some(q => !q || !text(q.question, 1500) || !q.question.trim() || !Array.isArray(q.options) || ![2, 4].includes(q.options.length) || q.options.some(o => !text(o, 1000) || !o.trim()) || new Set(q.options).size !== q.options.length || !Number.isInteger(q.correct) || q.correct < 0 || q.correct >= q.options.length || !text(q.explanation, 2500))) throw new Error('The AI returned invalid quiz questions.')
   if (((task === 'summary'||task==='reviewer') && !data.summary.trim()) || (task === 'flashcards' && !data.cards.length) || (task === 'quiz' && !data.questions.length)) throw new Error('The AI did not return the requested content.')
   if(task==='reviewer'&&(!data.keyPoints.length||!data.cards.length||!data.questions.length))throw new Error('The reviewer is incomplete. Please generate it again.')
-  return data
+  const clean = {...data,title:plainText(data.title),summary:plainText(data.summary),keyPoints:data.keyPoints.map(plainText),cards:data.cards.map(card=>({question:plainText(card.question),answer:plainText(card.answer)})),questions:data.questions.map(question=>({...question,question:plainText(question.question),options:question.options.map(plainText),explanation:plainText(question.explanation)}))}
+  if(!clean.title||clean.cards.some(card=>!card.question||!card.answer)||clean.questions.some(question=>!question.question||question.options.some(option=>!option)||new Set(question.options).size!==question.options.length))throw new Error('The AI returned empty or duplicate content after removing formatting. Please generate again.')
+  if((task==='summary'||task==='reviewer')&&!clean.summary)throw new Error('The AI returned an empty summary.')
+  return clean
 }

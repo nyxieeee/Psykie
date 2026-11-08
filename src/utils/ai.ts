@@ -1,3 +1,4 @@
+import { plainText } from '../../supabase/functions/_shared/plainText'
 import { useAuthStore } from '../store/useAuthStore'
 import { requireSupabase, supabaseConfigured } from './supabase'
 import { AIServiceError, aiErrorMessage } from './aiErrors'
@@ -23,7 +24,7 @@ export async function chatWithMindy(messages: { role: 'user' | 'assistant'; cont
   if (typeof data?.answer !== 'string' || !data.answer.trim()) throw new Error('Mindy returned an empty response. Please try again.')
   const status=['off','used','empty','unavailable'].includes(data.research?.status)?data.research.status:'off'
   const sources=Array.isArray(data.research?.sources)?data.research.sources.filter((source:any)=>source&&typeof source.title==='string'&&typeof source.source==='string'&&typeof source.url==='string'&&trustedSource(source.url)):[]
-  return {answer:data.answer,research:{status,sources}}
+  return {answer:plainText(data.answer),research:{status,sources}}
 }
 export async function generateAIDraft(task: AITask, text: string, category: string, count: number, signal?: AbortSignal, quizOptions?: QuizOptions): Promise<AIDraft> {
   return validateDraft(await invoke('psykie-ai', { action: task, text, category, count, quizOptions }, signal), task)

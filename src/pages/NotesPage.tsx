@@ -1,3 +1,4 @@
+import { plainText } from '../../supabase/functions/_shared/plainText'
 import { AIGenerator } from '../components/AIGenerator'
 import { AITask, extractImageText } from '../utils/ai'
 import { workspaceStorage } from '../utils/workspaceStorage'
@@ -75,7 +76,7 @@ export function NotesPage() {
   const filtered = notes.filter(note =>
     (notebook === 'all' || note.category === notebook) &&
     (tab !== 'favorites' || favorites.includes(note.id)) &&
-    `${note.title} ${note.summary}`.toLowerCase().includes(search.toLowerCase())
+    `${plainText(note.title)} ${note.summary}`.toLowerCase().includes(search.toLowerCase())
   ).sort((a, b) => sort === 'name' ? a.title.localeCompare(b.title) : b.date.localeCompare(a.date))
 
   useEffect(() => { workspaceStorage.setItem('psykie-note-favorites', JSON.stringify(favorites)) }, [favorites])
@@ -91,8 +92,8 @@ export function NotesPage() {
     const editor = editorRef.current
     if (editor && editor.dataset.noteId !== active?.id) {
       const stored = active ? workspaceStorage.getItem('psykie-note-html-' + active.id) : null
-      if (stored) editor.innerHTML = sanitizeNoteHtml(stored)
-      else editor.textContent = active?.summary || ''
+      if (stored) editor.innerHTML = sanitizeNoteHtml(plainText(stored))
+      else editor.textContent = plainText(active?.summary || '')
       editor.dataset.noteId = active?.id || ''
       setSaved(true)
     }
@@ -163,7 +164,7 @@ export function NotesPage() {
       action="New note"
       onAction={() => { setNewKind('text'); setShowNew(true) }}
     />
-    <div className="notes-viewbar"><p>{active ? <><strong>{active.title}</strong><span>{isHandwriting?'Handwritten note':'Text note'}</span></> : 'Your notebooks and writing space'}</p>{active&&<button className="ref-secondary" aria-controls="notes-browser" aria-expanded={browserOpen} onClick={()=>setBrowserOpen(value=>!value)}><SidebarSimple size={18}/>{browserOpen?'Focus editor':'Show notes'}</button>}</div>
+    <div className="notes-viewbar"><p>{active ? <><strong>{plainText(active.title)}</strong><span>{isHandwriting?'Handwritten note':'Text note'}</span></> : 'Your notebooks and writing space'}</p>{active&&<button className="ref-secondary" aria-controls="notes-browser" aria-expanded={browserOpen} onClick={()=>setBrowserOpen(value=>!value)}><SidebarSimple size={18}/>{browserOpen?'Focus editor':'Show notes'}</button>}</div>
     <div className="ref-notes-layout"><div className="notes-browser" id="notes-browser">
       <aside className="ref-panel ref-notebooks">
         <div className="ref-panel-title">
@@ -208,7 +209,7 @@ export function NotesPage() {
                   {note.fileSize === 'Handwritten note' ? <Scribble size={26} /> : <FileText size={26} />}
                 </span>
                 <span>
-                  <strong>{note.title}</strong>
+                  <strong>{plainText(note.title)}</strong>
                   <p>{note.summary.slice(0, 88)}</p>
                   <span className="ref-note-meta">
                     <span className={`ref-tag tint-${index % 4}`}>{note.category}</span>
@@ -229,7 +230,7 @@ export function NotesPage() {
         {active ? (
           <>
             <div className="ref-note-title">
-              <h2>{active.title}</h2>
+              <h2>{plainText(active.title)}</h2>
               <button aria-label="Favorite current note" onClick={() => toggleFavorite(active.id)}>
                 <Star size={20} weight={favorites.includes(active.id) ? 'fill' : 'regular'} />
               </button>
@@ -297,7 +298,7 @@ export function NotesPage() {
             {!isHandwriting && (
               <form className="ref-note-ask" onSubmit={e => {
                 e.preventDefault()
-                if (question.trim()) navigate(`/mindy?q=${encodeURIComponent(`About my note "${active.title}": ${question}`)}`, { state: { noteContext: active.summary.slice(0,4000) } })
+                if (question.trim()) navigate(`/mindy?q=${encodeURIComponent(`About my note "${plainText(active.title)}": ${question}`)}`, { state: { noteContext: active.summary.slice(0,4000) } })
               }}>
                 <span><img src="/mindy-mascot.png" alt="" />Ask Mindy</span>
                 <input aria-label="Ask about this note" placeholder="Ask a question about this note…" value={question} onChange={e => setQuestion(e.target.value)} />

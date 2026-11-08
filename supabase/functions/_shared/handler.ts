@@ -1,3 +1,4 @@
+import { plainText } from './plainText.ts'
 import type { AIDraft, AITask, ResearchResponse } from './contracts.ts'
 import { TRUSTED_SOURCES, trustedSource, validateDraft } from './contracts.ts'
 type Runtime = { env: (key: string) => string | undefined; fetch: typeof fetch }
@@ -5,7 +6,7 @@ class RequestError extends Error { status: number; code?: string; constructor(st
 const objectSchema = (properties: Record<string, unknown>) => ({ type: 'object', properties, required: Object.keys(properties), additionalProperties: false })
 const string = { type: 'string' }
 const draftSchema = objectSchema({ title: string, summary: string, keyPoints: { type: 'array', maxItems: 12, items: string }, cards: { type: 'array', maxItems: 20, items: objectSchema({ question: string, answer: string }) }, questions: { type: 'array', maxItems: 15, items: objectSchema({ question: string, options: { type: 'array', minItems: 2, maxItems: 4, items: string }, correct: { type: 'integer', minimum: 0, maximum: 3 }, explanation: string }) } })
-const SYSTEM = 'You are Mindy, an expert psychology study companion and clinical education assistant. You provide in-depth, scientifically rigorous explanations of psychological theories, DSM-5-TR diagnostic criteria, clinical case formulation, evidence-based psychotherapies (CBT, ACT, DBT, psychodynamic), psychological assessments, neurobiological mechanisms, and research methodologies. When asked about clinical scenarios, discuss differential diagnosis, assessment instruments, evidence-based treatment guidelines, and formulation frameworks from an educational and training perspective. When discussing research, synthesize established and current scientific literature accurately. Use clear markdown formatting with bullet points and bold headers for clarity. Use plain text or markdown, not HTML.'
+const SYSTEM = 'You are Mindy, an expert psychology study companion and clinical education assistant. You provide in-depth, scientifically rigorous explanations of psychological theories, DSM-5-TR diagnostic criteria, clinical case formulation, evidence-based psychotherapies (CBT, ACT, DBT, psychodynamic), psychological assessments, neurobiological mechanisms, and research methodologies. When asked about clinical scenarios, discuss differential diagnosis, assessment instruments, evidence-based treatment guidelines, and formulation frameworks from an educational and training perspective. When discussing research, synthesize established and current scientific literature accurately. Use plain text only. Never use Markdown or HTML formatting: no asterisks for bold or italics, hash-prefixed headings, backticks, code fences, Markdown tables or Markdown links. Use short paragraphs, ordinary section titles and simple numbered lists. In structured JSON, keep every text field plain text.'
 function requiredText(value: unknown, max: number, name: string) {
   if (typeof value !== 'string' || !value.trim() || value.length > max) throw new RequestError(400, `${name} must contain 1-${max} characters.`)
   return value.trim()
@@ -88,7 +89,7 @@ async function generate(rt: Runtime, body: Record<string, unknown>) {
     const data = await mistral(rt, 'chat/completions', { model: rt.env('MISTRAL_MODEL') || 'ministral-8b-latest', messages: [{ role: 'system', content: systemPrompt }, ...messages], max_tokens: 2500, temperature: 0.3 })
     const answer = data.choices?.[0]?.message?.content
     if (typeof answer !== 'string' || !answer.trim() || data.choices[0].finish_reason !== 'stop') throw new RequestError(502, 'The AI response was incomplete. Try a shorter question.')
-    return { answer, research: {status:researchStatus,sources:researchSources} }
+    return { answer:plainText(answer), research: {status:researchStatus,sources:researchSources} }
   }
   if (!['summary', 'flashcards', 'quiz', 'reviewer'].includes(String(body.action))) throw new RequestError(400, 'Unknown AI action.')
   const action = body.action as AITask, text = requiredText(body.text, 25000, 'Source text or topic')
