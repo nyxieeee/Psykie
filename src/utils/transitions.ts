@@ -50,6 +50,7 @@ const T_EXIT  = { duration: DURATION.fast,   ease: EASE.aggressive }
 
 export type TransitionDirection = 'up' | 'down' | 'left' | 'right'
 export type TransitionStyle =
+  | 'studio-slide'
   | 'fade'
   | 'slide-up' | 'slide-down' | 'slide-left' | 'slide-right'
   | 'scale-up' | 'scale-down'
@@ -300,6 +301,7 @@ const threeDGlassDepth: TransitionSet = {
 // REGISTRY — map TransitionStyle → TransitionSet
 // ═══════════════════════════════════════════
 export const TRANSITIONS: Record<TransitionStyle, TransitionSet> = {
+  'studio-slide': { initial:{opacity:0,y:8}, animate:{opacity:1,y:0,transition:{duration:0.25,ease:EASE.snappy}}, exit:{opacity:0,y:-8,transition:{duration:0.15,ease:EASE.snappy}} },
   'fade':           fade,
   'slide-up':       slideUp,
   'slide-down':     slideDown,
@@ -346,6 +348,7 @@ export function getDirectionalVariants(
 
 // All available transition names for the picker UI
 export const TRANSITION_NAMES: { label: string; value: TransitionStyle }[] = [
+  { label: 'Soft slide', value: 'studio-slide' },
   { label: '3D Glass Depth', value: '3d-glass-depth' },
   { label: 'Cube Right',    value: 'cube-right' },
   { label: 'Cube Left',     value: 'cube-left' },
@@ -362,4 +365,4 @@ export const TRANSITION_NAMES: { label: string; value: TransitionStyle }[] = [
 ]
 
 // Default active transition for the app — permanently 3D Glass Depth
-export const DEFAULT_TRANSITION: TransitionStyle = 'fade'
+export const DEFAULT_TRANSITION: TransitionStyle = 'studio-slide'

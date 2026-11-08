@@ -1,4 +1,7 @@
-import { useState, useRef, useEffect } from 'react'
+import { useMotionPreference } from '../hooks/useMotionPreference'
+import { AnimatePresence, motion } from 'framer-motion'
+import { BookTurn } from '../components/BookTurn'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   MagnifyingGlass, CaretRight, CaretDown, BookOpen, Warning, Info,
   ArrowRight, Sparkle, Bookmarks, CaretLeft, FilePdf, UploadSimple, X,
@@ -227,7 +230,7 @@ function BookSheet({
 
   return (
     <div
-      className={`p-8 sm:p-11 border flex flex-col justify-between transition-all select-text w-full h-full ${bgClass} ${roundedCorners} ${gutterShadow}`}
+      className={`dsm-paper p-8 sm:p-11 border flex flex-col justify-between select-text w-full h-full ${bgClass} ${roundedCorners} ${gutterShadow}`}
       style={{
         minHeight: 700,
         fontSize: `${fontSizeMultiplier * 13.5}px`,
@@ -326,6 +329,7 @@ function BookSheet({
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export function DSMPage() {
+  const reducedMotion = useMotionPreference()
   const [activeTab, setActiveTab] = useState<'criteria' | 'reader' | 'pdf'>('criteria')
   const location = useLocation()
   const [search, setSearch] = useState((location.state as {query?:string} | null)?.query || '')
@@ -343,6 +347,9 @@ export function DSMPage() {
   const [paperTheme, setPaperTheme] = useState<'cream' | 'rose' | 'slate'>('cream')
   const [showTOC, setShowTOC] = useState(false)
 
+  const previousReaderPage = useCallback(() => setCurrentPageNumber(page => Math.max(1, page - (spreadMode === 'spread' ? (page === 2 ? 1 : 2) : 1))), [spreadMode])
+  const nextReaderPage = useCallback(() => setCurrentPageNumber(page => Math.min(TOTAL_DSM5_PAGES, page + (spreadMode === 'spread' ? (page === 1 ? 1 : 2) : 1))), [spreadMode])
+
   // Keyboard navigation for authentic book flipping
   useEffect(() => {
     if (activeTab !== 'reader') return
@@ -350,15 +357,15 @@ export function DSMPage() {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return
       if (e.key === 'ArrowLeft') {
         e.preventDefault()
-        setCurrentPageNumber(p => Math.max(1, p - (spreadMode === 'spread' ? 2 : 1)))
+        previousReaderPage()
       } else if (e.key === 'ArrowRight') {
         e.preventDefault()
-        setCurrentPageNumber(p => Math.min(TOTAL_DSM5_PAGES, p + (spreadMode === 'spread' ? 2 : 1)))
+        nextReaderPage()
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [activeTab, spreadMode])
+  }, [activeTab, previousReaderPage, nextReaderPage])
 
   // PDF file upload state
   const [customPdfUrl, setCustomPdfUrl] = useState<string | null>(null)
@@ -596,7 +603,7 @@ export function DSMPage() {
               <div className="flex items-center gap-2">
                 <button
                   disabled={currentPageNumber <= 1}
-                  onClick={() => setCurrentPageNumber(p => Math.max(1, p - (spreadMode === 'spread' ? 2 : 1)))}
+                  onClick={() => previousReaderPage()}
                   className="w-9 h-9 rounded-xl border border-pink-200 text-neutral-600 hover:bg-pink-50 hover:text-pink-600 disabled:opacity-30 transition-all flex items-center justify-center shadow-2xs"
                   title="Previous page (Left Arrow)"
                 >
@@ -605,9 +612,9 @@ export function DSMPage() {
 
                 <div className="px-3.5 py-1 rounded-xl bg-pink-50/70 border border-pink-100/80 text-center min-w-36">
                   <span className="text-xs font-black text-neutral-800">
-                    Page <strong className="text-pink-600">{currentPageNumber}</strong>
-                    {spreadMode === 'spread' && currentPageNumber < TOTAL_DSM5_PAGES && (
-                      <span>–{Math.min(TOTAL_DSM5_PAGES, currentPageNumber + 1)}</span>
+                    Page <strong className="text-pink-600">{spreadMode === 'spread' && currentPageNumber > 1 && currentPageNumber < TOTAL_DSM5_PAGES ? currentPageNumber - currentPageNumber % 2 : currentPageNumber}</strong>
+                    {spreadMode === 'spread' && currentPageNumber > 1 && currentPageNumber < TOTAL_DSM5_PAGES && (
+                      <span>–{Math.min(TOTAL_DSM5_PAGES, (currentPageNumber % 2 === 0 ? currentPageNumber : currentPageNumber - 1) + 1)}</span>
                     )}{' '}
                     <span className="text-neutral-400 font-normal">/ {TOTAL_DSM5_PAGES}</span>
                   </span>
@@ -618,7 +625,7 @@ export function DSMPage() {
 
                 <button
                   disabled={currentPageNumber >= TOTAL_DSM5_PAGES}
-                  onClick={() => setCurrentPageNumber(p => Math.min(TOTAL_DSM5_PAGES, p + (spreadMode === 'spread' ? 2 : 1)))}
+                  onClick={() => nextReaderPage()}
                   className="w-9 h-9 rounded-xl border border-pink-200 text-neutral-600 hover:bg-pink-50 hover:text-pink-600 disabled:opacity-30 transition-all flex items-center justify-center shadow-2xs"
                   title="Next page (Right Arrow)"
                 >
@@ -631,6 +638,7 @@ export function DSMPage() {
                 <span className="text-xs font-bold text-neutral-500">Go to page:</span>
                 <input
                   type="number"
+                  aria-label="Go to reader page"
                   min={1}
                   max={TOTAL_DSM5_PAGES}
                   placeholder="1–1050"
@@ -658,6 +666,7 @@ export function DSMPage() {
               </div>
               <input
                 type="range"
+                aria-label="Reader page"
                 min={1}
                 max={TOTAL_DSM5_PAGES}
                 value={currentPageNumber}
@@ -758,8 +767,8 @@ export function DSMPage() {
           </div>
 
           {/* Table of Contents Floating Popover / Drawer */}
-          {showTOC && (
-            <div className="ref-panel p-4 bg-white border border-pink-200 rounded-2xl shadow-xl max-h-96 overflow-y-auto animate-in fade-in duration-150">
+          <AnimatePresence initial={false}>{showTOC && (
+            <motion.div initial={reducedMotion ? false : {opacity:0,y:-12}} animate={{opacity:1,y:0}} exit={{opacity:0,y:reducedMotion?0:-8}} transition={{duration:reducedMotion?0:0.25,ease:[0.22,1,0.36,1]}} className="ref-panel p-4 bg-white border border-pink-200 rounded-2xl shadow-xl max-h-96 overflow-y-auto animate-in fade-in duration-150">
               <div className="flex items-center justify-between pb-2 mb-3 border-b border-pink-100">
                 <div className="flex items-center gap-2">
                   <BookBookmark size={18} className="text-pink-500" />
@@ -798,15 +807,15 @@ export function DSMPage() {
                   </button>
                 ))}
               </div>
-            </div>
-          )}
+            </motion.div>
+          )}</AnimatePresence>
 
           {/* Authentic Book Spread / Single Page View */}
-          {spreadMode === 'spread' ? (
+          {spreadMode === 'spread' && currentPageNumber > 1 && currentPageNumber < TOTAL_DSM5_PAGES ? (
             // Two-Page Open Book Spread
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-stretch gap-0 max-w-6xl mx-auto rounded-3xl overflow-hidden shadow-2xl border border-neutral-300/80 bg-neutral-900/5 p-2 transition-all">
+            <div className="dsm-book-spread">
               {/* Left Page (Even Page Number) */}
-              <div className="min-w-0 flex">
+              <BookTurn page={currentPageNumber % 2 === 0 ? currentPageNumber : currentPageNumber - 1} side="left">
                 <BookSheet
                   page={getDSMPage(currentPageNumber % 2 === 0 ? currentPageNumber : Math.max(1, currentPageNumber - 1))}
                   isLeftPage={true}
@@ -814,13 +823,13 @@ export function DSMPage() {
                   paperTheme={paperTheme}
                   fontSizeMultiplier={fontSizeMultiplier}
                 />
-              </div>
+              </BookTurn>
 
               {/* Central Spine Fold / Gutter Crease */}
-              <div className="hidden md:block w-3.5 flex-shrink-0 bg-gradient-to-r from-neutral-300/60 via-neutral-400/80 to-neutral-300/60 shadow-inner rounded-xs my-6 opacity-75" />
+              <div className="dsm-book-spine" aria-hidden="true"/>
 
               {/* Right Page (Odd Page Number) */}
-              <div className="min-w-0 flex mt-3 md:mt-0">
+              <BookTurn page={currentPageNumber % 2 === 0 ? currentPageNumber + 1 : currentPageNumber} side="right">
                 <BookSheet
                   page={getDSMPage(
                     Math.min(
@@ -833,11 +842,11 @@ export function DSMPage() {
                   paperTheme={paperTheme}
                   fontSizeMultiplier={fontSizeMultiplier}
                 />
-              </div>
+              </BookTurn>
             </div>
           ) : (
             // Single Page View
-            <div className="max-w-2xl mx-auto transition-all shadow-xl rounded-3xl">
+            <div className="dsm-book-single"><BookTurn page={currentPageNumber}>
               <BookSheet
                 page={getDSMPage(currentPageNumber)}
                 isLeftPage={currentPageNumber % 2 === 0}
@@ -845,14 +854,14 @@ export function DSMPage() {
                 paperTheme={paperTheme}
                 fontSizeMultiplier={fontSizeMultiplier}
               />
-            </div>
+            </BookTurn></div>
           )}
 
           {/* Quick Bottom Flip Bar */}
           <div className="flex items-center justify-between max-w-3xl mx-auto pt-3">
             <button
               disabled={currentPageNumber <= 1}
-              onClick={() => setCurrentPageNumber(p => Math.max(1, p - (spreadMode === 'spread' ? 2 : 1)))}
+              onClick={() => previousReaderPage()}
               className="flex items-center gap-1.5 text-xs font-bold text-pink-600 hover:text-pink-700 bg-pink-50 px-4 py-2.5 rounded-xl disabled:opacity-40 transition-colors shadow-xs"
             >
               <CaretLeft size={16} />Previous {spreadMode === 'spread' ? 'Spread' : 'Page'}
@@ -864,7 +873,7 @@ export function DSMPage() {
 
             <button
               disabled={currentPageNumber >= TOTAL_DSM5_PAGES}
-              onClick={() => setCurrentPageNumber(p => Math.min(TOTAL_DSM5_PAGES, p + (spreadMode === 'spread' ? 2 : 1)))}
+              onClick={() => nextReaderPage()}
               className="flex items-center gap-1.5 text-xs font-bold text-pink-600 hover:text-pink-700 bg-pink-50 px-4 py-2.5 rounded-xl disabled:opacity-40 transition-colors shadow-xs"
             >
               Next {spreadMode === 'spread' ? 'Spread' : 'Page'}<CaretRight size={16} />

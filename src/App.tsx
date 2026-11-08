@@ -1,8 +1,9 @@
+import { useMotionPreference } from './hooks/useMotionPreference'
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage'
 import { AccountTypePage } from './pages/auth/AccountTypePage'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Suspense, lazy, useEffect, useLayoutEffect, useRef } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useAuthStore, useIsAuthenticated } from './store'
 import { TransitionProvider, useTransitionStyle } from './context/TransitionContext'
 import { TRANSITIONS, DEFAULT_TRANSITION } from './utils/transitions'
@@ -136,7 +137,7 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
     return base
   }
 
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = useMotionPreference()
   const variant = reducedMotion ? TRANSITIONS.fade : getVariant()
 
   useEffect(() => {

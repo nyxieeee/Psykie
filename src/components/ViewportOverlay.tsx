@@ -1,3 +1,4 @@
+import { useMotionPreference } from '../hooks/useMotionPreference'
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, type HTMLMotionProps } from 'framer-motion'
@@ -10,6 +11,7 @@ type ViewportOverlayProps = HTMLMotionProps<'div'> & { onDismiss?: () => void }
 /** Keep dialogs out of transformed, filtered, or clipped page ancestors. */
 export function ViewportOverlay({ children, className = '', onDismiss, onClick, ...props }: ViewportOverlayProps) {
   const ref = useRef<HTMLDivElement>(null)
+  const reducedMotion = useMotionPreference()
   const dismissRef = useRef(onDismiss)
   dismissRef.current = onDismiss
 
@@ -50,7 +52,7 @@ export function ViewportOverlay({ children, className = '', onDismiss, onClick, 
   }, [])
 
   return createPortal(
-    <motion.div {...props} ref={ref} className={`viewport-overlay ${className}`} role="dialog" aria-modal="true" tabIndex={-1} onClick={event => {
+    <motion.div initial={reducedMotion ? false : {opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:reducedMotion ? 0 : 0.15}} {...props} ref={ref} className={`viewport-overlay ${className}`} role="dialog" aria-modal="true" tabIndex={-1} onClick={event => {
       onClick?.(event)
       if (event.target === event.currentTarget) onDismiss?.()
     }}>{children}</motion.div>,

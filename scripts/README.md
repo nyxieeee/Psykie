@@ -33,3 +33,11 @@ Run `npm run test:redesign` (Playwright and Microsoft Edge required). The runner
 Checks all student pages at 320, 390, 768 and 1440px, clinical pages at three widths, login/registration, global DSM search handoff, appearance saving and calendar persistence/removal. Screenshots are written to ignored `artifacts/redesign/`.
 
 The existing `check-library.cjs`, `check-ai-ui.cjs` and `check-psych-quiz.cjs` cover material reuse, OCR imports, note summaries, chat retry, flashcards, quiz timers/history and research collections. Run them through `node scripts/run-ai-ui.cjs scripts/<name>.cjs`, one at a time.
+
+## Motion and visual polish
+
+The shared tabs, panel entrance and modal motion adapt free patterns by Jakub Antalik from [Transitions.dev](https://transitions.dev/). Source recipes: [sliding tabs](https://github.com/Jakubantalik/transitions.dev/blob/main/skills/transitions-dev/16-tabs-sliding.md), [panel reveal](https://github.com/Jakubantalik/transitions.dev/blob/main/skills/transitions-dev/07-panel-reveal.md), and [modal](https://github.com/Jakubantalik/transitions.dev/blob/main/skills/transitions-dev/06-modal.md). Usage is covered by the project's [license](https://github.com/Jakubantalik/transitions.dev/blob/main/LICENSE). No Pro assets or additional runtime package are used.
+
+DSM book turns use the existing Framer Motion dependency and Psykie's own `BookTurn` component. Outgoing copies are hidden from assistive technology and removed after the turn. Perspective remains local to the book; page controls and modal positioning remain outside it. Single-page and spread modes share keyboard, scrubber, jump and contents navigation. Reduced-motion preferences update live and show pages immediately.
+
+Run `node scripts/run-ai-ui.cjs scripts/check-motion.cjs` to check forward/back/rapid turns, spread pairing, end bounds, contents, mobile overflow, live reduced-motion changes, tab resize alignment and modal dismissal. The tests mock authentication and make no model requests. Screenshots go to ignored `artifacts/motion/`.
