@@ -115,7 +115,7 @@ async function generate(rt: Runtime, body: Record<string, unknown>) {
   if (!Number.isInteger(count) || count < 1 || count > (action === 'quiz' ? 15 : 20)) throw new RequestError(400, 'Requested item count is out of range.')
   const quizOptions = (body.quizOptions || { style: 'multiple-choice', difficulty: 'medium' }) as { style: string; difficulty: string }
   if (action === 'quiz' && (!['multiple-choice', 'true-false', 'scenario', 'mixed'].includes(quizOptions.style) || !['easy', 'medium', 'hard', 'board'].includes(quizOptions.difficulty))) throw new RequestError(400, 'Choose a supported quiz style and difficulty.')
-  const quizInstruction = action === 'quiz' ? ` Psychology quiz style: ${quizOptions.style}; difficulty: ${quizOptions.difficulty}. Multiple-choice questions have four plausible options. True/false questions have exactly two options: True and False. Scenario questions use fictional psychology learning situations with four options. Mixed quizzes may combine these styles. All questions have one correct answer. Board difficulty means challenging educational practice, not an official or validated licensure exam. Explain why the answer is correct and why distractors are wrong. Keep psychology scenarios grounded in the supplied concepts; no nursing-specific exam content or personalized diagnosis.` : ''
+  const quizInstruction = action === 'quiz' ? ` Psychology quiz style: ${quizOptions.style}; difficulty: ${quizOptions.difficulty}. For multiple-choice, scenario, or single-style quizzes, every question MUST have EXACTLY 4 distinct options. For true/false questions, every question MUST have exactly 2 options: True and False. Mixed quizzes may combine these styles. All questions have one correct answer with zero-based index. Board difficulty means challenging educational practice, not an official or validated licensure exam. Explain why the answer is correct and why distractors are wrong. Keep psychology scenarios grounded in the supplied concepts; no nursing-specific exam content or personalized diagnosis.` : ''
   const draftInstruction = [
     `Create a psychology ${action} draft from the supplied text/topic.`,
     'Use only supported facts; preserve nuance.',
@@ -135,6 +135,23 @@ async function generate(rt: Runtime, body: Record<string, unknown>) {
   if (action === 'flashcards') result.cards = result.cards.slice(0, count)
   if (action === 'quiz') {
     result.questions = result.questions.slice(0, count)
+    for (const q of result.questions) {
+      if (quizOptions.style === 'true-false') {
+        if (q.options.length === 2) {
+          const lower = q.options.map(o => o.trim().toLowerCase().replace(/[.]+$/, ''))
+          if (lower[0] === 'false' && lower[1] === 'true') {
+            q.options = ['True', 'False']
+            q.correct = q.correct === 0 ? 1 : 0
+          } else if (lower[0] === 'true' && lower[1] === 'false') {
+            q.options = ['True', 'False']
+          }
+        }
+      } else if (quizOptions.style !== 'mixed') {
+        if (q.options.length === 3 && q.correct < 3) {
+          q.options.push('None of the above')
+        }
+      }
+    }
     if (result.questions.some(q => quizOptions.style === 'true-false' ? q.options.length !== 2 || q.options[0] !== 'True' || q.options[1] !== 'False' : quizOptions.style !== 'mixed' && q.options.length !== 4)) throw new RequestError(502, 'The AI returned the wrong question format. Please generate again.')
   }
   return result

@@ -56,6 +56,14 @@ body .ref-quizzes-page .ref-answer-options .answer-incorrect { border-color:var(
 body .quiz-choice-chips button { min-height:38px; padding:9px 14px; border:1px solid var(--ref-border); border-radius:999px; color:var(--ref-muted); background:var(--ref-surface); font-size:12px; }
 body .quiz-choice-chips button[aria-pressed=true] { border-color:var(--ref-accent); background:var(--ref-soft); color:var(--ref-accent); font-weight:800; }
 .quiz-choice-chips button:disabled { opacity:.5; }
+
+.quiz-checkbox-group { display:flex; flex-direction:column; gap:8px; margin:8px 0; }
+.quiz-checkbox-label { display:flex !important; flex-direction:row !important; align-items:center !important; justify-content:flex-start !important; gap:10px !important; margin:4px 0 !important; cursor:pointer; font-size:13px !important; font-weight:500 !important; color:var(--ref-text) !important; width:auto !important; }
+.quiz-checkbox-label input[type="checkbox"] { width:18px !important; height:18px !important; min-height:18px !important; margin:0 !important; padding:0 !important; display:inline-block !important; flex:0 0 18px !important; accent-color:var(--ref-accent); border-radius:4px !important; }
+.quiz-count-fieldset { margin:16px 0; border:none; padding:0; }
+.quiz-count-fieldset legend { font-size:13px; font-weight:800; margin-bottom:8px; }
+.quiz-custom-count-label { display:flex; align-items:center; gap:12px; font-size:12px; font-weight:600; color:var(--ref-muted); margin-top:10px; }
+.quiz-custom-count-label input { max-width:110px; margin-top:0 !important; }
 body .ai-draft-dialog { display:flex; flex-direction:column; padding:0; gap:0; overflow:hidden; max-height:calc(100dvh - 32px); width:min(680px,100%); }
 body .ai-draft-dialog>.ref-panel-title { padding:22px 24px; margin:0; flex-shrink:0; border-bottom:1px solid var(--ref-border); }
 .ai-generator-body { overflow-y:auto; min-height:0; padding:20px 24px; overscroll-behavior:contain; }
