@@ -1,13 +1,14 @@
 /* Shared workspace presentation. Shell selectors outrank lazy page styles. */
 :root {
+  --font-family-primary:'Nunito',ui-rounded,system-ui,sans-serif;
   --ref-ink:#242333; --ref-muted:#6c6b7b; --ref-border:#e4e3ea;
   --ref-surface:#fff; --ref-soft:#f5f3fa; --ref-accent:#7054c4;
   --surface-bg:#f7f7fa; --surface-card:#fff; --surface-border:#e4e3ea;
   --psykie-gradient:#7054c4; --psykie-gradient-hover:#5f43b0;
 }
 html { scroll-behavior:auto; }
-body { background:#f7f7fa; color:var(--ref-ink); font-family:Inter,system-ui,sans-serif; }
-body :is(h1,h2,h3,h4,.ref-brand,.mindy-header h1) { font-family:Inter,system-ui,sans-serif; }
+body { background:#f7f7fa; color:var(--ref-ink); font-family:var(--font-family-primary); }
+body :is(h1,h2,h3,h4,.ref-brand,.mindy-header h1) { font-family:var(--font-family-primary); }
 body .psykie-frame { grid-template-columns:224px minmax(0,1fr); background:#f7f7fa; }
 body .ref-sidebar { padding:24px 14px 16px; background:#fff; border-right:1px solid var(--ref-border); }
 body .ref-brand { justify-content:flex-start; gap:8px; padding:0 12px; margin-bottom:24px; font-size:25px; letter-spacing:-1px; }

@@ -305,7 +305,7 @@ body {
 .reference-page {
   min-width:0;
   color:var(--ref-ink);
-  font-family:Inter,system-ui,sans-serif
+  font-family:var(--font-family-primary)
 }
 .reference-page :where(div,section,aside,article,form,header,nav,fieldset) {
   min-width:0

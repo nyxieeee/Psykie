@@ -3,7 +3,7 @@ let pw;try{pw=require('playwright')}catch{pw=require(require('path').join(proces
 
 fs.mkdirSync('artifacts/theme',{recursive:true});
 await p.emulateMedia({colorScheme:'light'});await open('settings');
-await p.evaluate(async()=>{const {workspaceStorage}=await import('/src/utils/workspaceStorage.ts');workspaceStorage.setItem('psykie-preferences',JSON.stringify({theme:'light',accent:'#7054c4'}));});await p.reload();
+await p.evaluate(async()=>{const {workspaceStorage}=await import('/src/utils/workspaceStorage.ts');workspaceStorage.setItem('psykie-preferences',JSON.stringify({theme:'light',accent:'#7054c4'}));});await p.reload();await p.locator('.ref-settings-page').waitFor();
 const palette=async()=>p.evaluate(()=>{const root=getComputedStyle(document.documentElement);return {mode:document.documentElement.dataset.psykieTheme,pink:root.getPropertyValue('--fn-pink').trim().toLowerCase(),bg:root.getPropertyValue('--fn-bg').trim().toLowerCase(),card:root.getPropertyValue('--fn-card').trim().toLowerCase(),accent:root.getPropertyValue('--ref-accent').trim()}});
 if((await palette()).pink!=='#be5b6c')throw Error('Light pink does not match France Notes');
 if(await p.getByRole('button',{name:'Accent #be5b6c',exact:true}).getAttribute('aria-pressed')!=='true')throw Error('Legacy default did not migrate');

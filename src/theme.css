@@ -1,4 +1,12 @@
-﻿/* France Notes' current dusty-rose / warm-charcoal palette.
+@font-face {
+  font-family:'Nunito';
+  font-style:normal;
+  font-weight:400 900;
+  font-display:swap;
+  src:url('/fonts/nunito-latin-variable.woff2') format('woff2');
+}
+
+/* France Notes' current dusty-rose / warm-charcoal palette.
    Source: France Notes/src/index.css. Theme colors live here; layout stays separate. */
 :root {
   color-scheme:light;
@@ -130,3 +138,5 @@
 :root[data-psykie-theme] body .dsm-paper[data-paper=slate] { --paper-text:#F7ECEE; --paper-accent:#D9798A; background:#261D20; color:var(--paper-text); }
 :root[data-psykie-theme] body .dsm-paper[data-paper] :is(h1,h2,h3,h4,p,li,span,strong) { color:var(--paper-text); }
 :root[data-psykie-theme] body .dsm-paper[data-paper] [class*='text-pink-'] { color:var(--paper-accent); }
+
+:root[data-psykie-theme] body :is(button,input,textarea,select) { font-family:var(--font-family-primary); }

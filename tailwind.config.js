@@ -55,8 +55,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Playfair Display', 'serif'],
+        sans: ['Nunito', 'ui-rounded', 'system-ui', 'sans-serif'],
+        display: ['Nunito', 'ui-rounded', 'system-ui', 'sans-serif'],
         rounded: ['Nunito', 'system-ui', 'sans-serif'],
       },
       animation: {

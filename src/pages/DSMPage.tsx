@@ -236,7 +236,7 @@ function BookSheet({
         minHeight: 700,
         fontSize: `${fontSizeMultiplier * 13.5}px`,
         lineHeight: 1.85,
-        fontFamily: 'Georgia, Cambria, "Times New Roman", serif',
+        fontFamily: 'var(--font-family-primary)',
       }}
     >
       <div>
