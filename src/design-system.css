@@ -195,9 +195,9 @@ body .ref-notes-layout { height:calc(100dvh - 235px); min-height:470px; }
 /* Motion adapted from the free transitions.dev modal, panel and tabs recipes.
    https://github.com/Jakubantalik/transitions.dev/tree/main/skills/transitions-dev */
 :root {
-  --duration-quick:150ms; --duration-fast:250ms; --duration-panel:400ms;
+  --duration-quick:100ms; --duration-fast:160ms; --duration-panel:220ms;
   --ease-smooth-out:cubic-bezier(.22,1,.36,1);
-  --tabs-dur:250ms; --tabs-ease:var(--ease-smooth-out);
+  --tabs-dur:160ms; --tabs-ease:var(--ease-smooth-out);
 }
 body .ref-workspace { background:radial-gradient(ellipse at 100% 0%,#f3eafa80,transparent 48%),#f8f7fb; }
 body .ref-sidebar { background:linear-gradient(180deg,#fff 65%,#fcf8ff); }
@@ -212,7 +212,7 @@ body .ref-brand img { transition:transform var(--duration-panel) var(--ease-smoo
 body .ref-brand:hover img { transform:rotate(-8deg) scale(1.08); }
 body :is(.ref-primary,.ref-secondary,.overview-tool,.overview-metric,.ref-deck) { transition:transform var(--duration-fast) var(--ease-smooth-out),box-shadow var(--duration-fast) var(--ease-smooth-out),border-color var(--duration-fast) var(--ease-smooth-out),background-color var(--duration-fast) var(--ease-smooth-out); }
 @media(hover:hover) {
-  body :is(.overview-tool,.overview-metric,.ref-deck):hover { transform:translateY(-3px); box-shadow:0 8px 20px #7054c410; }
+  body :is(.overview-tool,.overview-metric,.ref-deck):hover { transform:translateY(-1px); box-shadow:0 8px 20px #7054c410; }
   body .ref-primary:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 5px 14px #7054c42a; }
 }
 body :is(.ref-primary,.ref-secondary,.overview-tool,.overview-metric):active:not(:disabled) { transform:scale(.98); }
@@ -223,7 +223,7 @@ body .ref-tabs.motion-tabs>button::after { display:none; }
 .ref-tabs-pill { position:absolute; inset:0 auto auto 0; z-index:0; pointer-events:none; background:#fff; border:1px solid #e6ddef; border-radius:6px; box-shadow:0 1px 3px #35204a0b; transition:transform var(--tabs-dur) var(--tabs-ease),width var(--tabs-dur) var(--tabs-ease),height var(--tabs-dur) var(--tabs-ease); }
 .viewport-overlay>:is(form.glass-modal,section.glass-modal) { animation:psykie-modal-enter var(--duration-fast) var(--ease-smooth-out) both; }
 .ref-notification-popover { animation:psykie-panel-enter var(--duration-fast) var(--ease-smooth-out) both; transform-origin:top right; }
-@keyframes psykie-modal-enter { from { opacity:0; transform:translateY(8px) scale(.96); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes psykie-modal-enter { from { opacity:0; transform:translateY(4px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
 @keyframes psykie-panel-enter { from { opacity:0; transform:translateY(-6px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
 /* Perspective stays local to the book, keeping the viewport and dialogs stable. */
 .book-turn-stage { position:relative; perspective:1800px; min-width:0; width:100%; }

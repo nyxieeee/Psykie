@@ -5,11 +5,10 @@ import { useMotionPreference } from './hooks/useMotionPreference'
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage'
 import { AccountTypePage } from './pages/auth/AccountTypePage'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { lazy, useEffect, useLayoutEffect, useRef } from 'react'
+import { lazy, useEffect, useLayoutEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuthStore, useIsAuthenticated } from './store'
-import { TransitionProvider, useTransitionStyle } from './context/TransitionContext'
-import { TRANSITIONS, DEFAULT_TRANSITION } from './utils/transitions'
+import { pageModules } from './utils/pageModules'
 import {
   HelpIcon,
   BrainIcon,
@@ -20,19 +19,19 @@ const AuthLayout     = lazy(() => import('./layouts/AuthLayout').then(m => ({ de
 const AppLayout      = lazy(() => import('./layouts/AppLayout').then(m => ({ default: m.AppLayout })))
 const LoginPage      = lazy(() => import('./pages/auth/LoginPage').then(m => ({ default: m.LoginPage })))
 const RegisterPage   = lazy(() => import('./pages/auth/RegisterPage').then(m => ({ default: m.RegisterPage })))
-const DashboardPage  = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
-const MindyPage      = lazy(() => import('./pages/MindyPage').then(m => ({ default: m.MindyPage })))
-const NotesPage      = lazy(() => import('./pages/NotesPage').then(m => ({ default: m.NotesPage })))
-const FlashcardsPage = lazy(() => import('./pages/FlashcardsPage').then(m => ({ default: m.FlashcardsPage })))
-const QuizzesPage    = lazy(() => import('./pages/QuizzesPage').then(m => ({ default: m.QuizzesPage })))
-const ResearchPage   = lazy(() => import('./pages/ResearchPage').then(m => ({ default: m.ResearchPage })))
-const CalendarPage   = lazy(() => import('./pages/CalendarPage').then(m => ({ default: m.CalendarPage })))
-const ClientsPage    = lazy(() => import('./pages/ClientsPage').then(m => ({ default: m.ClientsPage })))
-const SettingsPage   = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
-const HelpPage       = lazy(() => import('./pages/HelpPage').then(m => ({ default: m.HelpPage })))
-const DocumentsPage  = lazy(() => import('./pages/DocumentsPage').then(m => ({ default: m.DocumentsPage })))
-const StudyBoxPage = lazy(() => import('./pages/StudyBoxPage').then(m => ({ default: m.StudyBoxPage })))
-const DSMPage      = lazy(() => import('./pages/DSMPage').then(m => ({ default: m.DSMPage })))
+const DashboardPage  = lazy(() => pageModules['/dashboard']().then(m => ({ default: m.DashboardPage })))
+const MindyPage      = lazy(() => pageModules['/mindy']().then(m => ({ default: m.MindyPage })))
+const NotesPage      = lazy(() => pageModules['/notes']().then(m => ({ default: m.NotesPage })))
+const FlashcardsPage = lazy(() => pageModules['/flashcards']().then(m => ({ default: m.FlashcardsPage })))
+const QuizzesPage    = lazy(() => pageModules['/quizzes']().then(m => ({ default: m.QuizzesPage })))
+const ResearchPage   = lazy(() => pageModules['/research']().then(m => ({ default: m.ResearchPage })))
+const CalendarPage   = lazy(() => pageModules['/calendar']().then(m => ({ default: m.CalendarPage })))
+const ClientsPage    = lazy(() => pageModules['/clients']().then(m => ({ default: m.ClientsPage })))
+const SettingsPage   = lazy(() => pageModules['/settings']().then(m => ({ default: m.SettingsPage })))
+const HelpPage       = lazy(() => pageModules['/help']().then(m => ({ default: m.HelpPage })))
+const DocumentsPage  = lazy(() => pageModules['/documents']().then(m => ({ default: m.DocumentsPage })))
+const StudyBoxPage = lazy(() => pageModules['/library']().then(m => ({ default: m.StudyBoxPage })))
+const DSMPage      = lazy(() => pageModules['/dsm']().then(m => ({ default: m.DSMPage })))
 
 // ── Protected Route ──
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -62,103 +61,13 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 // ── Page order for direction detection ──
-const PAGE_ORDER = [
-  '/dashboard',
-  '/mindy',
-  '/notes',
-  '/flashcards',
-  '/quizzes',
-  '/research',
-  '/dsm',
-  '/documents',
-  '/library',
-  '/calendar',
-  '/clients',
-  '/settings',
-  '/help',
-]
-
-// ── Route Transition ──
-// Uses the globally-set TransitionStyle from context, direction-aware
-function RouteTransition({ children }: { children: React.ReactNode }) {
+function RouteTransition({children}:{children:React.ReactNode}) {
   useStartupReady()
-  const location = useLocation()
-  const prevPathRef = useRef<string>(location.pathname)
-  const { active } = useTransitionStyle()
-
-  // Reset once the destination page commits, including lazy-loaded routes.
-  // `instant` overrides the document's smooth scrolling preference.
-  useLayoutEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
-  }, [location.pathname])
-
-  const prevIdx = PAGE_ORDER.indexOf(prevPathRef.current)
-  const currIdx = PAGE_ORDER.indexOf(location.pathname)
-  const isForward = currIdx > prevIdx
-
-  // For directional transitions, pick opposing direction for backward navigation
-  const getVariant = () => {
-    const base = TRANSITIONS[active] ?? TRANSITIONS[DEFAULT_TRANSITION]
-
-    // Direction-aware: flip left↔right / up↔down for backward nav
-    if (prevIdx !== -1 && currIdx !== -1 && !isForward) {
-      // Automatically use the mirror direction for back navigation
-      const mirrorMap: Partial<Record<string, string>> = {
-        'cube-right':    'cube-left',
-        'cube-left':     'cube-right',
-        'cube-up':       'cube-down',
-        'cube-down':     'cube-up',
-        'slide-right':   'slide-left',
-        'slide-left':    'slide-right',
-        'slide-up':      'slide-down',
-        'slide-down':    'slide-up',
-        'wipe-right':    'wipe-left',
-        'wipe-left':     'wipe-right',
-        'wipe-up':       'wipe-down',
-        'wipe-down':     'wipe-up',
-        'swap-right':    'swap-left',
-        'swap-left':     'swap-right',
-        'swap-up':       'swap-down',
-        'swap-down':     'swap-up',
-        'skew-right':    'skew-left',
-        'skew-left':     'skew-right',
-        'skew-up':       'skew-down',
-        'skew-down':     'skew-up',
-        'uncover-right': 'uncover-left',
-        'uncover-left':  'uncover-right',
-        'uncover-up':    'uncover-down',
-        'uncover-down':  'uncover-up',
-      }
-      const mirror = mirrorMap[active]
-      if (mirror) return TRANSITIONS[mirror as keyof typeof TRANSITIONS] ?? base
-    }
-    return base
-  }
-
-  const reducedMotion = useMotionPreference()
-  const variant = reducedMotion ? TRANSITIONS.fade : getVariant()
-
-  useEffect(() => {
-    prevPathRef.current = location.pathname
-  }, [location.pathname])
-
-  return (
-    <motion.div
-      key={location.pathname}
-      className="route-content"
-      initial={reducedMotion ? false : variant.initial as any}
-      animate={{ ...variant.animate, transitionEnd: { ...variant.animate.transitionEnd, filter: 'none', transform: 'none', clipPath: 'none', willChange: 'auto' } }}
-      style={{
-        transformOrigin: 'center center',
-        width: '100%',
-      }}
-    >
-      {children}
-    </motion.div>
-  )
+  const location=useLocation(),reduced=useMotionPreference()
+  useLayoutEffect(()=>{window.scrollTo({top:0,left:0,behavior:'instant'})},[location.pathname])
+  return <motion.div key={location.pathname} className="route-content" initial={reduced?false:{opacity:.9,y:4}} animate={{opacity:1,y:0,transitionEnd:{transform:'none'}}} transition={{duration:reduced?0:.16,ease:[.22,1,.36,1],delay:0}} style={{width:'100%'}}>{children}</motion.div>
 }
 
-// ── Inner App (needs TransitionProvider in tree) ──
 function InnerApp() {
   const { checkAuth } = useAuthStore()
 
@@ -210,9 +119,7 @@ function InnerApp() {
 // ── Root App ──
 function App() {
   return (
-    <TransitionProvider>
       <StartupBoundary><InnerApp /></StartupBoundary>
-    </TransitionProvider>
   )
 }
 
