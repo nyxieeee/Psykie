@@ -7,6 +7,7 @@ import './workspace.css'
 import './reference.css'
 import './design-system.css'
 import './theme.css'
+import './workspace-polish.css'
 import { watchAppearance } from './utils/appearance'
 
 const stopWatchingAppearance = watchAppearance()

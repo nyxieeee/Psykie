@@ -8,7 +8,7 @@ import {
 } from '@phosphor-icons/react'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ReferenceEmpty, ReferenceHeader, ReferenceSearch, ReferenceTabs } from '../components/ReferenceUI'
+import { ReferenceEmpty, ReferenceStart, ReferenceHeader, ReferenceSearch, ReferenceTabs } from '../components/ReferenceUI'
 import { ViewportOverlay } from '../components/ViewportOverlay'
 import { useStudyStore } from '../store'
 import '../notes.css'
@@ -221,7 +221,7 @@ export function NotesPage() {
               </button>
             </article>
           ))}
-          {!filtered.length && <ReferenceEmpty>No notes here yet. Start with a new thought.</ReferenceEmpty>}
+          {!filtered.length && <ReferenceStart icon={<FileText size={28}/>} title={notes.length?'No matching notes':'A little clarity starts here'} action={notes.length?'Reset filters':'Write your first note'} onAction={()=>{if(notes.length){setSearch('');setNotebook('all');setTab('all')}else{setNewKind('text');setShowNew(true)}}}>{notes.length?'Try another word or view all your notebooks.':'Capture a thought, type your lecture notes, or write by hand.'}</ReferenceStart>}
         </div>
       </section>
 

@@ -30,3 +30,7 @@ export function ReferenceTabs({ items, value, onChange }: { items: { id: string;
   return <div ref={bar} className="ref-tabs motion-tabs" role="group" aria-label="View options"><span className="ref-tabs-pill" aria-hidden="true"/>{items.map(item => <button key={item.id} className={value === item.id ? 'selected' : ''} aria-pressed={value === item.id} onClick={() => onChange(item.id)}>{item.label}{item.count !== undefined && <span>{item.count}</span>}</button>)}</div>
 }
 export function ReferenceEmpty({ children }: { children: ReactNode }) { return <p className="ref-empty">{children}</p> }
+
+export function ReferenceStart({ icon, title, children, action, onAction }: { icon: ReactNode; title: string; children: ReactNode; action: string; onAction: () => void }) {
+  return <div className="ref-start"><span className="ref-start-icon" aria-hidden="true">{icon}</span><h3>{title}</h3><p>{children}</p><button className="ref-secondary" onClick={onAction}>{action}</button></div>
+}

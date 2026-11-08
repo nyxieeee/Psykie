@@ -7,6 +7,8 @@ import { ViewportOverlay } from '../components/ViewportOverlay'
 import { useAuthStore, useStudyStore, useUser } from '../store'
 import { DSM5_TR_CHAPTERS } from '../data/dsm5Data'
 import { readLibrary } from '../utils/studyLibrary'
+import { readWorkspaceList } from '../utils/workspaceStorage'
+import type { StudyQuiz } from '../utils/quizPractice'
 
 const studyNav = [{ path: '/dashboard', label: 'Overview', icon: House }, { path: '/mindy', label: 'Mindy AI', icon: Sparkle }, { path: '/notes', label: 'Notes', icon: FileText }, { path: '/flashcards', label: 'Flashcards', icon: Cards }, { path: '/quizzes', label: 'Quizzes', icon: ChartBar }, { path: '/research', label: 'Research', icon: BookOpen }, { path: '/dsm', label: 'DSM-5-TR', icon: Stethoscope }, { path: '/calendar', label: 'Calendar', icon: CalendarBlank }, { path: '/library', label: 'Study Box', icon: Folder }]
 const clinicalNav = [{ path: '/clients', label: 'Clients', icon: Users }, { path: '/documents', label: 'Documents', icon: FileText }, { path: '/sessions', label: 'Sessions', icon: CalendarBlank }, { path: '/mindy', label: 'Mindy AI', icon: Sparkle }, { path: '/research', label: 'Research', icon: BookOpen }, { path: '/dsm', label: 'DSM-5-TR', icon: Stethoscope }, { path: '/calendar', label: 'Calendar', icon: CalendarBlank }, { path: '/library', label: 'Study Box', icon: Folder }]
@@ -33,8 +35,9 @@ export function AppLayout() {
   const dsmResults = DSM5_TR_CHAPTERS.flatMap(ch => ch.disorders.map(d => ({ title: `${d.name}${d.icdCode ? ` (${d.icdCode})` : ''}`, type: 'DSM-5-TR', path: '/dsm', state: { query: d.name } })))
   const results = [
     ...notes.map(note => ({ title: note.title, type: 'Note', path: '/notes', state: { noteId: note.id } })),
-    ...cards.map(card => ({ title: card.question, type: 'Flashcard', path: '/flashcards' })),
+    ...cards.map(card => ({ title: card.question, type: 'Flashcard', path: '/flashcards', state:{cardId:card.id} })),
     ...readLibrary().map(item => ({title:item.title,type:'Study material',path:'/library',state:{materialId:item.id}})),
+    ...readWorkspaceList<StudyQuiz>('psykie-quizzes').map(quiz=>({title:quiz.title,type:'Quiz',path:'/quizzes',state:{quizId:quiz.id}})),
     ...dsmResults,
     ...nav.map(item => ({ title: item.label, type: 'Workspace', path: item.path }))
   ].filter(item => (item.title + ' ' + item.type).toLowerCase().includes(search.toLowerCase())).slice(0, 10)

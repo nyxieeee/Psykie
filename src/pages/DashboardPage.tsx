@@ -1,9 +1,10 @@
-﻿import { ArrowRight, BookOpen, CalendarCheck, Cards, ChartBar, Folder, Lightbulb, NoteBlank } from '@phosphor-icons/react'
+﻿import { ArrowRight, BookOpen, CalendarCheck, Cards, ChartBar, CheckCircle, Folder, Lightbulb, NoteBlank } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStudyStore, useUser } from '../store'
 import { readWorkspaceList } from '../utils/workspaceStorage'
 import { readLibrary } from '../utils/studyLibrary'
+import type { StudyQuiz } from '../utils/quizPractice'
 
 export function DashboardPage() {
   const navigate = useNavigate(), user = useUser()
@@ -13,6 +14,15 @@ export function DashboardPage() {
   const localDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
   const deadlines = readWorkspaceList<{id:string; title:string; date:string; time:string}>('psykie-events').filter(event => event.date >= localDate).sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time))
   const due = cards.filter(card => card.dueDate <= localDate).length
+  const quizzes = readWorkspaceList<StudyQuiz>('psykie-quizzes')
+  const completed = quizzes.reduce((count,quiz)=>count+(quiz.attempts?.length || (quiz.lastAttempt?1:0)),0)
+  const steps = [
+    {title:'Bring your material',description:'Upload a reading or save a note.',done:materials.length>0||notes.length>0,path:'/library',icon:Folder},
+    {title:'Build your practice',description:'Create a deck or a quiz from your topic.',done:cards.length>0||quizzes.length>0,path:cards.length?'/quizzes':'/flashcards',icon:Cards},
+    {title:'See what sticks',description:'Review cards or finish a practice quiz.',done:completed>0||cards.some(card=>!!card.lastReviewed),path:'/quizzes',icon:ChartBar}
+  ]
+  const progress = steps.filter(step=>step.done).length
+  const latest = [...materials].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0]
   const ask = (text:string) => navigate(`/mindy?q=${encodeURIComponent(text)}`)
   return <div className="reference-page overview-page">
     <header className="overview-heading"><div><span className="eyebrow">YOUR WORKSPACE</span><h1>Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''}.</h1><p>Your materials, practice, and plans. All in one place.</p></div><time dateTime={localDate}>{now.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})}</time></header>
@@ -22,8 +32,9 @@ export function DashboardPage() {
       {label:'Cards to review',value:due,icon:Cards,path:'/flashcards'},
       {label:'Upcoming events',value:deadlines.length,icon:CalendarCheck,path:'/calendar'}
     ].map(item => <button className="overview-metric" key={item.path} onClick={() => navigate(item.path)}><item.icon size={25}/><span><strong>{item.value}</strong><small>{item.label}</small></span></button>)}</div>
+    {progress<3&&<section className="workspace-journey" aria-label="Your study journey"><div className="journey-heading"><div><span className="eyebrow">MAKE IT YOURS</span><h2>A small start. A steady rhythm.</h2></div><span>{progress} of 3 steps</span></div><div className="journey-steps">{steps.map((step,index)=><button key={step.title} onClick={()=>navigate(step.path)} className={step.done?'is-complete':''}><span className="journey-step-icon">{step.done?<CheckCircle size={23} weight="fill"/>:<step.icon size={23}/>}</span><span><small>{step.done?'Complete':`Step ${index+1}`}</small><strong>{step.title}</strong><p>{step.description}</p></span><ArrowRight size={16}/></button>)}</div></section>}
     <div className="overview-workflow"><div>
-      <section className="study-start"><div><h2>What are you learning today?</h2><p>Bring your readings and lecture notes into Study Box. Turn them into flashcards, quizzes, or a clearer set of notes.</p><button className="ref-primary" onClick={() => navigate('/library')}>Open Study Box <ArrowRight size={17}/></button><button className="ref-secondary dashboard-plan" onClick={()=>ask('Help me plan a focused psychology study session. I have '+due+' flashcards due and '+notes.length+' notes. My current materials are: '+(materials.slice(0,5).map(item=>item.title).join(', ')||'none yet')+'. Ask me how much time I have, then suggest an achievable session using my materials.')}>Plan a session with Mindy</button></div><BookOpen size={76} weight="duotone"/></section>
+      <section className="study-start"><div><span className="eyebrow">{latest?'PICK UP WHERE YOU LEFT OFF':'YOUR NEXT CHAPTER'}</span><h2>{latest?latest.title:'What are you learning today?'}</h2><p>{latest?`Your latest material in ${latest.category}. Read it again, create practice questions, or make a set of flashcards.`:'Bring your readings and lecture notes into Study Box. Turn them into flashcards, quizzes, or a clearer set of notes.'}</p><button className="ref-primary" onClick={() => navigate('/library',latest?{state:{materialId:latest.id}}:undefined)}>{latest?'Continue studying':'Open Study Box'} <ArrowRight size={17}/></button><button className="ref-secondary dashboard-plan" onClick={()=>ask('Help me plan a focused psychology study session. I have '+due+' flashcards due and '+notes.length+' notes. My current materials are: '+(materials.slice(0,5).map(item=>item.title).join(', ')||'none yet')+'. Ask me how much time I have, then suggest an achievable session using my materials.')}>Plan a session with Mindy</button></div><BookOpen size={76} weight="duotone"/></section>
       <div className="overview-tools">{[
         {title:'Review flashcards',sub:due ? `${due} cards ready to practice` : 'Build recall, one concept at a time',icon:Cards,path:'/flashcards'},
         {title:'Take a practice quiz',sub:'Find out what needs another look',icon:ChartBar,path:'/quizzes'},

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, BookOpen, Brain, CheckCircle, Clock, DownloadSimple, Flag, X } from '@phosphor-icons/react'
 import { AIGenerator } from '../components/AIGenerator'
-import { ReferenceEmpty, ReferenceHeader, ReferenceSearch, ReferenceTabs } from '../components/ReferenceUI'
+import { ReferenceEmpty, ReferenceStart, ReferenceHeader, ReferenceSearch, ReferenceTabs } from '../components/ReferenceUI'
 import { ViewportOverlay } from '../components/ViewportOverlay'
 import { useStudyStore } from '../store'
 import { readWorkspaceList, workspaceStorage } from '../utils/workspaceStorage'
@@ -10,7 +10,7 @@ import { completeQuizSession, createQuizSession, missedQuestions, questionsFromC
 
 const dateLabel = (date: string) => Number.isNaN(Date.parse(date)) ? date : new Date(date).toLocaleString()
 const timeLabel = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
-type Handoff = { studyText?: string; sourceName?: string; category?: string }
+type Handoff = { studyText?: string; sourceName?: string; category?: string; quizId?: string }
 
 export function QuizzesPage() {
   const cards = useStudyStore(state => state.cards)
@@ -52,10 +52,11 @@ export function QuizzesPage() {
   useEffect(() => { if (session?.deadline && now >= session.deadline) finish(true) }, [now, session?.deadline, finish])
   useEffect(() => {
     const state = location.state as Handoff | null
+    if (state?.quizId) { const item=quizzes.find(quiz=>quiz.id===state.quizId); if(item){setCategory('all');setSearch(item.title);setView('mine')} navigate(location.pathname,{replace:true,state:null}); return }
     if (!state?.studyText) return
     setHandoff(state); setShowAI(true)
     navigate(location.pathname, {replace:true, state:null})
-  }, [location.state, location.pathname, navigate])
+  }, [location.state, location.pathname, navigate, quizzes])
   useEffect(() => {
     if (!scrollToPractice.current) return
     scrollToPractice.current = false
@@ -89,7 +90,7 @@ export function QuizzesPage() {
         <div className="ref-panel ref-quiz-list">
           <div className="ref-collection-toolbar"><ReferenceTabs items={[{id:'practice',label:'Practice'},{id:'mine',label:'My quizzes'},{id:'results',label:'Results'}]} value={view} onChange={setView}/><select aria-label="Quiz subject" value={category} onChange={e => setCategory(e.target.value)}><option value="all">All subjects</option>{[...new Set(quizzes.map(item => item.category))].map(name => <option key={name}>{name}</option>)}</select></div>
           <ReferenceSearch value={search} onChange={setSearch} placeholder="Find a quiz or source..."/>
-          {view !== 'results' && <div className="ref-quiz-rows">{filtered.map((item,index) => <article key={item.id} className="ref-quiz-row"><span className={'ref-icon tint-'+index%4}>{index%2 ? <BookOpen size={27}/> : <Brain size={27}/>}</span><div><h3>{item.title}</h3><p>{item.questions.length} questions | {item.difficulty}{item.timerMinutes ? ` | ${item.timerMinutes} min` : ' | Untimed'}</p>{item.sourceName && <small className="study-source">{item.sourceName}</small>}</div><span className="ref-tag tint-2">{item.category}</span><button className="ref-primary" onClick={() => begin(item)} disabled={!item.questions.length}>Start quiz</button><details className="ref-item-menu"><summary aria-label={'Options for '+item.title}>...</summary><button onClick={() => removeQuiz(item.id)}>Delete quiz</button></details></article>)}{!filtered.length && <ReferenceEmpty>No quizzes yet. Create one from a topic, note, or uploaded file.</ReferenceEmpty>}</div>}
+          {view !== 'results' && <div className="ref-quiz-rows">{filtered.map((item,index) => <article key={item.id} className="ref-quiz-row"><span className={'ref-icon tint-'+index%4}>{index%2 ? <BookOpen size={27}/> : <Brain size={27}/>}</span><div><h3>{item.title}</h3><p>{item.questions.length} questions | {item.difficulty}{item.timerMinutes ? ` | ${item.timerMinutes} min` : ' | Untimed'}</p>{item.sourceName && <small className="study-source">{item.sourceName}</small>}</div><span className="ref-tag tint-2">{item.category}</span><button className="ref-primary" onClick={() => begin(item)} disabled={!item.questions.length}>Start quiz</button><details className="ref-item-menu"><summary aria-label={'Options for '+item.title}>...</summary><button onClick={() => removeQuiz(item.id)}>Delete quiz</button></details></article>)}{!filtered.length && <ReferenceStart icon={<Brain size={28}/>} title={quizzes.length?'No quizzes match this view':'Turn understanding into practice'} action={quizzes.length?'Reset quiz filters':'Build your first quiz'} onAction={()=>{if(quizzes.length){setSearch('');setCategory('all')}else openGenerator()}}>{quizzes.length?'Clear your search or choose another subject.':'Choose your topic, upload a reading, or use a saved note. Review the questions before you start.'}</ReferenceStart>}</div>}
         </div>
         <section className="ref-panel ref-results"><div className="ref-panel-title"><h2>Recent results</h2><button className="ref-text-action" onClick={() => setView('results')}>View all results<ArrowRight size={15}/></button></div><div className="ref-results-table"><div className="ref-results-heading"><span>Quiz</span><span>Subject</span><span>Score</span><span>Date</span></div>{attempts.filter(item => (category === 'all' || item.category === category) && (item.title+' '+item.category).toLowerCase().includes(search.toLowerCase())).slice(0,view === 'results' ? undefined : 3).map(attempt => <button className="ref-result-row" key={attempt.id} onClick={() => {scrollToPractice.current=true;setResult(attempt);setReviewFilter('all')}}><span>{attempt.title}</span><span>{attempt.category}</span><span className="ref-score">{attempt.percentage}%</span><small>{dateLabel(attempt.date)}</small></button>)}{legacyResults.map(item => <div className="ref-result-row" key={item.id}><span>{item.title}</span><span>{item.category}</span><span>{item.lastAttempt?.percentage}%</span><small>{dateLabel(item.lastAttempt!.date)}</small></div>)}</div>{!attempts.length && !legacyResults.length && <ReferenceEmpty>Completed attempts and answer reviews will appear here.</ReferenceEmpty>}</section>
         <p className="ref-inline-notice">Study content and up to 30 attempts per quiz are saved in this browser for your account. AI practice is educational; board-style questions are not official exam items.</p>
