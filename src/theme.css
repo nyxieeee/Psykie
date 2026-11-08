@@ -150,6 +150,11 @@
 :root[data-psykie-theme] body :is(.viewport-overlay button,.ref-auth-card button,.ink-toolbar button) { border-radius:var(--button-compact-radius); }
 :root[data-psykie-theme] body :is(.viewport-overlay,.ref-auth-card) :is(.ref-primary,.ref-secondary,.ref-social-button,button[type=submit]) { border-radius:var(--button-radius); }
 :root[data-psykie-theme] body .ink-toolbar .ink-color { border-radius:50%; }
+:root[data-psykie-theme] body :is(.ref-sidebar,.ref-mobile-sidebar) .ref-brand { justify-content:center; width:100%; font-weight:900; font-size:28px; gap:8px; }
+:root[data-psykie-theme] body :is(.ref-sidebar,.ref-mobile-sidebar) .nav-section-label { text-align:center; font-weight:800; }
+:root[data-psykie-theme] body :is(.ref-main-nav,.ref-sidebar-bottom nav) button { font-weight:750; }
+:root[data-psykie-theme] body :is(.ref-sidebar,.ref-mobile-sidebar,.ref-main-nav) { scrollbar-width:none; -ms-overflow-style:none; }
+:root[data-psykie-theme] body :is(.ref-sidebar,.ref-mobile-sidebar,.ref-main-nav)::-webkit-scrollbar { display:none; width:0; height:0; }
 
 .psykie-loading { display:grid; place-items:center; color:var(--fn-text); font-family:var(--font-family-primary); }
 .psykie-loading-full { position:fixed; inset:0; z-index:9999; padding:24px; background:var(--fn-bg); }

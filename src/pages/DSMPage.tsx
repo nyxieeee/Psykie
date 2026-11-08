@@ -1,13 +1,14 @@
 import { useMotionPreference } from '../hooks/useMotionPreference'
 import { AnimatePresence, motion } from 'framer-motion'
-import { BookTurn } from '../components/BookTurn'
+import { BookSpreadTurn, BookTurn } from '../components/BookTurn'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   MagnifyingGlass, CaretRight, CaretDown, BookOpen, Warning, Info,
   ArrowRight, Sparkle, Bookmarks, CaretLeft, FilePdf, UploadSimple, X,
-  Rows, BookBookmark
+  BookBookmark
 } from '@phosphor-icons/react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import '../reader.css'
 import { DSM5_TR_CHAPTERS, DSMDisorder, DSMCriterion } from '../data/dsm5Data'
 import { getDSMPage, TOTAL_DSM5_PAGES, DSM_BOOK_TOC, BookPage } from '../data/dsm5BookEngine'
 
@@ -344,18 +345,21 @@ export function DSMPage() {
   const [currentPageNumber, setCurrentPageNumber] = useState(1)
   const [jumpPageInput, setJumpPageInput] = useState('')
   const [fontSizeMultiplier, setFontSizeMultiplier] = useState(1)
-  const [spreadMode, setSpreadMode] = useState<'single' | 'spread'>('single')
+  const [spreadMode, setSpreadMode] = useState<'single' | 'spread'>('spread')
   const [paperTheme, setPaperTheme] = useState<'cream' | 'rose' | 'slate'>(() => document.documentElement.dataset.psykieTheme === 'dark' ? 'slate' : 'cream')
   const [showTOC, setShowTOC] = useState(false)
+  const [wideReader,setWideReader]=useState(()=>matchMedia('(min-width:1100px)').matches)
+  useEffect(()=>{const media=matchMedia('(min-width:1100px)');const change=()=>setWideReader(media.matches);media.addEventListener('change',change);return()=>media.removeEventListener('change',change)},[])
+  const openSpread=spreadMode==='spread'&&wideReader
 
-  const previousReaderPage = useCallback(() => setCurrentPageNumber(page => Math.max(1, page - (spreadMode === 'spread' ? (page === 2 ? 1 : 2) : 1))), [spreadMode])
+  const previousReaderPage = useCallback(() => setCurrentPageNumber(page => Math.max(1, page - (openSpread ? (page === 2 ? 1 : 2) : 1))), [openSpread])
   const nextReaderPage = useCallback(() => setCurrentPageNumber(page => Math.min(TOTAL_DSM5_PAGES, page + (spreadMode === 'spread' ? (page === 1 ? 1 : 2) : 1))), [spreadMode])
 
   // Keyboard navigation for authentic book flipping
   useEffect(() => {
     if (activeTab !== 'reader') return
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return
       if (e.key === 'ArrowLeft') {
         e.preventDefault()
         previousReaderPage()
@@ -420,29 +424,7 @@ export function DSMPage() {
     <div className="reference-page dsm-page">
       {/* Header Banner */}
       <div className="ref-panel dsm-intro">
-        <div className="flex items-start gap-4 flex-wrap sm:flex-nowrap">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm" style={{ background: 'linear-gradient(135deg, var(--ref-accent), var(--fn-hover))' }}>
-            <BookOpen size={26} className="text-white" weight="duotone" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-xl font-black text-neutral-800">DSM-5-TR Complete Reference Manual</h1>
-              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-pink-100 text-pink-700">
-                Text Revision (2022)
-              </span>
-            </div>
-            <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
-              Diagnostic and Statistical Manual of Mental Disorders, Fifth Edition, Text Revision. American Psychiatric Association.
-              All <strong className="text-neutral-800">20 diagnostic classes</strong>, {totalDisorders}+ disorders, specifiers, and page citations.
-            </p>
-            <div className="mt-2.5 flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] text-amber-800 bg-amber-50/90 border border-amber-200/80 rounded-lg px-2.5 py-1">
-                ⚠️ Academic study reference for psychology students. Use with clinical supervision.
-              </span>
-            </div>
-          </div>
-        </div>
-
+        <div className="dsm-heading"><BookOpen size={32} weight="duotone"/><div><h1>DSM-5-TR</h1><p>Psychology study reference. Browse diagnostic topics or read page by page.</p></div></div>
         {/* Navigation Tabs between Manual View, Paginated Book Reader, and PDF Viewer */}
         <div className="mt-5 pt-4 border-t border-pink-200/60 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap">
@@ -450,13 +432,13 @@ export function DSMPage() {
               onClick={() => setActiveTab('criteria')}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'criteria' ? 'bg-pink-500 text-white shadow-sm' : 'bg-white/80 text-neutral-600 hover:bg-pink-50'}`}
             >
-              <Bookmarks size={16} />Diagnostic Manual (All 20 Classes)
+              <Bookmarks size={16} />Diagnostic guide
             </button>
             <button
               onClick={() => setActiveTab('reader')}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'reader' ? 'bg-pink-500 text-white shadow-sm' : 'bg-white/80 text-neutral-600 hover:bg-pink-50'}`}
             >
-              <BookOpen size={16} />Book Reader (Page-by-Page)
+              <BookOpen size={16} />Book reader
             </button>
             <button
               onClick={() => customPdfUrl ? setActiveTab('pdf') : fileInputRef.current?.click()}
@@ -597,176 +579,7 @@ export function DSMPage() {
       {/* ── TAB 2: Authentic Paginated Book Reader (Pages 1 to 1,050) ───────── */}
       {activeTab === 'reader' && (
         <div className="space-y-4">
-          {/* Reader Top Controls Toolbar (Clean 2-Tier Layout) */}
-          <div className="ref-panel p-4 bg-white border border-pink-100 shadow-sm rounded-3xl space-y-3">
-            {/* Top Row: Page Turn Buttons, Current Chapter Info, Jump Form */}
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2">
-                <button
-                  disabled={currentPageNumber <= 1}
-                  onClick={() => previousReaderPage()}
-                  className="w-9 h-9 rounded-xl border border-pink-200 text-neutral-600 hover:bg-pink-50 hover:text-pink-600 disabled:opacity-30 transition-all flex items-center justify-center shadow-2xs"
-                  title="Previous page (Left Arrow)"
-                >
-                  <CaretLeft size={18} weight="bold" />
-                </button>
-
-                <div className="px-3.5 py-1 rounded-xl bg-pink-50/70 border border-pink-100/80 text-center min-w-36">
-                  <span className="text-xs font-black text-neutral-800">
-                    Page <strong className="text-pink-600">{spreadMode === 'spread' && currentPageNumber > 1 && currentPageNumber < TOTAL_DSM5_PAGES ? currentPageNumber - currentPageNumber % 2 : currentPageNumber}</strong>
-                    {spreadMode === 'spread' && currentPageNumber > 1 && currentPageNumber < TOTAL_DSM5_PAGES && (
-                      <span>–{Math.min(TOTAL_DSM5_PAGES, (currentPageNumber % 2 === 0 ? currentPageNumber : currentPageNumber - 1) + 1)}</span>
-                    )}{' '}
-                    <span className="text-neutral-400 font-normal">/ {TOTAL_DSM5_PAGES}</span>
-                  </span>
-                  <span className="block text-[10px] font-semibold text-pink-700/80 truncate max-w-[150px] mx-auto">
-                    {getDSMPage(currentPageNumber).chapterTitle}
-                  </span>
-                </div>
-
-                <button
-                  disabled={currentPageNumber >= TOTAL_DSM5_PAGES}
-                  onClick={() => nextReaderPage()}
-                  className="w-9 h-9 rounded-xl border border-pink-200 text-neutral-600 hover:bg-pink-50 hover:text-pink-600 disabled:opacity-30 transition-all flex items-center justify-center shadow-2xs"
-                  title="Next page (Right Arrow)"
-                >
-                  <CaretRight size={18} weight="bold" />
-                </button>
-              </div>
-
-              {/* Jump to Page */}
-              <form onSubmit={handleJumpToPage} className="flex items-center gap-2">
-                <span className="text-xs font-bold text-neutral-500">Go to page:</span>
-                <input
-                  type="number"
-                  aria-label="Go to reader page"
-                  min={1}
-                  max={TOTAL_DSM5_PAGES}
-                  placeholder="1–1050"
-                  value={jumpPageInput}
-                  onChange={e => setJumpPageInput(e.target.value)}
-                  className="w-20 px-2.5 py-1.5 text-xs border border-pink-200 rounded-xl text-center outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400 bg-white font-bold text-neutral-800 shadow-2xs"
-                />
-                <button
-                  type="submit"
-                  className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-pink-500 to-rose-400 hover:from-pink-600 hover:to-rose-500 rounded-xl shadow-xs shadow-pink-200 transition-all"
-                >
-                  Turn
-                </button>
-              </form>
-            </div>
-
-            {/* Middle Row: Continuous Scrubber Slider */}
-            <div className="pt-1">
-              <div className="flex items-center justify-between text-[11px] font-semibold text-neutral-500 mb-1.5 px-0.5">
-                <span>p. 1 (Basics)</span>
-                <span className="text-pink-600 font-bold truncate max-w-sm text-center">
-                  p. {currentPageNumber} · {getDSMPage(currentPageNumber).heading}
-                </span>
-                <span>p. 1,050 (Index)</span>
-              </div>
-              <input
-                type="range"
-                aria-label="Reader page"
-                min={1}
-                max={TOTAL_DSM5_PAGES}
-                value={currentPageNumber}
-                onChange={e => setCurrentPageNumber(parseInt(e.target.value, 10))}
-                className="w-full accent-pink-500 cursor-pointer h-2 bg-pink-100/90 rounded-lg"
-              />
-            </div>
-
-            {/* Bottom Row: View mode, Themes, Contents, Zoom */}
-            <div className="pt-2.5 border-t border-pink-100/80 flex items-center justify-between gap-3 flex-wrap">
-              {/* View Mode */}
-              <div className="flex items-center gap-1 bg-pink-50/80 p-1 rounded-xl border border-pink-200/60 shadow-2xs">
-                <button
-                  onClick={() => setSpreadMode('single')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    spreadMode === 'single' ? 'bg-white text-pink-700 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
-                  }`}
-                  title="Single Page view"
-                >
-                  <Rows size={14} />Single
-                </button>
-                <button
-                  onClick={() => setSpreadMode('spread')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    spreadMode === 'spread' ? 'bg-white text-pink-700 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
-                  }`}
-                  title="Two-Page Spread (Open Book view)"
-                >
-                  <BookOpen size={14} />Open Book
-                </button>
-              </div>
-
-              {/* Paper Theme Picker */}
-              <div className="flex items-center gap-1 bg-pink-50/80 p-1 rounded-xl border border-pink-200/60 shadow-2xs">
-                <button
-                  onClick={() => setPaperTheme('cream')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                    paperTheme === 'cream' ? 'bg-white text-amber-900 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
-                  }`}
-                  title="Classic Ivory / Cream Paper"
-                >
-                  <span>📜</span>Cream
-                </button>
-                <button
-                  onClick={() => setPaperTheme('rose')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                    paperTheme === 'rose' ? 'bg-white text-pink-700 shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
-                  }`}
-                  title="Psykie Blush Rose"
-                >
-                  <span>🌸</span>Rose
-                </button>
-                <button
-                  onClick={() => setPaperTheme('slate')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                    paperTheme === 'slate' ? 'bg-neutral-800 text-white shadow-xs' : 'text-neutral-500 hover:text-neutral-800'
-                  }`}
-                  title="Midnight Dark Mode"
-                >
-                  <span>🌙</span>Slate
-                </button>
-              </div>
-
-              {/* Contents & Font Size */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowTOC(o => !o)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border shadow-xs ${
-                    showTOC
-                      ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white border-transparent shadow-pink-300'
-                      : 'bg-white hover:bg-pink-50/80 text-pink-700 border-pink-200'
-                  }`}
-                  aria-expanded={showTOC}
-                >
-                  <BookBookmark size={15} weight="bold" />
-                  <span>Contents</span>
-                  <CaretDown size={14} weight="bold" className={`transition-transform duration-200 ${showTOC ? 'rotate-180' : 'rotate-0'}`} />
-                </button>
-
-                <div className="flex items-center gap-1 border border-pink-200/80 bg-white rounded-xl p-0.5 shadow-2xs">
-                  <button
-                    onClick={() => setFontSizeMultiplier(f => Math.max(0.85, f - 0.1))}
-                    className="w-7 h-7 rounded-lg text-xs font-bold text-neutral-600 hover:bg-pink-50 hover:text-pink-600 transition-colors flex items-center justify-center"
-                    title="Decrease font size"
-                  >
-                    A-
-                  </button>
-                  <button
-                    onClick={() => setFontSizeMultiplier(f => Math.min(1.35, f + 0.1))}
-                    className="w-7 h-7 rounded-lg text-xs font-bold text-neutral-600 hover:bg-pink-50 hover:text-pink-600 transition-colors flex items-center justify-center"
-                    title="Increase font size"
-                  >
-                    A+
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
+          <section className="ref-panel reader-toolbar" aria-label="Book controls"><div className="reader-navigation"><button className="ref-secondary" onClick={()=>setShowTOC(value=>!value)} aria-expanded={showTOC}><BookBookmark size={18}/>Contents</button><div className="reader-pagination"><button className="ref-square-button" title="Previous page (Left Arrow)" disabled={currentPageNumber<=1} onClick={previousReaderPage}><CaretLeft size={19}/></button><span>Page {openSpread&&currentPageNumber>1&&currentPageNumber<TOTAL_DSM5_PAGES?(currentPageNumber-currentPageNumber%2)+' - '+Math.min(TOTAL_DSM5_PAGES,currentPageNumber-currentPageNumber%2+1):currentPageNumber}<small>of {TOTAL_DSM5_PAGES}</small></span><button className="ref-square-button" title="Next page (Right Arrow)" disabled={currentPageNumber>=TOTAL_DSM5_PAGES} onClick={nextReaderPage}><CaretRight size={19}/></button></div><details className="reader-options"><summary>Reading options<CaretDown size={15}/></summary><div className="reader-options-panel"><label>Page layout<select aria-label="Page layout" value={openSpread?'spread':'single'} onChange={event=>setSpreadMode(event.target.value as 'spread'|'single')}><option value="single">Single page</option><option value="spread" disabled={!wideReader}>Open book</option></select></label><label>Paper<select aria-label="Paper color" value={paperTheme} onChange={event=>setPaperTheme(event.target.value as 'cream'|'rose'|'slate')}><option value="cream">Cream</option><option value="rose">Rose</option><option value="slate">Slate</option></select></label><div className="reader-font-controls"><span>Text size</span><button className="ref-secondary" title="Decrease font size" onClick={()=>setFontSizeMultiplier(value=>Math.max(.85,value-.1))}>A-</button><button className="ref-secondary" title="Increase font size" onClick={()=>setFontSizeMultiplier(value=>Math.min(1.35,value+.1))}>A+</button></div><form onSubmit={handleJumpToPage}><label>Go to page<input type="number" aria-label="Go to reader page" min={1} max={TOTAL_DSM5_PAGES} value={jumpPageInput} onChange={event=>setJumpPageInput(event.target.value)}/></label><button className="ref-primary" type="submit">Turn</button></form></div></details></div></section>
           {/* Table of Contents Floating Popover / Drawer */}
           <AnimatePresence initial={false}>{showTOC && (
             <motion.div initial={reducedMotion ? false : {opacity:0,y:-12}} animate={{opacity:1,y:0}} exit={{opacity:0,y:reducedMotion?0:-8}} transition={{duration:reducedMotion?0:0.25,ease:[0.22,1,0.36,1]}} className="ref-panel p-4 bg-white border border-pink-200 rounded-2xl shadow-xl max-h-96 overflow-y-auto animate-in fade-in duration-150">
@@ -814,37 +627,7 @@ export function DSMPage() {
           {/* Authentic Book Spread / Single Page View */}
           {spreadMode === 'spread' && currentPageNumber > 1 && currentPageNumber < TOTAL_DSM5_PAGES ? (
             // Two-Page Open Book Spread
-            <div className="dsm-book-spread">
-              {/* Left Page (Even Page Number) */}
-              <BookTurn page={currentPageNumber % 2 === 0 ? currentPageNumber : currentPageNumber - 1} side="left">
-                <BookSheet
-                  page={getDSMPage(currentPageNumber % 2 === 0 ? currentPageNumber : Math.max(1, currentPageNumber - 1))}
-                  isLeftPage={true}
-                  isSpread={true}
-                  paperTheme={paperTheme}
-                  fontSizeMultiplier={fontSizeMultiplier}
-                />
-              </BookTurn>
-
-              {/* Central Spine Fold / Gutter Crease */}
-              <div className="dsm-book-spine" aria-hidden="true"/>
-
-              {/* Right Page (Odd Page Number) */}
-              <BookTurn page={currentPageNumber % 2 === 0 ? currentPageNumber + 1 : currentPageNumber} side="right">
-                <BookSheet
-                  page={getDSMPage(
-                    Math.min(
-                      TOTAL_DSM5_PAGES,
-                      currentPageNumber % 2 === 0 ? currentPageNumber + 1 : currentPageNumber
-                    )
-                  )}
-                  isLeftPage={false}
-                  isSpread={true}
-                  paperTheme={paperTheme}
-                  fontSizeMultiplier={fontSizeMultiplier}
-                />
-              </BookTurn>
-            </div>
+            <BookSpreadTurn page={currentPageNumber} left={<BookSheet page={getDSMPage(currentPageNumber-currentPageNumber%2)} isLeftPage={true} isSpread={true} paperTheme={paperTheme} fontSizeMultiplier={fontSizeMultiplier}/>} right={<BookSheet page={getDSMPage(Math.min(TOTAL_DSM5_PAGES,currentPageNumber-currentPageNumber%2+1))} isLeftPage={false} isSpread={true} paperTheme={paperTheme} fontSizeMultiplier={fontSizeMultiplier}/>}/>
           ) : (
             // Single Page View
             <div className="dsm-book-single"><BookTurn page={currentPageNumber}>

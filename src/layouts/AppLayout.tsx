@@ -10,8 +10,8 @@ import { readLibrary } from '../utils/studyLibrary'
 import { readWorkspaceList } from '../utils/workspaceStorage'
 import type { StudyQuiz } from '../utils/quizPractice'
 
-const studyNav = [{ path: '/dashboard', label: 'Overview', icon: House }, { path: '/mindy', label: 'Mindy AI', icon: Sparkle }, { path: '/notes', label: 'Notes', icon: FileText }, { path: '/flashcards', label: 'Flashcards', icon: Cards }, { path: '/quizzes', label: 'Quizzes', icon: ChartBar }, { path: '/research', label: 'Research', icon: BookOpen }, { path: '/dsm', label: 'DSM-5-TR', icon: Stethoscope }, { path: '/calendar', label: 'Calendar', icon: CalendarBlank }, { path: '/library', label: 'Study Box', icon: Folder }]
-const clinicalNav = [{ path: '/clients', label: 'Clients', icon: Users }, { path: '/documents', label: 'Documents', icon: FileText }, { path: '/sessions', label: 'Sessions', icon: CalendarBlank }, { path: '/mindy', label: 'Mindy AI', icon: Sparkle }, { path: '/research', label: 'Research', icon: BookOpen }, { path: '/dsm', label: 'DSM-5-TR', icon: Stethoscope }, { path: '/calendar', label: 'Calendar', icon: CalendarBlank }, { path: '/library', label: 'Study Box', icon: Folder }]
+const studyNav = [{ path: '/dashboard', label: 'Overview', icon: House }, { path: '/mindy', label: 'Mindy AI', icon: Sparkle }, { path: '/notes', label: 'Notes', icon: FileText }, { path: '/library', label: 'Library', icon: Folder }, { path: '/flashcards', label: 'Flashcards', icon: Cards }, { path: '/quizzes', label: 'Quizzes', icon: ChartBar }, { path: '/research', label: 'Research', icon: BookOpen }, { path: '/dsm', label: 'DSM-5-TR', icon: Stethoscope }, { path: '/calendar', label: 'Calendar', icon: CalendarBlank }]
+const clinicalNav = [{ path: '/clients', label: 'Clients', icon: Users }, { path: '/documents', label: 'Documents', icon: FileText }, { path: '/sessions', label: 'Sessions', icon: CalendarBlank }, { path: '/mindy', label: 'Mindy AI', icon: Sparkle }, { path: '/research', label: 'Research', icon: BookOpen }, { path: '/dsm', label: 'DSM-5-TR', icon: Stethoscope }, { path: '/calendar', label: 'Calendar', icon: CalendarBlank }, { path: '/library', label: 'Library', icon: Folder }]
 export function AppLayout() {
   const notices = useWorkspaceNotices()
   const user = useUser(), { logout } = useAuthStore(), { notes, cards } = useStudyStore()
@@ -20,7 +20,7 @@ export function AppLayout() {
   const searchRef = useRef<HTMLInputElement>(null)
   const clinical = user?.role === 'professional' || user?.role === 'admin'
   const nav = clinical ? clinicalNav : studyNav
-  const current = location.pathname === '/dashboard' ? 'Overview' : location.pathname === '/mindy' ? 'Mindy AI' : location.pathname === '/library' ? 'Study Box' : location.pathname === '/dsm' ? 'DSM-5-TR' : location.pathname.slice(1).replace(/^./, letter => letter.toUpperCase())
+  const current = location.pathname === '/dashboard' ? 'Overview' : location.pathname === '/mindy' ? 'Mindy AI' : location.pathname === '/library' ? 'Library' : location.pathname === '/dsm' ? 'DSM-5-TR' : location.pathname.slice(1).replace(/^./, letter => letter.toUpperCase())
   const go = (path: string, state?: Record<string,string>) => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
     navigate(path, { state })

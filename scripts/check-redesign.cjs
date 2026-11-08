@@ -13,7 +13,7 @@ for(const width of [1440,768,390,320]) {
   checks.push('All student routes rendered without horizontal overflow at '+width);
 }
 await p.setViewportSize({width:1440,height:900});await open('dashboard');
-await p.getByRole('button',{name:'Open Study Box',exact:true}).click();await p.waitForURL('**/library');
+await p.getByRole('button',{name:'Open Library',exact:true}).click();await p.waitForURL('**/library');
 await p.getByRole('button',{name:'Search your workspace'}).click();await p.locator('.ref-search-dialog input').fill('Depressive');
 await p.locator('.ref-search-results button').filter({hasText:'DSM-5-TR'}).first().click();await p.waitForURL('**/dsm');await p.locator('.dsm-page input:not([type=file])').first().waitFor();
 if(!await p.locator('input').evaluateAll(xs=>xs.some(x=>x.value.toLowerCase().includes('depressive'))))throw Error('DSM search handoff failed');
