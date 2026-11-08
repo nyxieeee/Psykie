@@ -6,6 +6,7 @@ export type LibraryMaterial = {
   tags: string[]; favorite: boolean; kind: 'upload' | 'text' | 'note' | 'document' | 'summary' | 'reviewer'
   sourceName: string; createdAt: string; updatedAt: string; summary?: string
   reviewer?:AIDraft;
+  extractionError?: string;
   fileId?: string; ownsFile?: boolean; sourceIds?: string[]
 }
 export type LibraryFolder = {id: string; name: string}
