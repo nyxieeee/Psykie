@@ -48,7 +48,6 @@ export function NotesPage() {
   const [category, setCategory] = useState('General Psychology')
   const [question, setQuestion] = useState('')
   const [saved, setSaved] = useState(true)
-  const [notice, setNotice] = useState('')
   const [aiTask, setAITask] = useState<AITask | null>(null)
   const [readingInk,setReadingInk] = useState(false),[inkProgress,setInkProgress] = useState(''),[inkError,setInkError] = useState('')
   const inkController = useRef<AbortController|null>(null)
@@ -291,7 +290,6 @@ export function NotesPage() {
                   <div ref={editorRef} role="textbox" aria-label="Note content" aria-multiline="true" contentEditable suppressContentEditableWarning onInput={saveText} />
                   {active.keyTopics.length > 0 && <><h3>Key principles</h3><ul>{active.keyTopics.map(topic => <li key={topic}>{topic}</li>)}</ul></>}
                   {active.keyConcepts.length > 0 && <><h3>Common concepts</h3><ul>{active.keyConcepts.map(concept => <li key={concept}>{concept}</li>)}</ul></>}
-                  {notice && <p role="status" className="ref-inline-notice">{notice}</p>}
                 </>
               )}
             </div>
