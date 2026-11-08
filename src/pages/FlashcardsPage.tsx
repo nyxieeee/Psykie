@@ -1,21 +1,22 @@
 import { AIGenerator } from '../components/AIGenerator'
 import {
-  ArrowRight, BookOpen, Brain, CaretLeft,
-  CaretRight, ChartBar, Check, Fire, Cards as Layers,
+  ArrowLeft, Brain, CaretLeft,
+  CaretRight, Check, Cards as Layers,
   Plus, Shuffle, Sparkle, X
 } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ReferenceStart, ReferenceHeader, ReferenceTabs } from '../components/ReferenceUI'
+import { ReferenceStart, ReferenceTabs } from '../components/ReferenceUI'
 import { StudyFlashcard } from '../components/StudyFlashcard'
 import { ViewportOverlay } from '../components/ViewportOverlay'
 import { StudyCard, useStudyStore } from '../store'
+import '../flashcards.css'
 
 export function FlashcardsPage() {
   const { decks, cards, createDeck, deleteDeck, addCard, deleteCard, reviewCard } = useStudyStore()
 
-  const [selectedDeckId, setSelectedDeckId] = useState<string>(decks.find(deck => deck.id !== 'deck-all')?.id || 'deck-all')
+  const [selectedDeckId, setSelectedDeckId] = useState<string>('')
   const location = useLocation(), navigate = useNavigate()
   const [showAI, setShowAI] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -90,6 +91,7 @@ export function FlashcardsPage() {
 
     const createdId = createDeck(newDeckName.trim(), newDeckCategory)
     setSelectedDeckId(createdId)
+    setSessionReviewedCount(0)
     setCurrentIndex(0)
     setIsFlipped(false)
     setNewDeckName('')
@@ -113,32 +115,28 @@ export function FlashcardsPage() {
   }
 
   const [deckView, setDeckView] = useState('all')
-  const [reviewing, setReviewing] = useState(false)
   const visibleDecks = decks.filter(deck => deck.id !== 'deck-all' && (deckView === 'all' || cards.some(card => card.deckId === deck.id && card.dueDate <= todayStr)))
   const selectedDeck = decks.find(deck => deck.id === selectedDeckId)
   return (
     <div className="reference-page ref-flashcards-page">
-      <ReferenceHeader title="Flashcards" subtitle="Turn key concepts into lasting knowledge." action="Create deck" onAction={() => setShowCreateDeckModal(true)} />
-      <div className="ref-ai-page-actions"><button className="ref-secondary" onClick={() => setShowAI(true)}><Sparkle size={17}/>Generate with AI</button></div><div className="ref-flashcards-layout">
-        <section className="ref-deck-browser">
-          <div className="ref-stat-row">
-            <div className="ref-stat"><span className="ref-icon tint-0"><Layers size={27} /></span><span><strong>{cards.filter(card => card.dueDate <= todayStr).length}</strong><small>cards due for review</small></span><CaretRight size={17} /></div>
-            <div className="ref-stat"><span className="ref-icon tint-1"><ChartBar size={27} /></span><span><strong>{decks.filter(deck => deck.id !== 'deck-all').length}</strong><small>flashcard decks</small></span><CaretRight size={17} /></div>
-            <div className="ref-stat"><span className="ref-icon tint-3"><Fire size={27} weight="duotone" /></span><span><strong>{useStudyStore.getState().studyStats.dayStreak}</strong><small>day streak</small></span></div>
-          </div>
-          <ReferenceTabs items={[{ id: 'all', label: 'All decks' }, { id: 'due', label: 'Due for review' }]} value={deckView} onChange={setDeckView} />
-          <div className="ref-deck-grid">{visibleDecks.map((deck, index) => { const deckCards = cards.filter(card => card.deckId === deck.id); const due = deckCards.filter(card => card.dueDate <= todayStr).length; const mastered = deckCards.filter(card => card.status === 'mastered').length; return <article key={deck.id} className={selectedDeckId === deck.id ? 'ref-deck selected' : 'ref-deck'}><button className="ref-deck-select" onClick={() => { setSelectedDeckId(deck.id); setCurrentIndex(0); setIsFlipped(false); setReviewing(false) }}><span className={'ref-icon tint-' + index % 4}>{index % 3 === 0 ? <Brain size={29} /> : index % 3 === 1 ? <Sparkle size={29} /> : <BookOpen size={29} />}</span><strong>{deck.name}</strong><small>{deckCards.length} cards</small><span className="ref-deck-progress"><span style={{ width: (deckCards.length ? mastered / deckCards.length * 100 : 0) + '%' }} /></span><span className="ref-deck-due">{due} due</span></button><details className="ref-item-menu"><summary aria-label={'Options for ' + deck.name}>···</summary><button onClick={() => { deleteDeck(deck.id); if (selectedDeckId === deck.id) setSelectedDeckId('deck-all') }}>Delete deck</button></details></article> })}</div>
-          {!visibleDecks.length && <ReferenceStart icon={<Layers size={28}/>} title={deckView==='due'?'You are caught up':'Make your first connections'} action={deckView==='due'?'Browse all decks':'Create your first deck'} onAction={()=>deckView==='due'?setDeckView('all'):setShowCreateDeckModal(true)}>{deckView==='due'?'No decks are due today. You can still practice any deck.':'Start with a few concepts, or generate cards from a reading using AI.'}</ReferenceStart>}
-          <button className="ref-text-action ref-browser-footer" onClick={() => setShowAddCardModal(true)}><Plus size={16} />Add a card to your collection</button>
-        </section>
-        <section className="ref-panel ref-study-preview">
-          <div className="ref-panel-title"><span className="ref-icon tint-0"><Brain size={24} /></span><h2>{selectedDeck?.name || 'All decks'}</h2><span className="ref-tag tint-0">{selectedDeck?.category || 'General'}</span><button aria-label="Add card" onClick={() => setShowAddCardModal(true)}><Plus size={19} /></button></div>
-          {!!decks.length&&<label className="ref-study-picker"><span>Studying</span><select aria-label="Study deck" value={selectedDeckId} onChange={e => { setSelectedDeckId(e.target.value); setCurrentIndex(0); setIsFlipped(false) }}>{decks.map(deck => <option key={deck.id} value={deck.id}>{deck.name}</option>)}</select></label>}
+      <header className="ref-page-header"><div><h1>Flashcards</h1><p>{selectedDeck?'One question at a time. Reveal, recall, and rate your answer.':'Keep your concepts together. Choose a deck when you are ready to practice.'}</p></div><div className="flashcard-actions"><button className="ref-secondary" onClick={()=>setShowAI(true)}><Sparkle size={17}/>Generate with AI</button><button className="ref-primary" onClick={()=>setShowCreateDeckModal(true)}><Plus size={18}/>Create deck</button></div></header>
+      <div className="ref-flashcards-layout" data-view={selectedDeck?'study':'decks'}>
+        {!selectedDeck&&<section className="ref-deck-browser">
+          {decks.some(deck=>deck.id!=='deck-all')?<>
+            <div className="flashcard-browser-heading"><div><h2>Your decks</h2><p>{decks.filter(deck=>deck.id!=='deck-all').length} decks | {cards.filter(card=>card.dueDate<=todayStr).length} cards due today</p></div><ReferenceTabs items={[{id:'all',label:'All decks'},{id:'due',label:'Due for review'}]} value={deckView} onChange={setDeckView}/></div>
+            <div className="ref-deck-grid">{visibleDecks.map((deck,index)=>{const deckCards=cards.filter(card=>card.deckId===deck.id),due=deckCards.filter(card=>card.dueDate<=todayStr).length;return <article className="ref-deck" key={deck.id}><button className="ref-deck-select" onClick={()=>{setSelectedDeckId(deck.id);setCurrentIndex(0);setIsFlipped(false);setSessionReviewedCount(0)}}><span className={'ref-icon tint-'+index%4}><Layers size={28}/></span><strong>{deck.name}</strong><small>{deck.category}</small><span className="flashcard-deck-meta"><span>{deckCards.length} cards</span><span>{due?due+' due':'Up to date'}</span></span><span className="flashcard-deck-open">{deckCards.length?'Study deck':'Add your first card'} <CaretRight size={16}/></span></button><details className="ref-item-menu"><summary aria-label={'Options for '+deck.name}>...</summary><button onClick={()=>deleteDeck(deck.id)}>Delete deck</button></details></article>})}</div>
+            {!visibleDecks.length&&<ReferenceStart icon={<Check size={28}/>} title="You are caught up" action="Browse all decks" onAction={()=>setDeckView('all')}>No decks are due today. You can still practice any deck.</ReferenceStart>}
+          </>:<section className="flashcard-welcome"><span className="flashcard-welcome-icon"><Layers size={38} weight="duotone"/></span><h2>Your first deck starts here</h2><p>A deck keeps related questions together. Add your own cards, or let AI draft them from a topic, a note, or an uploaded reading.</p><button className="ref-primary" onClick={()=>setShowCreateDeckModal(true)}>Create your first deck</button><ol><li><span>1</span>Create a deck</li><li><span>2</span>Add questions and answers</li><li><span>3</span>Flip, recall, repeat</li></ol></section>}
+        </section>}
+        {selectedDeck&&<section className="ref-panel ref-study-preview">
+          <div className="flashcard-study-navigation"><button className="ref-secondary" onClick={()=>{setSelectedDeckId('');setIsFlipped(false);setSessionReviewedCount(0)}}><ArrowLeft size={16}/>All decks</button><button className="ref-secondary" onClick={()=>setShowAddCardModal(true)}><Plus size={16}/>Add card</button></div>
+
+          <div className="ref-panel-title"><span className="ref-icon tint-0"><Brain size={24} /></span><h2>{selectedDeck?.name || 'All decks'}</h2><span className="ref-tag tint-0">{selectedDeck?.category || 'General'}</span></div>
           <div className="ref-cloud-card">{totalCards>0&&<div className="ref-study-count"><button aria-label="Previous card" disabled={totalCards < 2} onClick={handlePrev}><CaretLeft size={17} /></button><span>{totalCards ? currentIndex % totalCards + 1 : 0} of {totalCards}</span><button aria-label="Next card" disabled={totalCards < 2} onClick={handleNext}><CaretRight size={17} /></button></div>}{currentCard ? <StudyFlashcard key={currentCard.id} question={currentCard.question} answer={currentCard.answer} category={currentCard.category} flipped={isFlipped} showHints={showHints} onFlip={() => setIsFlipped(value => !value)} onDelete={() => deleteCard(currentCard.id)} /> : <ReferenceStart icon={<Brain size={28}/>} title="Your practice space" action="Add card" onAction={()=>setShowAddCardModal(true)}>Add a question and answer to start. Reveal the answer, then rate your recall to schedule your next review.</ReferenceStart>}</div>
-          {(reviewing || isFlipped) && currentCard && <div className="ref-review-ratings">{(['again', 'hard', 'good', 'easy'] as const).map(rating => <button key={rating} className={rating} onClick={() => handleRating(rating)}>{rating}<small>{rating === 'again' ? 'Try again' : rating === 'hard' ? 'A little unsure' : rating === 'good' ? 'Got it' : 'Easy recall'}</small></button>)}</div>}
-          {currentCard&&<div className="ref-study-footer"><button className="ref-secondary" disabled={totalCards < 2} onClick={() => { setCurrentIndex(Math.floor(Math.random() * Math.max(1, totalCards))); setIsFlipped(false) }}><Shuffle size={19} />Shuffle</button><button className="ref-primary" disabled={!currentCard} onClick={() => { setReviewing(true); setIsFlipped(false) }}>Start review<ArrowRight size={18} /></button></div>}
-          {totalCards>0&&<details className="ref-study-options"><summary>Study options · {overallPercentage}% mastered</summary><label><input type="checkbox" checked={showHints} onChange={e => setShowHints(e.target.checked)} />Show hints</label><p>Your ratings automatically schedule the next review using spaced repetition.</p><p>{masteredCardsCount} mastered · {learningCardsCount} learning · {dueCardsCount} due</p><button className="ref-text-action" onClick={handleEndStudySession}>End Study Session</button></details>}
-        </section>
+          {isFlipped && currentCard && <div className="ref-review-ratings">{(['again', 'hard', 'good', 'easy'] as const).map(rating => <button key={rating} className={rating} onClick={() => handleRating(rating)}>{rating}<small>{rating === 'again' ? 'Try again' : rating === 'hard' ? 'A little unsure' : rating === 'good' ? 'Got it' : 'Easy recall'}</small></button>)}</div>}
+          {currentCard&&<div className="ref-study-footer"><button className="ref-secondary" disabled={totalCards < 2} onClick={() => { setCurrentIndex(Math.floor(Math.random() * Math.max(1, totalCards))); setIsFlipped(false) }}><Shuffle size={19} />Shuffle</button><button className="ref-secondary" onClick={handleEndStudySession}>Finish session</button></div>}
+          {totalCards>0&&<details className="ref-study-options"><summary>Study options · {overallPercentage}% mastered</summary><label><input type="checkbox" checked={showHints} onChange={e => setShowHints(e.target.checked)} />Show hints</label><p>Your ratings automatically schedule the next review using spaced repetition.</p><p>{masteredCardsCount} mastered · {learningCardsCount} learning · {dueCardsCount} due</p></details>}
+        </section>}
       </div>
       <AnimatePresence>
         {showCreateDeckModal && (
@@ -289,17 +287,18 @@ export function FlashcardsPage() {
                 onClick={() => {
                   setSessionReviewedCount(0)
                   setShowSessionEndModal(false)
+                  setSelectedDeckId('')
                 }}
                 className="w-full py-2.5 rounded-full text-xs font-bold text-white shadow-md shadow-pink-500/20"
                 style={{ background: 'linear-gradient(135deg, #FF6EA7 0%, #FF3385 100%)' }}
               >
-                Back to Dashboard
+                Back to decks
               </button>
             </motion.div>
           </ViewportOverlay>
         )}
       </AnimatePresence>
-      {showAI && <AIGenerator task="flashcards" category={selectedDeck?.category || 'General Psychology'} onClose={() => setShowAI(false)} onSave={(draft,settings) => { const category = settings.category; const id = createDeck(draft.title, category); draft.cards.forEach(card => addCard(id, card.question, card.answer, category)); setSelectedDeckId(id); setShowAI(false); setCurrentIndex(0); setIsFlipped(false) }}/>}
+      {showAI && <AIGenerator task="flashcards" category={selectedDeck?.category || 'General Psychology'} onClose={() => setShowAI(false)} onSave={(draft,settings) => { const category = settings.category; const id = createDeck(draft.title, category); draft.cards.forEach(card => addCard(id, card.question, card.answer, category)); setSelectedDeckId(id); setSessionReviewedCount(0); setShowAI(false); setCurrentIndex(0); setIsFlipped(false) }}/>}
     </div>
   )
 }
