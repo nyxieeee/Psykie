@@ -107,13 +107,15 @@ export function CalendarPage() {
       duration: newEvent.duration,
       type: newEvent.type,
       clientName: newEvent.clientName,
-      location: newEvent.isTelehealth ? 'Telehealth Video Suite' : newEvent.location,
+      location: newEvent.location.trim() || (newEvent.isTelehealth ? 'Online event' : ''),
       isTelehealth: newEvent.isTelehealth,
       notes: newEvent.notes,
       status: 'confirmed'
     }
 
     setEvents(prev => [...prev, created])
+    setSelectedDate(created.date)
+    setCurrentMonth(start.getMonth()); setCurrentYear(start.getFullYear())
     setShowCreateModal(false)
     setToastContent({
       title: 'Event saved',
@@ -173,7 +175,7 @@ export function CalendarPage() {
   const schedule = () => { setNewEvent(previous => ({ ...previous, date: selectedDate })); setShowCreateModal(true) }
   return (
     <div className="reference-page ref-calendar-page">
-      <ReferenceHeader title="Make room for progress." subtitle="Plan your study time, stay consistent, and look after your wellbeing." action="New event" onAction={schedule} />
+      <ReferenceHeader title="Calendar" subtitle="Plan your study time, stay consistent, and look after your wellbeing." action="New event" onAction={schedule} />
       <div className="ref-calendar-layout"><section className="ref-panel ref-calendar-main"><div className="ref-calendar-toolbar"><div><button className="ref-square-button" aria-label="Previous month" onClick={goToPreviousMonth}><CaretLeft size={18} /></button><h2>{monthNames[currentMonth]} {currentYear}</h2><button className="ref-square-button" aria-label="Next month" onClick={goToNextMonth}><CaretRight size={18} /></button></div><div><button className="ref-secondary" onClick={goToToday}>Today</button><ReferenceTabs items={[{ id: 'month', label: 'Month' }, { id: 'week', label: 'Week' }, { id: 'agenda', label: 'Agenda' }]} value={viewMode} onChange={id => setViewMode(id as typeof viewMode)} /></div></div>{viewMode === 'agenda' ? <div className="ref-month-agenda">{events.filter(event => event.date.startsWith(currentYear + '-' + String(currentMonth + 1).padStart(2, '0'))).sort((a, b) => a.date.localeCompare(b.date)).map(event => <button key={event.id} onClick={() => setSelectedDate(event.date)}><span className="ref-date-tile">{event.date.slice(-2)}</span><span><strong>{event.title}</strong><small>{event.time}</small></span><span className="ref-tag tint-2">{typeConfig[event.type].label}</span></button>)}</div> : <><div className="ref-calendar-weekdays">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => <span key={day}>{day}</span>)}</div><div className={'ref-month-grid ' + (viewMode === 'week' ? 'week' : '')}>{displayedCells.map(date => { const key = dateKey(date), dayEvents = getEventsForDate(key); return <button key={key} className={'ref-calendar-day ' + (key === selectedDate ? 'selected ' : '') + (date.getMonth() !== currentMonth ? 'outside' : '')} aria-label={date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) + ', ' + dayEvents.length + ' events'} aria-pressed={key === selectedDate} onClick={() => setSelectedDate(key)}><span className={key === dateKey(new Date()) ? 'today' : ''}>{date.getDate()}</span><div>{dayEvents.slice(0, 2).map(event => <span key={event.id} className={'ref-calendar-event tint-' + (['cbt_session', 'consultation', 'assessment', 'supervision', 'study', 'personal'].indexOf(event.type) % 4)}>{event.title}</span>)}{dayEvents.length > 2 && <small>+{dayEvents.length - 2} more</small>}</div>{dayEvents.length > 0 && <i className="ref-event-dot" />}</button> })}</div></>}</section>
         <aside className="ref-calendar-sidebar"><section className="ref-panel ref-day-agenda"><h2>{new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</h2>{selectedDateEvents.map(event => <article className="ref-agenda-event" key={event.id}><time>{event.time.split(' - ')[0]}<small>{event.duration}</small></time><div><h3>{event.title}</h3><p>{event.location}</p><span className="ref-tag tint-0">{typeConfig[event.type].label}</span><details><summary>Session details</summary><p>{event.notes || 'No additional notes.'}</p><button className="ref-text-action" onClick={() => setEvents(previous => previous.filter(item => item.id !== event.id))}>Remove event</button></details></div></article>)}{!selectedDateEvents.length && <ReferenceEmpty>A little breathing room. Add an event when you are ready.</ReferenceEmpty>}<button className="ref-text-action" onClick={schedule}><Plus size={15} />Add an event</button></section><section className="ref-panel ref-event-categories"><h2>Event categories</h2><div><span><i className="tint-2" />Study</span><span><i className="tint-0" />Clinical</span><span><i className="tint-3" />Personal</span></div></section></aside></div>
       <TransitionsModal
@@ -190,6 +192,7 @@ export function CalendarPage() {
             <input
               type="text"
               required
+              aria-label="Event title"
               value={newEvent.title}
               onChange={e => setNewEvent({ ...newEvent, title: e.target.value })}
               placeholder="What are you planning?"
@@ -215,6 +218,7 @@ export function CalendarPage() {
                 Event category
               </label>
               <select
+                aria-label="Event category"
                 value={newEvent.type}
                 onChange={e => setNewEvent({ ...newEvent, type: e.target.value as CalendarEvent['type'] })}
                 className="w-full liquid-glass-input px-3.5 py-2 text-sm text-neutral-800 focus:outline-none"
@@ -232,6 +236,7 @@ export function CalendarPage() {
               <input
                 type="date"
                 required
+                aria-label="Event date"
                 value={newEvent.date}
                 onChange={e => setNewEvent({ ...newEvent, date: e.target.value })}
                 className="w-full liquid-glass-input px-3 py-2 text-sm text-neutral-800 focus:outline-none"
@@ -242,7 +247,7 @@ export function CalendarPage() {
                 Start Time
               </label>
               <input
-                type="time" required value={newEvent.time}
+                type="time" aria-label="Start time" required value={newEvent.time}
                 onChange={e => setNewEvent({ ...newEvent, time: e.target.value })}
                 placeholder="10:00 AM"
                 className="w-full liquid-glass-input px-3 py-2 text-sm text-neutral-800 focus:outline-none"
@@ -253,6 +258,7 @@ export function CalendarPage() {
                 Duration
               </label>
               <select
+                aria-label="Event duration"
                 value={newEvent.duration}
                 onChange={e => setNewEvent({ ...newEvent, duration: e.target.value })}
                 className="w-full liquid-glass-input px-3 py-2 text-sm text-neutral-800 focus:outline-none"
@@ -265,6 +271,7 @@ export function CalendarPage() {
             </div>
           </div>
 
+          <div><label htmlFor="event-location" className="block text-xs font-bold text-neutral-700 mb-1">Location or meeting link</label><input id="event-location" className="w-full liquid-glass-input px-3.5 py-2 text-sm" value={newEvent.location} onChange={event => setNewEvent({ ...newEvent, location: event.target.value })} placeholder="Room, library, or your existing meeting URL" /></div>
           <div className="flex items-center gap-2 py-1">
             <input
               type="checkbox"
@@ -274,19 +281,19 @@ export function CalendarPage() {
               className="w-4 h-4 rounded text-pink-600 focus:ring-pink-500 border-pink-300"
             />
             <label htmlFor="telehealthCheck" className="text-xs font-medium text-neutral-700 cursor-pointer">
-              Telehealth Session (Generate Encrypted Video Room Link)
+              Online event (add your meeting link below)
             </label>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-neutral-700 mb-1">
-              Clinical Objectives / Notes
+              Agenda / Notes
             </label>
             <textarea
               rows={3}
               value={newEvent.notes}
               onChange={e => setNewEvent({ ...newEvent, notes: e.target.value })}
-              placeholder="Key clinical themes, assessments to administer, or agenda items..."
+              placeholder="Topics, preparation, or agenda items..."
               className="w-full liquid-glass-input px-3.5 py-2 text-sm text-neutral-800 focus:outline-none resize-none"
             />
           </div>

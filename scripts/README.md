@@ -25,3 +25,11 @@ node scripts/check-flip.cjs
 - Flip: intermediate and final 3D transforms, hidden faces, keyboard controls, reduced motion, and horizontal overflow.
 
 `check-layout.cjs`, `check-interactions.cjs`, `check-effects.cjs`, and `check-card-creation.cjs` forward to the current reference checks.
+
+## Workspace redesign checks
+
+Run `npm run test:redesign` (Playwright and Microsoft Edge required). The runner starts its own local Vite server with test credentials. Auth responses are mocked, with no model requests or real account changes.
+
+Checks all student pages at 320, 390, 768 and 1440px, clinical pages at three widths, login/registration, global DSM search handoff, appearance saving and calendar persistence/removal. Screenshots are written to ignored `artifacts/redesign/`.
+
+The existing `check-library.cjs`, `check-ai-ui.cjs` and `check-psych-quiz.cjs` cover material reuse, OCR imports, note summaries, chat retry, flashcards, quiz timers/history and research collections. Run them through `node scripts/run-ai-ui.cjs scripts/<name>.cjs`, one at a time.

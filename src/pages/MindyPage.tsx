@@ -21,7 +21,7 @@ export function MindyPage() {
 
   const [inputMessage, setInputMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
-  const [liveResearch, setLiveResearch] = useState(true)
+  const [liveResearch, setLiveResearch] = useState(false)
   const [retryAt, setRetryAt] = useState(0), [retrySeconds, setRetrySeconds] = useState(0)
   useEffect(() => {
     if (!retryAt) return
@@ -195,10 +195,7 @@ export function MindyPage() {
                   <button className="ref-secondary" onClick={() => handleSend('Help me structure an active recall study schedule for my psychology exams')}>Plan study schedule</button>
                   <button className="ref-secondary" onClick={() => handleSend('Explain neurotransmitters and neural transmission in biological psychology')}>Neurotransmitters</button>
                 </div>
-                <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(244, 114, 182, 0.2)', width: '100%', maxWidth: 680 }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary, #6b7280)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
-                    Explore All Psychology Subjects
-                  </p>
+                <details className="mindy-subjects"><summary>Browse psychology subjects</summary>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
                     {[
                       'Cognitive Psychology',
@@ -219,29 +216,19 @@ export function MindyPage() {
                         key={sub}
                         type="button"
                         onClick={() => handleSend(`Teach me the core foundational theories and high-yield concepts in ${sub}.`)}
-                        style={{
-                          fontSize: 11.5,
-                          fontWeight: 600,
-                          padding: '4px 10px',
-                          borderRadius: 20,
-                          border: '1px solid rgba(244, 114, 182, 0.4)',
-                          background: 'rgba(255, 255, 255, 0.8)',
-                          color: '#be185d',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                        }}
+                        className="mindy-subject-button"
                       >
                         {sub}
                       </button>
                     ))}
                   </div>
-                </div>
+                </details>
               </div>
             )}
             {messages.map(msg => msg.sender === 'user' ? <div className="mindy-user-message" key={msg.id}><span className="ref-avatar tint-2">{initials}</span><p>{msg.text}</p></div> : <article key={msg.id} className="mindy-response">
               <div className="mindy-response-heading"><img src="/mindy-mascot.png" alt=""/><strong>Mindy</strong><time>{new Date(msg.timestamp).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}</time></div>
               <div className="mindy-response-content"><p>{msg.text}</p>
-<div className="mindy-response-footer"><a className="mindy-references" href="/research"><BookOpen size={17}/> Find research sources</a><div className="mindy-message-actions"><button onClick={() => handleCopy(msg.id,msg.text)}>{copiedId === msg.id ? <Check size={16}/> : <Copy size={16}/>}<span>{copiedId === msg.id ? 'Copied' : 'Copy'}</span></button><button onClick={() => handleSaveToNotes(msg.text)}><Bookmark size={16}/><span>Save</span></button><details className="mindy-more"><summary aria-label="More study actions"><DotsThree size={20}/></summary><div><button onClick={() => handleCreateFlashcardFromChat(msg.text)}>Make flashcard</button><button onClick={() => handleRetry(msg.text)}>Try another explanation</button><button onClick={() => toggleLike(msg.id)}>{likedMap[msg.id] ? 'Liked' : 'Like response'}</button></div></details></div></div>
+<div className="mindy-response-footer"><button className="mindy-references" onClick={() => navigate('/research')}><BookOpen size={17}/> Find research sources</button><div className="mindy-message-actions"><button onClick={() => handleCopy(msg.id,msg.text)}>{copiedId === msg.id ? <Check size={16}/> : <Copy size={16}/>}<span>{copiedId === msg.id ? 'Copied' : 'Copy'}</span></button><button onClick={() => handleSaveToNotes(msg.text)}><Bookmark size={16}/><span>Save</span></button><details className="mindy-more"><summary aria-label="More study actions"><DotsThree size={20}/></summary><div><button onClick={() => handleCreateFlashcardFromChat(msg.text)}>Make flashcard</button><button onClick={() => handleRetry(msg.text)}>Try another explanation</button><button onClick={() => toggleLike(msg.id)}>{likedMap[msg.id] ? 'Liked' : 'Like response'}</button></div></details></div></div>
               </div>
             </article>)}
             {isSending && <p className="mindy-typing" role="status">Mindy is thinking<span>...</span></p>}
@@ -252,32 +239,7 @@ export function MindyPage() {
         <div className="mindy-compose-area">{!aiConfigured && <p className="ref-inline-notice">Mindy is not available for this workspace yet.</p>}
           {savedActionNotice && <p role="status" className="mindy-notice">{savedActionNotice}</p>}
           {retrySeconds > 0 && <p role="timer" className="mindy-notice">You can retry in {retrySeconds}s. An exhausted allowance may take longer to reset.</p>}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px 8px', fontSize: 11 }}>
-            <button
-              type="button"
-              onClick={() => setLiveResearch(r => !r)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 5,
-                padding: '3px 10px',
-                borderRadius: 20,
-                border: liveResearch ? '1.5px solid #f472b6' : '1px solid #e5e7eb',
-                background: liveResearch ? '#fdf2f8' : '#ffffff',
-                color: liveResearch ? '#be185d' : '#6b7280',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-              title="Toggle real-time research synthesis from PubMed, APA, NIMH, and Cochrane"
-            >
-              <Compass size={14} weight={liveResearch ? 'fill' : 'regular'} style={{ color: liveResearch ? '#ec4899' : '#9ca3af' }} />
-              <span>{liveResearch ? 'Real-Time Research & Clinical Synthesis: ON' : 'Real-Time Research: OFF'}</span>
-            </button>
-            <span style={{ color: '#9ca3af', fontSize: 11, fontWeight: 500 }}>
-              {liveResearch ? 'Active live search over PubMed & APA' : 'Fast textbook mode'}
-            </span>
-          </div>
+          <div className="mindy-research-option"><button type="button" aria-pressed={liveResearch} onClick={() => setLiveResearch(value => !value)}><Compass size={15}/>{liveResearch ? 'Research lookup enabled' : 'Include research lookup'}</button><small>{liveResearch ? 'Attempts a source search; chat may continue without results.' : 'Optional lookup uses additional AI requests'}</small></div>
           <form className="mindy-composer" onSubmit={e => {e.preventDefault();handleSend()}}>
             <Sparkle size={22} aria-hidden="true"/>
             <textarea ref={inputRef} rows={1} aria-label="Message Mindy" placeholder="Ask Mindy a question..." value={inputMessage} onChange={e => {setInputMessage(e.target.value);e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,140)+'px'}} onKeyDown={e => {if(e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing){e.preventDefault();handleSend()}}}/>

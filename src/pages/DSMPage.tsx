@@ -4,7 +4,7 @@ import {
   ArrowRight, Sparkle, Bookmarks, CaretLeft, FilePdf, UploadSimple, X,
   Rows, BookBookmark
 } from '@phosphor-icons/react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { DSM5_TR_CHAPTERS, DSMDisorder, DSMCriterion } from '../data/dsm5Data'
 import { getDSMPage, TOTAL_DSM5_PAGES, DSM_BOOK_TOC, BookPage } from '../data/dsm5BookEngine'
 
@@ -327,7 +327,12 @@ function BookSheet({
 
 export function DSMPage() {
   const [activeTab, setActiveTab] = useState<'criteria' | 'reader' | 'pdf'>('criteria')
-  const [search, setSearch] = useState('')
+  const location = useLocation()
+  const [search, setSearch] = useState((location.state as {query?:string} | null)?.query || '')
+  useEffect(() => {
+    const query = (location.state as {query?:string} | null)?.query
+    if (query) { setSearch(query); setSelectedChapter(null); setActiveTab('criteria') }
+  }, [location.state])
   const [selectedChapter, setSelectedChapter] = useState<string | null>(null)
 
   // Reader state (Contiguous 1 to 1,050 Pages)
@@ -381,10 +386,13 @@ export function DSMPage() {
 
   const totalDisorders = DSM5_TR_CHAPTERS.reduce((acc, ch) => acc + ch.disorders.length, 0)
 
+  useEffect(() => () => { if (customPdfUrl) URL.revokeObjectURL(customPdfUrl) }, [customPdfUrl])
+
   // Handle PDF file selection
   const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) return
     const url = URL.createObjectURL(file)
     setCustomPdfUrl(url)
     setPdfFileName(file.name)
@@ -401,7 +409,7 @@ export function DSMPage() {
   }
 
   return (
-    <div className="reference-page" style={{ maxWidth: 1220 }}>
+    <div className="reference-page dsm-page">
       {/* Header Banner */}
       <div className="ref-panel" style={{ marginBottom: 20, background: 'linear-gradient(135deg, #fdf2f8 0%, #f5f3ff 100%)', borderColor: '#f9a8d4' }}>
         <div className="flex items-start gap-4 flex-wrap sm:flex-nowrap">
@@ -473,7 +481,7 @@ export function DSMPage() {
 
       {/* ── TAB 1: Structured Diagnostic Manual (All 20 Classes) ─────────────── */}
       {activeTab === 'criteria' && (
-        <div className="flex gap-5">
+        <div className="dsm-chapter-layout">
           {/* Scrollable Chapter Sidebar */}
           <aside style={{ width: 260, flexShrink: 0 }}>
             <div

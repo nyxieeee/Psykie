@@ -12,7 +12,8 @@
     "check:functions": "tsc -p tsconfig.functions.json",
     "test:ai:backend": "node scripts/check-ai-backend.mjs",
     "test:ai:ui": "node scripts/run-ai-ui.cjs",
-    "setup:check": "node scripts/check-setup.mjs"
+    "setup:check": "node scripts/check-setup.mjs",
+    "test:redesign": "node scripts/run-ai-ui.cjs scripts/check-redesign.cjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
@@ -49,6 +50,7 @@
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "playwright": "^1.65.0",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.3.6",
     "typescript": "^5.2.2",

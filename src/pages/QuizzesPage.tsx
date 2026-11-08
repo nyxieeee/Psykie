@@ -82,7 +82,7 @@ export function QuizzesPage() {
     setQuizzes(previous => [item,...previous]); setShowCards(false); setError(''); setCategory('all'); setSearch(''); setView('mine'); begin(item)
   }
   return <div className="reference-page ref-quizzes-page">
-    <ReferenceHeader title="Put your knowledge into practice." subtitle="Turn your psychology notes and reading into practice, then learn from every answer." action="Create quiz" onAction={openGenerator}/>
+    <ReferenceHeader title="Practice quizzes" subtitle="Turn your psychology notes and reading into practice, then learn from every answer." action="Create quiz" onAction={openGenerator}/>
     <div className="study-quiz-intro ref-panel"><div><strong>Your material. Your practice.</strong><p>Upload a reading, choose a saved note, or type a topic. Build psychology questions at your level.</p></div><div className="study-actions"><button className="ref-primary" onClick={openGenerator}>Generate quiz with AI</button><button className="ref-secondary" onClick={() => {setError('');setShowCards(true)}}>Practice from flashcards</button></div></div>
     <div className="ref-quiz-layout">
       <section className="ref-quiz-browser">

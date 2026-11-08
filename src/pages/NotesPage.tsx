@@ -152,7 +152,7 @@ export function NotesPage() {
 
   return <div className="reference-page ref-notes-page">
     <ReferenceHeader
-      title="Your notes"
+      title="Notes"
       subtitle="A little clarity, one thought at a time."
       action="New note"
       onAction={() => { setNewKind('text'); setShowNew(true) }}
