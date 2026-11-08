@@ -79,6 +79,21 @@ body .flashcard-draft-review .flashcard-answer { font-size:15px; line-height:1.8
 body .flashcard-draft-review .flashcard-question { font-size:18px; line-height:1.6; }
 .draft-card-editor label { margin-bottom:16px; }
 .flashcard-draft-review>label,.draft-card-editor label,.ai-generator-body .ai-setup-section>label { display:block; font-size:12px; font-weight:700; margin-bottom:14px; }
+.reviewer-content { margin-top:20px; }
+.reviewer-source-links { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+.reviewer-source-links button { font-size:12px; max-width:100%; overflow-wrap:anywhere; }
+.reviewer-guide { max-width:780px; margin:22px auto; }
+.reviewer-guide h3 { font-size:16px; font-weight:850; color:var(--ref-accent); margin:28px 0 12px; }
+.reviewer-guide p { font-size:15px; line-height:1.95; margin:12px 0; white-space:pre-wrap; }
+.reviewer-points { display:flex; flex-direction:column; gap:14px; margin-top:20px; }
+.reviewer-points li { display:flex; gap:14px; align-items:flex-start; padding:18px; border:1px solid var(--ref-border); border-radius:14px; }
+.reviewer-points li>span { display:grid; place-items:center; width:27px; height:27px; border-radius:50%; background:var(--ref-soft); color:var(--ref-accent); flex-shrink:0; font-size:12px; font-weight:800; }
+.reviewer-points p { font-size:14px; line-height:1.8; }
+.reviewer-self-test article { padding:22px 0; border-bottom:1px solid var(--ref-border); }
+.reviewer-self-test h3 { font-size:16px; line-height:1.6; font-weight:800; }
+.reviewer-self-test ol { list-style:upper-alpha; padding-left:24px; margin:14px 0; }
+.reviewer-self-test li,.reviewer-self-test p { font-size:14px; line-height:1.8; margin-bottom:8px; }
+.reviewer-self-test summary { cursor:pointer; color:var(--ref-accent); font-size:13px; margin-bottom:12px; }
 @media(max-width:480px) { body .ai-draft-dialog>.ref-panel-title { padding:18px; } .ai-generator-body { padding:18px; } .draft-save-bar { padding:14px 18px; } .draft-save-meta { align-items:flex-start; } .draft-save-actions { flex-direction:column-reverse; align-items:stretch; } .draft-save-actions>button { width:100%; justify-content:center; } }
 .ai-source-options { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
 body .ai-source-options button { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:14px 8px; border:1px solid var(--ref-border); border-radius:14px; font-size:12px; background:var(--ref-surface); }

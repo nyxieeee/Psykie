@@ -90,7 +90,7 @@ async function generate(rt: Runtime, body: Record<string, unknown>) {
     if (typeof answer !== 'string' || !answer.trim() || data.choices[0].finish_reason !== 'stop') throw new RequestError(502, 'The AI response was incomplete. Try a shorter question.')
     return { answer, research: {status:researchStatus,sources:researchSources} }
   }
-  if (!['summary', 'flashcards', 'quiz'].includes(String(body.action))) throw new RequestError(400, 'Unknown AI action.')
+  if (!['summary', 'flashcards', 'quiz', 'reviewer'].includes(String(body.action))) throw new RequestError(400, 'Unknown AI action.')
   const action = body.action as AITask, text = requiredText(body.text, 25000, 'Source text or topic')
   const category = typeof body.category === 'string' ? body.category.slice(0, 100) : 'Psychology'
   const count = Number(body.count || (action === 'quiz' ? 5 : 8))
@@ -111,7 +111,7 @@ async function generate(rt: Runtime, body: Record<string, unknown>) {
     `For flashcards return title, cards (produce ${count} cards), empty summary (""), empty keyPoints ([]), and empty questions ([]).`,
     `For quizzes return questions with two (true/false) or four distinct options, zero-based correct index and an educational rationale; empty summary (""), empty keyPoints ([]), and empty cards ([]).`,
     'Do not include answers unrelated to the source.',
-    quizInstruction
+    action==='reviewer'?'For reviewers, return ALL fields: a source-grounded psychology study guide in summary (600-900 words maximum), 6-10 keyPoints, up to 6 concise flashcards, and 3 multiple-choice self-test questions with explanations. Structure the guide with uppercase headings: OVERVIEW; CORE CONCEPTS AND THEORIES; KEY TERMS; IMPORTANT COMPARISONS; MEMORY AIDS; REVISION CHECKLIST. Only include sections supported by the uploaded source. Distinguish a learning mnemonic from an established fact. Do not invent source citations, patient details, clinical recommendations or missing facts. Keep all parts concise enough to fit the response budget. No nursing-specific material.':quizInstruction
   ].filter(Boolean).join(' ')
   const result: AIDraft = validateDraft(await structured(rt, 'study_draft', draftSchema, draftInstruction, { text, category, count, ...(action === 'quiz' ? { quizOptions } : {}) }), action)
   if (action === 'flashcards') result.cards = result.cards.slice(0, count)

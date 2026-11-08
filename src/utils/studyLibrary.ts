@@ -1,9 +1,11 @@
+import type { AIDraft } from './ai'
 import { readWorkspaceList, workspaceStorage } from './workspaceStorage'
 
 export type LibraryMaterial = {
   id: string; title: string; text: string; category: string; folderId: string | null
-  tags: string[]; favorite: boolean; kind: 'upload' | 'text' | 'note' | 'document' | 'summary'
+  tags: string[]; favorite: boolean; kind: 'upload' | 'text' | 'note' | 'document' | 'summary' | 'reviewer'
   sourceName: string; createdAt: string; updatedAt: string; summary?: string
+  reviewer?:AIDraft;
   fileId?: string; ownsFile?: boolean; sourceIds?: string[]
 }
 export type LibraryFolder = {id: string; name: string}

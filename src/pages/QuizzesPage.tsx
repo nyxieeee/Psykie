@@ -11,7 +11,7 @@ import { completeQuizSession, createQuizSession, missedQuestions, questionsFromC
 
 const dateLabel = (date: string) => Number.isNaN(Date.parse(date)) ? date : new Date(date).toLocaleString()
 const timeLabel = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
-type Handoff = { studyText?: string; sourceName?: string; category?: string; quizId?: string }
+type Handoff = { studyText?: string; sourceName?: string; category?: string; quizId?: string; startQuizId?:string }
 
 export function QuizzesPage() {
   const cards = useStudyStore(state => state.cards)
@@ -62,6 +62,7 @@ export function QuizzesPage() {
   },[now,session,checked,expired,studyMode,finish])
   useEffect(() => {
     const state = location.state as Handoff | null
+    if(state?.startQuizId){const item=quizzes.find(quiz=>quiz.id===state.startQuizId);if(item){setShowPractice(true);setResult(null);setSession(createQuizSession(item))}navigate(location.pathname,{replace:true,state:null});return}
     if (state?.quizId) { const item=quizzes.find(quiz=>quiz.id===state.quizId); if(item){setShowPractice(false);setCategory('all');setSearch(item.title);setView('mine')} navigate(location.pathname,{replace:true,state:null}); return }
     if (!state?.studyText) return
     setHandoff(state); setShowAI(true)

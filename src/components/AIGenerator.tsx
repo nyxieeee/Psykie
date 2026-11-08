@@ -1,3 +1,4 @@
+import { ReviewerContent } from './ReviewerContent'
 import { FlashcardDraftReview } from './FlashcardDraftReview'
 import { StudyFilePicker } from './StudyFilePicker'
 import { useEffect, useRef, useState } from 'react'
@@ -9,7 +10,7 @@ import { useStudyStore } from '../store'
 import { readLibrary } from '../utils/studyLibrary'
 import '../study-workflows.css'
 
-export type GenerationSettings = { category: string; quizOptions: QuizOptions; timerMinutes: number; sourceName: string; questionSeconds:number; mode: 'study' | 'exam' }
+export type GenerationSettings = { category: string; quizOptions: QuizOptions; timerMinutes: number; sourceName: string; questionSeconds:number; sourceText:string; sourceFile?:File; mode: 'study' | 'exam' }
 export const PSYCHOLOGY_SUBJECTS = [
   'General Psychology',
   'Cognitive Psychology',
@@ -33,12 +34,13 @@ export const PSYCHOLOGY_SUBJECTS = [
   'Board Exam & Licensure Prep',
 ]
 const subjects = PSYCHOLOGY_SUBJECTS
-type Props = { task: AITask; initialText?: string; initialSourceName?: string; category?: string; saveLabel?: string; saveError?: string; onClose: () => void; onSave: (draft: AIDraft, settings: GenerationSettings) => void }
+type Props = { task: AITask; initialText?: string; initialSourceName?: string; category?: string; saveLabel?: string; saveError?: string; saving?:boolean; onClose: () => void; onSave: (draft: AIDraft, settings: GenerationSettings) => void }
 
-export function AIGenerator({ task, initialText = '', initialSourceName = '', category = 'General Psychology', saveLabel, saveError, onClose, onSave }: Props) {
+export function AIGenerator({ task, initialText = '', initialSourceName = '', category = 'General Psychology', saveLabel, saveError, saving=false, onClose, onSave }: Props) {
   const notes = useStudyStore(state => state.notes)
+  const [uploadedFile,setUploadedFile]=useState<File>()
   const [sourceMode,setSourceMode] = useState(initialText ? 'text' : 'topic')
-  const chooseSource = (mode:string) => {setSourceMode(mode);setText('');setTopic('');setFileName('');setNoteId('');setMaterialId('');setDraft(null);setError('')}
+  const chooseSource = (mode:string) => {setSourceMode(mode);setUploadedFile(undefined);setText('');setTopic('');setFileName('');setNoteId('');setMaterialId('');setDraft(null);setError('')}
   const [libraryItems] = useState(readLibrary), [materialId, setMaterialId] = useState('')
   const [text, setText] = useState(initialText), [count, setCount] = useState(task === 'quiz' ? 5 : 8)
   const [loading, setLoading] = useState(false), [error, setError] = useState(''), [draft, setDraft] = useState<AIDraft | null>(null)
@@ -53,8 +55,8 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', ca
   const source = [topic.trim() && `Requested topics and focus: ${topic.trim()}`, text.trim() && `Study material:\n${text.trim()}`].filter(Boolean).join('\n\n')
   const upload = async (file?: File) => {
     if (!file) return
-    setReading(true); setError(''); setDraft(null);setText('');setFileName(''); controller.current = new AbortController()
-    try { const extracted = await readStudyUpload(file, {ocr:ocrEnabled ? extractImageText : undefined, signal:controller.current.signal, onProgress:setReadProgress}); setText(extracted); setFileName(file.name); setNoteId(''); setMaterialId('') }
+    setReading(true);setUploadedFile(undefined); setError(''); setDraft(null);setText('');setFileName(''); controller.current = new AbortController()
+    try { const extracted = await readStudyUpload(file, {ocr:ocrEnabled ? extractImageText : undefined, signal:controller.current.signal, onProgress:setReadProgress}); setText(extracted);setUploadedFile(file); setFileName(file.name); setNoteId(''); setMaterialId('') }
     catch (error) { if (!controller.current.signal.aborted) setError(error instanceof Error ? error.message : 'Could not read this file. Try another document.') }
     finally { setReading(false); setReadProgress('') }
   }
@@ -66,8 +68,8 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', ca
     catch(error) { if (!controller.current.signal.aborted) setError(error instanceof Error ? error.message : 'Generation failed. Please try again.') }
     finally { setLoading(false) }
   }
-  const title = task === 'summary' ? 'Create a study summary' : task === 'flashcards' ? 'Create flashcards' : 'Create a quiz'
-  const busy = loading || reading
+  const title = task==='reviewer'?'Create a psychology reviewer':task === 'summary' ? 'Create a study summary' : task === 'flashcards' ? 'Create flashcards' : 'Create a quiz'
+  const busy = loading || reading || saving
   return <ViewportOverlay onDismiss={onClose}>
     <section className="glass-modal ref-form-dialog ai-draft-dialog">
       <div className="ref-panel-title"><h2>{title}</h2><button aria-label="Close AI generator" onClick={onClose}><X size={20}/></button></div>
@@ -85,18 +87,18 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', ca
       </div></section><section className="ai-setup-section"><h3><span>2</span>Make it yours</h3>
         <label>Subject<select aria-label="Generation subject" disabled={busy} value={subject} onChange={e => {setSubject(e.target.value);setDraft(null)}}>{[...new Set([...subjects, category, subject])].map(value => <option key={value}>{value}</option>)}</select></label>
       {task==='quiz'&&<div className="quiz-setup-choices"><fieldset><legend>Question style</legend><div className="quiz-choice-chips">{[{id:'multiple-choice',label:'Multiple choice'},{id:'true-false',label:'True / false'},{id:'scenario',label:'Psychology scenarios'},{id:'mixed',label:'Mixed practice'}].map(item=><button key={item.id} disabled={busy} aria-pressed={quizOptions.style===item.id} onClick={()=>setQuizOptions({...quizOptions,style:item.id as QuizOptions['style']})}>{item.label}</button>)}</div></fieldset><fieldset><legend>Difficulty</legend><div className="quiz-choice-chips">{[{id:'easy',label:'Foundations'},{id:'medium',label:'Intermediate'},{id:'hard',label:'Advanced'},{id:'board',label:'Board-style'}].map(item=><button key={item.id} disabled={busy} aria-pressed={quizOptions.difficulty===item.id} onClick={()=>setQuizOptions({...quizOptions,difficulty:item.id as QuizOptions['difficulty']})}>{item.label}</button>)}</div></fieldset><fieldset><legend>Learning mode</legend><div className="quiz-choice-chips"><button disabled={busy} aria-pressed={mode==='study'} onClick={()=>setMode('study')}>Study - explain each answer</button><button disabled={busy} aria-pressed={mode==='exam'} onClick={()=>setMode('exam')}>Exam - feedback at the end</button></div></fieldset><fieldset><legend>Timer</legend><div className="quiz-choice-chips"><button disabled={busy} aria-pressed={!timerMinutes&&!questionSeconds} onClick={()=>{setTimerMinutes(0);setQuestionSeconds(0)}}>No timer</button>{[5,10,20,30].map(value=><button key={value} disabled={busy} aria-pressed={timerMinutes===value} onClick={()=>{setTimerMinutes(value);setQuestionSeconds(0)}}>{value} min total</button>)}</div><small>Per question</small><div className="quiz-choice-chips">{[30,60,90,120].map(value=><button key={value} disabled={busy} aria-pressed={questionSeconds===value} onClick={()=>{setQuestionSeconds(value);setTimerMinutes(0)}}>{value} sec</button>)}</div></fieldset></div>}
-      {task !== 'summary'&&<div className="quiz-choice-chips" aria-label="Quick question count">{(task==='quiz'?[5,10,15]:[5,10,15,20]).map(value=><button key={value} disabled={busy} aria-pressed={count===value} onClick={()=>setCount(value)}>{value} {task==='quiz'?'questions':'cards'}</button>)}</div>}
+      {task !== 'summary'&&task!=='reviewer'&&<div className="quiz-choice-chips" aria-label="Quick question count">{(task==='quiz'?[5,10,15]:[5,10,15,20]).map(value=><button key={value} disabled={busy} aria-pressed={count===value} onClick={()=>setCount(value)}>{value} {task==='quiz'?'questions':'cards'}</button>)}</div>}
       {task !== 'summary' && <label>Number of {task === 'quiz' ? 'questions' : 'cards'}<input aria-label={task === 'quiz' ? 'Number of questions' : 'Number of cards'} disabled={busy} type="number" min={1} max={task === 'quiz' ? 15 : 20} value={count} onChange={event => {setCount(Number(event.target.value));setDraft(null)}}/></label>}
       </section></>}
       {error && <p role="alert" className="ref-form-error">{error}</p>}
       {saveError && <p role="alert" className="ref-form-error">{saveError}</p>}
       {!draft&&<button className="ref-primary ref-wide" disabled={busy || !source || source.length > MAX_SOURCE_LENGTH || !Number.isInteger(count) || count < 1 || count > (task === 'quiz' ? 15 : 20)} onClick={generate}>{loading?<><Spinner className="animate-spin" size={18}/>Generating...</>:'Generate draft'}</button>}
       {draft&&<section className="ai-draft-preview" aria-label="AI draft preview">
-        {task==='flashcards'?<FlashcardDraftReview draft={draft} category={subject} onChange={setDraft} disabled={busy}/>:<><h3>{draft.title}</h3>{task==='summary'?<><p>{draft.summary}</p><ul>{draft.keyPoints.map((point,index)=><li key={index}>{point}</li>)}</ul></>:<ol>{draft.questions.map((question,index)=><li key={index}><strong>{question.question}</strong><ul>{question.options.map((option,answer)=><li key={answer}>{option}{answer===question.correct?' (correct)':''}</li>)}</ul><p>{question.explanation}</p></li>)}</ol>}</>}
+        {task==='reviewer'?<><h3>{draft.title}</h3><ReviewerContent draft={draft} category={subject}/></>:task==='flashcards'?<FlashcardDraftReview draft={draft} category={subject} onChange={setDraft} disabled={busy}/>:<><h3>{draft.title}</h3>{task==='summary'?<><p>{draft.summary}</p><ul>{draft.keyPoints.map((point,index)=><li key={index}>{point}</li>)}</ul></>:<ol>{draft.questions.map((question,index)=><li key={index}><strong>{question.question}</strong><ul>{question.options.map((option,answer)=><li key={answer}>{option}{answer===question.correct?' (correct)':''}</li>)}</ul><p>{question.explanation}</p></li>)}</ol>}</>}
         <p className="ref-inline-notice">AI-generated draft. Check the content against your study material before saving.</p>
       </section>}
       </div>
-      {draft&&<footer className="draft-save-bar"><div className="draft-save-meta"><strong>{task==='flashcards'?draft.cards.length+' cards ready':task==='quiz'?draft.questions.length+' questions ready':'Summary ready'}</strong><button className="ref-text-action" disabled={busy} onClick={()=>setDraft(null)}>Edit source and settings</button></div><div className="draft-save-actions"><button className="ref-secondary" disabled={busy} onClick={generate}>{loading?'Generating...':'Generate again'}</button><button className="ref-primary" disabled={busy||!draft.title.trim()||task==='flashcards'&&draft.cards.some(card=>!card.question.trim()||!card.answer.trim())} onClick={()=>onSave(draft,{category:subject,quizOptions,timerMinutes,questionSeconds,mode,sourceName:fileName||topic.trim().slice(0,120)||'Pasted study material'})}>{saveLabel||(task==='summary'?'Save as a new note':task==='quiz'?'Save quiz':'Save deck')}</button></div></footer>}
+      {draft&&<footer className="draft-save-bar"><div className="draft-save-meta"><strong>{task==='flashcards'?draft.cards.length+' cards ready':task==='quiz'?draft.questions.length+' questions ready':task==='reviewer'?'Reviewer ready':'Summary ready'}</strong><button className="ref-text-action" disabled={busy} onClick={()=>setDraft(null)}>Edit source and settings</button></div><div className="draft-save-actions"><button className="ref-secondary" disabled={busy} onClick={generate}>{loading?'Generating...':'Generate again'}</button><button className="ref-primary" disabled={busy||!draft.title.trim()||task==='flashcards'&&draft.cards.some(card=>!card.question.trim()||!card.answer.trim())} onClick={()=>onSave(draft,{category:subject,quizOptions,timerMinutes,questionSeconds,mode,sourceText:text,sourceFile:uploadedFile,sourceName:fileName||topic.trim().slice(0,120)||'Pasted study material'})}>{saving?'Saving...':saveLabel||(task==='reviewer'?'Save reviewer':task==='summary'?'Save as a new note':task==='quiz'?'Save quiz':'Save deck')}</button></div></footer>}
     </section>
   </ViewportOverlay>
 }

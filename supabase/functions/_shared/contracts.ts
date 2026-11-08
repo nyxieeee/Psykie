@@ -1,4 +1,4 @@
-export type AITask = 'summary' | 'flashcards' | 'quiz'
+export type AITask = 'summary' | 'flashcards' | 'quiz' | 'reviewer'
 export type AIQuestion = { question: string; options: string[]; correct: number; explanation: string }
 export type QuizOptions = { style: 'multiple-choice' | 'true-false' | 'scenario' | 'mixed'; difficulty: 'easy' | 'medium' | 'hard' | 'board' }
 export type AIDraft = { title: string; summary: string; keyPoints: string[]; cards: { question: string; answer: string }[]; questions: AIQuestion[] }
@@ -31,6 +31,7 @@ export function validateDraft(value: unknown, task: AITask): AIDraft {
   if (!data || !text(data.title, 200) || !text(data.summary) || !Array.isArray(data.keyPoints) || data.keyPoints.length > 12 || data.keyPoints.some(p => !text(p, 2000)) || !Array.isArray(data.cards) || !Array.isArray(data.questions)) throw new Error('The AI returned an invalid draft. Please try again.')
   if (data.cards.length > 20 || data.cards.some(c => !c || !text(c.question, 1000) || !c.question.trim() || !text(c.answer, 4000) || !c.answer.trim())) throw new Error('The AI returned invalid flashcards.')
   if (data.questions.length > 15 || data.questions.some(q => !q || !text(q.question, 1500) || !q.question.trim() || !Array.isArray(q.options) || ![2, 4].includes(q.options.length) || q.options.some(o => !text(o, 1000) || !o.trim()) || new Set(q.options).size !== q.options.length || !Number.isInteger(q.correct) || q.correct < 0 || q.correct >= q.options.length || !text(q.explanation, 2500))) throw new Error('The AI returned invalid quiz questions.')
-  if ((task === 'summary' && !data.summary.trim()) || (task === 'flashcards' && !data.cards.length) || (task === 'quiz' && !data.questions.length)) throw new Error('The AI did not return the requested content.')
+  if (((task === 'summary'||task==='reviewer') && !data.summary.trim()) || (task === 'flashcards' && !data.cards.length) || (task === 'quiz' && !data.questions.length)) throw new Error('The AI did not return the requested content.')
+  if(task==='reviewer'&&(!data.keyPoints.length||!data.cards.length||!data.questions.length))throw new Error('The reviewer is incomplete. Please generate it again.')
   return data
 }
