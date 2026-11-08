@@ -11,6 +11,8 @@ type LocalAccount = { user: User; salt: string; passwordHash: string }
 type AccountRole = 'student' | 'professional'
 type SessionSource = 'local' | 'supabase' | 'dev'
 const ACCOUNTS_KEY = 'psykie-beta-accounts-v1'
+let sessionCheck: Promise<void> | null = null
+let signInCheck: Promise<boolean> | null = null
 const initialState: AuthState = { user: null, isAuthenticated: false, isLoading: false, error: null }
 const hex = (bytes: Uint8Array) => Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')
 async function hashPassword(password: string, salt: string) {
@@ -52,18 +54,23 @@ export const useAuthStore = create<AuthState & AuthActions>()(persist((set, get)
     set({ user, isAuthenticated: true, isLoading: false, error: null, notice: null, sessionSource: 'dev', isSessionReady: true })
     return true
   },
-  finishSocialSignIn: async () => {
-    set({ isLoading: true, error: null, notice: null })
-    try {
-      const { user } = await getSocialSession()
-      loadAccountWorkspace(user.id)
-      set({ user, isAuthenticated: true, isLoading: false, error: null, sessionSource: 'supabase', isSessionReady: true })
-      return true
-    } catch(error) {
-      loadAccountWorkspace(null)
-      set({ ...initialState, isSessionReady: true, error: error instanceof Error ? error.message : 'Sign-in failed. Please try again.' })
-      return false
+  finishSocialSignIn: () => {
+    if (signInCheck) return signInCheck
+    const finish = async () => {
+      set({ isLoading: true, error: null, notice: null })
+      try {
+        const { user } = await getSocialSession()
+        loadAccountWorkspace(user.id)
+        set({ user, isAuthenticated: true, isLoading: false, error: null, sessionSource: 'supabase', isSessionReady: true })
+        return true
+      } catch(error) {
+        loadAccountWorkspace(null)
+        set({ ...initialState, isSessionReady: true, error: error instanceof Error ? error.message : 'Sign-in failed. Please try again.' })
+        return false
+      }
     }
+    signInCheck = finish().finally(() => { signInCheck = null })
+    return signInCheck
   },
   login: async ({ email, password }) => {
     if (!supabaseConfigured && !import.meta.env.DEV) { set({ error: 'Authentication is unavailable until Supabase is configured.' }); return false }
@@ -111,18 +118,26 @@ export const useAuthStore = create<AuthState & AuthActions>()(persist((set, get)
     loadAccountWorkspace(null)
     set({ ...initialState, sessionSource: 'local', isSessionReady: true, notice: null })
   },
-  checkAuth: async () => {
-    const { user, sessionSource } = get()
-    if (sessionSource === 'dev' && import.meta.env.DEV && user && ['student', 'professional'].includes(user.role) && user.id === 'dev-demo-' + user.role) { set({ isSessionReady: true }); return }
-    if (supabaseConfigured) {
-      const { data } = await requireSupabase().auth.getSession()
-      if (data.session) { await get().finishSocialSignIn(); return }
-      loadAccountWorkspace(null); set({ ...initialState, sessionSource: 'local', isSessionReady: true }); return
+  checkAuth: () => {
+    if (sessionCheck) return sessionCheck
+    const check = async () => {
+      const { user, sessionSource } = get()
+      if (sessionSource === 'dev' && import.meta.env.DEV && user && ['student', 'professional'].includes(user.role) && user.id === 'dev-demo-' + user.role) { set({ isSessionReady: true }); return }
+      if (supabaseConfigured) {
+        const { data } = await requireSupabase().auth.getSession()
+        if (data.session) { await get().finishSocialSignIn(); return }
+        loadAccountWorkspace(null); set({ ...initialState, sessionSource: 'local', isSessionReady: true }); return
+      }
+      if (!import.meta.env.DEV || sessionSource !== 'local' || !user || !Object.values(accounts()).some(account => account.user.id === user.id)) {
+        loadAccountWorkspace(null); set({ ...initialState, sessionSource: 'local', isSessionReady: true }); return
+      }
+      set({ isSessionReady: true })
     }
-    if (!import.meta.env.DEV || sessionSource !== 'local' || !user || !Object.values(accounts()).some(account => account.user.id === user.id)) {
-      loadAccountWorkspace(null); set({ ...initialState, sessionSource: 'local', isSessionReady: true }); return
-    }
-    set({ isSessionReady: true })
+    sessionCheck = check().catch(error => {
+      loadAccountWorkspace(null)
+      set({ ...initialState, sessionSource: 'local', isSessionReady: true, error: error instanceof Error ? error.message : 'Your session could not be checked. Please sign in again.' })
+    }).finally(() => { sessionCheck = null })
+    return sessionCheck
   },
   completeAccountRole: async role => {
     const user = get().user

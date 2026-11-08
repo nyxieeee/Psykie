@@ -1,14 +1,15 @@
+import { StartupBoundary } from './components/StartupBoundary'
+import { useStartupReady } from './context/StartupContext'
 import { PasswordPage } from './pages/auth/PasswordPage'
 import { useMotionPreference } from './hooks/useMotionPreference'
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage'
 import { AccountTypePage } from './pages/auth/AccountTypePage'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { Suspense, lazy, useEffect, useLayoutEffect, useRef } from 'react'
+import { lazy, useEffect, useLayoutEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useAuthStore, useIsAuthenticated } from './store'
 import { TransitionProvider, useTransitionStyle } from './context/TransitionContext'
 import { TRANSITIONS, DEFAULT_TRANSITION } from './utils/transitions'
-import { LoadingScreen } from './components/LoadingScreen'
 import {
   HelpIcon,
   BrainIcon,
@@ -33,18 +34,13 @@ const DocumentsPage  = lazy(() => import('./pages/DocumentsPage').then(m => ({ d
 const StudyBoxPage = lazy(() => import('./pages/StudyBoxPage').then(m => ({ default: m.StudyBoxPage })))
 const DSMPage      = lazy(() => import('./pages/DSMPage').then(m => ({ default: m.DSMPage })))
 
-// Loading fallback
-function LoadingFallback() {
-  return <LoadingScreen fullScreen label="Loading Psykie..." />
-}
-
 // ── Protected Route ──
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useIsAuthenticated()
   const isSessionReady = useAuthStore(state => state.isSessionReady)
   const user = useAuthStore(state => state.user)
   const location = useLocation()
-  if (!isSessionReady) return <LoadingFallback />
+  if (!isSessionReady) return null
   if (!isAuthenticated) return <Navigate to="/login" state={{ from: location }} replace />
   if (!user || !['student', 'professional', 'admin'].includes(user.role)) return <Navigate to="/account-type" replace />
   return children
@@ -60,7 +56,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   const isSessionReady = useAuthStore(state => state.isSessionReady)
   const isAuthenticated = useIsAuthenticated()
   const location = useLocation()
-  if (!isSessionReady) return <LoadingFallback />
+  if (!isSessionReady) return null
   if (isAuthenticated) return <Navigate to="/dashboard" state={{ from: location }} replace />
   return children
 }
@@ -85,6 +81,7 @@ const PAGE_ORDER = [
 // ── Route Transition ──
 // Uses the globally-set TransitionStyle from context, direction-aware
 function RouteTransition({ children }: { children: React.ReactNode }) {
+  useStartupReady()
   const location = useLocation()
   const prevPathRef = useRef<string>(location.pathname)
   const { active } = useTransitionStyle()
@@ -176,41 +173,37 @@ function InnerApp() {
   }, [checkAuth])
 
   return (
-    <>
-      <Suspense fallback={<LoadingFallback />}>
-        <Routes>
-          <Route element={<AuthLayout />}><Route path="/forgot-password" element={<PasswordPage/>}/><Route path="/reset-password" element={<PasswordPage reset/>}/><Route path="/account-type" element={<AccountTypePage />} /><Route path="/auth/callback" element={<AuthCallbackPage />} /></Route>
-          {/* Public Routes */}
-          <Route element={<PublicRoute><AuthLayout /></PublicRoute>}>
-            <Route path="/login"    element={<RouteTransition><LoginPage /></RouteTransition>} />
-            <Route path="/register" element={<RouteTransition><RegisterPage /></RouteTransition>} />
-          </Route>
+    <Routes>
+      <Route element={<AuthLayout />}><Route path="/forgot-password" element={<PasswordPage/>}/><Route path="/reset-password" element={<PasswordPage reset/>}/><Route path="/account-type" element={<AccountTypePage />} /><Route path="/auth/callback" element={<AuthCallbackPage />} /></Route>
+      {/* Public Routes */}
+      <Route element={<PublicRoute><AuthLayout /></PublicRoute>}>
+        <Route path="/login"    element={<RouteTransition><LoginPage /></RouteTransition>} />
+        <Route path="/register" element={<RouteTransition><RegisterPage /></RouteTransition>} />
+      </Route>
 
-          {/* Protected Routes */}
-          <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-            <Route path="/"           element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard"  element={<RouteTransition><DashboardPage /></RouteTransition>} />
-            <Route path="/mindy"      element={<RouteTransition><MindyPage /></RouteTransition>} />
-            <Route path="/notes"      element={<RouteTransition><NotesPage /></RouteTransition>} />
-            <Route path="/flashcards" element={<RouteTransition><FlashcardsPage /></RouteTransition>} />
-            <Route path="/quizzes"    element={<RouteTransition><QuizzesPage /></RouteTransition>} />
-            <Route path="/research"   element={<RouteTransition><ResearchPage /></RouteTransition>} />
-            <Route path="/documents"  element={<RouteTransition><DocumentsPage /></RouteTransition>} />
-            <Route path="/library" element={<RouteTransition><StudyBoxPage /></RouteTransition>} />
-            <Route path="/study-box" element={<Navigate to="/library" replace />} />
-            <Route path="/dsm"      element={<RouteTransition><DSMPage /></RouteTransition>} />
-            <Route path="/calendar"   element={<RouteTransition><CalendarPage /></RouteTransition>} />
-            <Route path="/sessions"   element={<ClinicalRoute><RouteTransition><CalendarPage /></RouteTransition></ClinicalRoute>} />
-            <Route path="/clients"    element={<ClinicalRoute><RouteTransition><ClientsPage /></RouteTransition></ClinicalRoute>} />
-            <Route path="/settings"   element={<RouteTransition><SettingsPage /></RouteTransition>} />
-            <Route path="/help"       element={<RouteTransition><HelpPage /></RouteTransition>} />
-          </Route>
+      {/* Protected Routes */}
+      <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+        <Route path="/"           element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard"  element={<RouteTransition><DashboardPage /></RouteTransition>} />
+        <Route path="/mindy"      element={<RouteTransition><MindyPage /></RouteTransition>} />
+        <Route path="/notes"      element={<RouteTransition><NotesPage /></RouteTransition>} />
+        <Route path="/flashcards" element={<RouteTransition><FlashcardsPage /></RouteTransition>} />
+        <Route path="/quizzes"    element={<RouteTransition><QuizzesPage /></RouteTransition>} />
+        <Route path="/research"   element={<RouteTransition><ResearchPage /></RouteTransition>} />
+        <Route path="/documents"  element={<RouteTransition><DocumentsPage /></RouteTransition>} />
+        <Route path="/library" element={<RouteTransition><StudyBoxPage /></RouteTransition>} />
+        <Route path="/study-box" element={<Navigate to="/library" replace />} />
+        <Route path="/dsm"      element={<RouteTransition><DSMPage /></RouteTransition>} />
+        <Route path="/calendar"   element={<RouteTransition><CalendarPage /></RouteTransition>} />
+        <Route path="/sessions"   element={<ClinicalRoute><RouteTransition><CalendarPage /></RouteTransition></ClinicalRoute>} />
+        <Route path="/clients"    element={<ClinicalRoute><RouteTransition><ClientsPage /></RouteTransition></ClinicalRoute>} />
+        <Route path="/settings"   element={<RouteTransition><SettingsPage /></RouteTransition>} />
+        <Route path="/help"       element={<RouteTransition><HelpPage /></RouteTransition>} />
+      </Route>
 
-          {/* 404 */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </Suspense>
-    </>
+      {/* 404 */}
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
   )
 }
 
@@ -218,13 +211,14 @@ function InnerApp() {
 function App() {
   return (
     <TransitionProvider>
-      <InnerApp />
+      <StartupBoundary><InnerApp /></StartupBoundary>
     </TransitionProvider>
   )
 }
 
 // ── 404 Page ──
 function NotFoundPage() {
+  useStartupReady()
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
       <motion.div
