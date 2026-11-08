@@ -1,3 +1,4 @@
+import { downloadWord, printFlashcards, reviewerText } from '../utils/studyExport'
 import { plainText } from '../../supabase/functions/_shared/plainText'
 import { ReviewerContent } from '../components/ReviewerContent'
 import { StudyFilePicker } from '../components/StudyFilePicker'
@@ -113,7 +114,8 @@ export function StudyBoxPage() {
     if(!active)return
     setError('')
     try {
-      const file=original&&active.fileId?await getDocumentFile(active.fileId):new Blob([plainText(previewTab==='summary'?active.summary||'':active.text)],{type:'text/plain;charset=utf-8'})
+      if(!original){await downloadWord(active.title,active.reviewer?reviewerText(active.reviewer):previewTab==='summary'?active.summary||'':active.text);return}
+      const file=active.fileId?await getDocumentFile(active.fileId):null
       if(!file)throw Error('The original file is unavailable in this browser. Your saved study text is still available.')
       const url=URL.createObjectURL(file),link=document.createElement('a');link.href=url;link.download=original?active.sourceName:(active.title.replace(/[^a-zA-Z0-9 _-]/g,'').slice(0,80)||'study-material')+'.txt';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000)
     }catch(error){setError(error instanceof Error?error.message:'Download failed. Please try again.')}
@@ -161,7 +163,7 @@ export function StudyBoxPage() {
         {previewTab==='summary'&&!active.summary?<div className="library-empty"><Sparkle size={30}/><p>Build a study summary from this material. Your original text stays intact.</p><button className="ref-secondary" onClick={()=>{setSelected([]);try{setGeneration({task:'summary',text:librarySource([active]),category:active.category,sourceName:active.title,ids:[active.id]});setError('')}catch(error){setError(error instanceof Error?error.message:'Source is too long.')}}}>Generate material summary</button></div>:<div className="library-reading" tabIndex={0} aria-label={previewTab==='summary'?'Saved material summary':'Saved material text'}>{plainText(previewTab==='summary'?active.summary||'':active.text)}</div>}
         {(previewTab==='summary'&&active.summary||active.kind==='summary')&&<p className="ref-inline-notice">AI-generated summary. Check it against your original source.</p>}
 </>}
-        <div className="library-reader-footer"><button className="ref-text-action" disabled={!active.text.trim()||previewTab==='summary'&&!active.summary} onClick={saveToNotes}>Save {previewTab==='summary'?'summary':'text'} to Notes</button><button className="ref-text-action" disabled={!active.text.trim()||previewTab==='summary'&&!active.summary} onClick={()=>void download(false)}><DownloadSimple size={15}/>Download text</button>{active.fileId&&<button className="ref-text-action" onClick={()=>void download(true)}>Download original</button>}</div>
+        <div className="library-reader-footer"><button className="ref-text-action" disabled={!active.text.trim()||previewTab==='summary'&&!active.summary} onClick={saveToNotes}>Save {previewTab==='summary'?'summary':'text'} to Notes</button><button className="ref-text-action" disabled={!active.text.trim()||previewTab==='summary'&&!active.summary} onClick={()=>void download(false)}><DownloadSimple size={15}/>Download Word (.docx)</button>{!!active.reviewer?.cards.length&&<button className="ref-text-action" onClick={()=>{try{printFlashcards(active.title,active.reviewer!.cards)}catch(error){setError(error instanceof Error?error.message:'Print failed.')}}}>Print flashcards</button>}{active.fileId&&<button className="ref-text-action" onClick={()=>void download(true)}>Download original</button>}</div>
       </>:<ReferenceEmpty>Select a material to read, organize, and study it.</ReferenceEmpty>}</section>}
     </div>
     {modal==='material'&&<ViewportOverlay onDismiss={dismiss}><form className="glass-modal ref-form-dialog library-material-dialog" onSubmit={saveMaterial}><div className="ref-panel-title"><h2>{editId?'Edit material':'Add study material'}</h2><button type="button" aria-label="Close material editor" onClick={dismiss}><X size={20}/></button></div>
