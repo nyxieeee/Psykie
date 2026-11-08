@@ -63,7 +63,11 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', in
   const [checkpoint,setCheckpoint]=useState<GenerationCheckpoint>()
   const savedKey='psykie-generation-'+task
   const [savedGeneration,setSavedGeneration]=useState<null|{source:string;text:string;topic:string;fileName:string;category:string;count:number;quizOptions:QuizOptions;timerMinutes:number;questionSeconds:number;mode:'study'|'exam';shuffleQuestions:boolean;shuffleAnswers:boolean;checkpoint:GenerationCheckpoint}>(()=>{try{return JSON.parse(workspaceStorage.getItem(savedKey)||'null')}catch{return null}})
-  const source = [topic.trim() && `Requested topics and focus: ${topic.trim()}`, text.trim() && `Study material:\n${text.trim()}`].filter(Boolean).join('\n\n')
+  const effectiveTopic = topic.trim() || subject || category || 'General Psychology'
+  const source = [
+    (sourceMode === 'topic' || topic.trim() || !text.trim()) && `Topic: ${effectiveTopic}${topic.trim() && topic.trim() !== effectiveTopic ? `\nFocus and instructions: ${topic.trim()}` : ''}`,
+    text.trim() && `Study material:\n${text.trim()}`
+  ].filter(Boolean).join('\n\n')
   const upload = async (file?: File) => {
     if (!file) return
     setReading(true);setUploadedFile(undefined); setError(''); setDraft(null);setText('');setFileName(''); controller.current = new AbortController()
@@ -89,17 +93,76 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', in
       <div className="ai-generator-body"><p>{draft?(task==='flashcards'?'Review your draft before saving. You can edit each flashcard.':'Review your draft before saving.'):'Choose what to study, set your preferences, then review the draft.'}</p>
       {!draft&&savedGeneration&&!loading&&<div className="ref-inline-notice"><p>A saved generation is available ({savedGeneration.checkpoint.completed} items or sections ready).</p><button className="ref-secondary" onClick={()=>{setText(savedGeneration.text??savedGeneration.source);setTopic(savedGeneration.topic||'');setFileName(savedGeneration.fileName||'');setSourceMode('text');setSubject(savedGeneration.category);setCount(savedGeneration.count);setQuizOptions(savedGeneration.quizOptions);setTimerMinutes(savedGeneration.timerMinutes||0);setQuestionSeconds(savedGeneration.questionSeconds||0);setMode(savedGeneration.mode||'study');setShuffleQuestions(!!savedGeneration.shuffleQuestions);setShuffleAnswers(!!savedGeneration.shuffleAnswers);setCheckpoint(savedGeneration.checkpoint);setError('Saved progress loaded. Choose Generate draft to continue.')}}>Restore saved generation</button><button className="ref-text-action" onClick={()=>{workspaceStorage.removeItem(savedKey);setSavedGeneration(null);setCheckpoint(undefined)}}>Discard saved generation</button></div>}
       {!draft&&<><section className="ai-setup-section"><h3><span>1</span>What would you like to study?</h3><div className="ai-source-options" role="group" aria-label="Study source">{[{id:'topic',label:'Type a topic',icon:Sparkle},{id:'upload',label:'Upload a file',icon:UploadSimple},{id:'saved',label:'Saved material',icon:BookOpen},{id:'text',label:'Paste text',icon:FileText}].map(item=><button key={item.id} disabled={busy} aria-pressed={sourceMode===item.id} onClick={()=>chooseSource(item.id)}><item.icon size={23}/>{item.label}</button>)}</div><div className="ai-source-content">
-      {sourceMode==='topic'&&<label>Topics and instructions<textarea aria-label="Topics and instructions" disabled={busy} rows={2} maxLength={2000} placeholder="e.g. Mood disorders: focus on symptoms and diagnostic criteria, beginner level" value={topic} onChange={event => { setTopic(event.target.value); setDraft(null) }}/></label>}
-      {sourceMode==='saved'&&<>{!!libraryItems.length && <label>Use a Library material<select aria-label="Use a Library material" disabled={busy} value={materialId} onChange={event => { const item=libraryItems.find(value=>value.id===event.target.value); setMaterialId(event.target.value); if(item){setText(item.text);setFileName(item.title);setSubject(item.category);setNoteId('');setDraft(null)} }}><option value="">Choose saved study material</option>{libraryItems.map(item=><option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}{!!notes.length && <label>Use a saved note<select aria-label="Use a saved note" disabled={busy} value={noteId} onChange={event => { const note = notes.find(item => item.id === event.target.value); setNoteId(event.target.value); setMaterialId(''); if (note) { setText(note.summary); setFileName(note.title); setSubject(note.category); setDraft(null) } }}><option value="">Choose a note or enter material below</option>{notes.map(note => <option key={note.id} value={note.id}>{note.title}</option>)}</select></label>}{!libraryItems.length&&!notes.length&&<p>No saved materials yet. Upload a file or paste your reading to get started.</p>}</>}
+      {sourceMode==='topic'&&<div className="ai-topic-setup">
+        <label>Subject / Topic
+          <select aria-label="Generation subject" disabled={busy} value={subject} onChange={e => {setSubject(e.target.value);setDraft(null)}}>
+            {[...new Set([...subjects, category, subject])].map(value => <option key={value} value={value}>{value}</option>)}
+          </select>
+        </label>
+        <label>Specific focus or subtopics <small className="text-[var(--text-secondary)] font-normal">(optional — AI uses general knowledge if blank)</small>
+          <textarea aria-label="Topics and instructions" disabled={busy} rows={2} maxLength={2000} placeholder="e.g. Focus on cognitive distortions, heuristics, and decision-making" value={topic} onChange={event => { setTopic(event.target.value); setDraft(null) }}/>
+        </label>
+      </div>}
+      {sourceMode==='saved'&&<>
+        {!!libraryItems.length && (
+          <div className="ai-saved-grid-group">
+            <p className="text-xs font-semibold text-[var(--text-secondary)] mb-2">Or select from your Library:</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+              {libraryItems.slice(0, 6).map(item => (
+                <button
+                  key={item.id}
+                  type="button"
+                  disabled={busy}
+                  aria-pressed={materialId === item.id}
+                  onClick={() => { setMaterialId(item.id); setText(item.text); setFileName(item.title); setSubject(item.category); setNoteId(''); setDraft(null) }}
+                  className={`flex items-center gap-2 p-2.5 rounded-xl border text-left text-sm transition-colors ${materialId === item.id ? 'border-[var(--pink)] bg-[var(--rose-soft)] text-[var(--pink)] font-semibold' : 'border-[var(--border)] hover:bg-[var(--rose-soft)]'}`}
+                >
+                  <BookOpen size={16} className="shrink-0 text-[var(--pink)]" />
+                  <span className="truncate">{item.title}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {!!notes.length && (
+          <div className="ai-saved-grid-group">
+            <p className="text-xs font-semibold text-[var(--text-secondary)] mb-2">Or select from your Notes:</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+              {notes.slice(0, 6).map(note => (
+                <button
+                  key={note.id}
+                  type="button"
+                  disabled={busy}
+                  aria-pressed={noteId === note.id}
+                  onClick={() => { const item=notes.find(n=>n.id===note.id); if(item){setNoteId(item.id);setMaterialId('');setText(item.summary);setFileName(item.title);setSubject(item.category);setDraft(null)} }}
+                  className={`flex items-center gap-2 p-2.5 rounded-xl border text-left text-sm transition-colors ${noteId === note.id ? 'border-[var(--pink)] bg-[var(--rose-soft)] text-[var(--pink)] font-semibold' : 'border-[var(--border)] hover:bg-[var(--rose-soft)]'}`}
+                >
+                  <FileText size={16} className="shrink-0 text-[var(--pink)]" />
+                  <span className="truncate">{note.title}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {!!libraryItems.length && <label>All Library materials<select aria-label="Use a Library material" disabled={busy} value={materialId} onChange={event => { const item=libraryItems.find(value=>value.id===event.target.value); setMaterialId(event.target.value); if(item){setText(item.text);setFileName(item.title);setSubject(item.category);setNoteId('');setDraft(null)} }}><option value="">Choose saved study material</option>{libraryItems.map(item=><option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}
+        {!!notes.length && <label>All notes<select aria-label="Use a saved note" disabled={busy} value={noteId} onChange={event => { const note = notes.find(item => item.id === event.target.value); setNoteId(event.target.value); setMaterialId(''); if (note) { setText(note.summary); setFileName(note.title); setSubject(note.category); setDraft(null) } }}><option value="">Choose a note or enter material below</option>{notes.map(note => <option key={note.id} value={note.id}>{note.title}</option>)}</select></label>}
+        {!libraryItems.length&&!notes.length&&<p>No saved materials yet. Upload a file or choose a topic above to get started.</p>}
+      </>}
       {sourceMode==='upload'&&<><p className="ref-inline-notice">Text is extracted automatically. Photos and scanned PDF pages use AI OCR and your AI allowance (up to 50 scanned pages per PDF).</p><StudyFilePicker disabled={busy} onSelect={file=>void upload(file)} hint="PDF, Word, PowerPoint, OpenDocument, text, and images. Up to 10 MB. Photos and scans are read automatically."/></>}
       {reading && <div><p role="status">{readProgress || 'Reading document...'}</p><button className="ref-text-action" onClick={() => controller.current?.abort()}>Cancel reading</button></div>}
       {fileName && <p>Source: {fileName} <button className="ref-text-action" disabled={busy} onClick={() => {setText('');setFileName('');setNoteId('');setMaterialId('');setDraft(null)}}>Remove material</button></p>}
       {(sourceMode==='text'||text.length>0)&&<label>Study text<textarea aria-label="Study material (optional)" disabled={busy} rows={5} maxLength={MAX_SOURCE_LENGTH} value={text} onChange={event => {setText(event.target.value);setDraft(null)}}/></label>}
       {sourceMode!=='topic'&&<details><summary>Add instructions (optional)</summary><label>Topics and instructions<textarea aria-label="Topics and instructions" disabled={busy} rows={2} maxLength={2000} value={topic} onChange={event=>{setTopic(event.target.value);setDraft(null)}}/></label></details>}
-      <small>{source.length.toLocaleString()} / 1,000,000 characters. This text is sent to AI when you generate.</small>
+      {sourceMode === 'topic' && !text.trim() ? (
+        <p className="ref-inline-notice" style={{ marginTop: '0.75rem', marginBottom: 0 }}>
+          ✨ Ready to generate from established psychology knowledge for <strong>{effectiveTopic}</strong>. No text or file required.
+        </p>
+      ) : (
+        <small>{source.length.toLocaleString()} / 1,000,000 characters. {text.trim() ? 'Extracted from your study material.' : 'This text is sent to AI when you generate.'}</small>
+      )}
       {source.length > MAX_SOURCE_LENGTH && <p role="alert" className="ref-form-error">Shorten the material or instructions to fit 1,000,000 characters.</p>}
       </div></section><section className="ai-setup-section"><h3><span>2</span>Make it yours</h3>
-        <label>Subject<select aria-label="Generation subject" disabled={busy} value={subject} onChange={e => {setSubject(e.target.value);setDraft(null)}}>{[...new Set([...subjects, category, subject])].map(value => <option key={value}>{value}</option>)}</select></label>
+      {sourceMode !== 'topic' && <label>Subject<select aria-label="Generation subject" disabled={busy} value={subject} onChange={e => {setSubject(e.target.value);setDraft(null)}}>{[...new Set([...subjects, category, subject])].map(value => <option key={value}>{value}</option>)}</select></label>}
       {task==='quiz'&&<div className="quiz-setup-choices"><fieldset><legend>Question style</legend><div className="quiz-choice-chips">{[{id:'multiple-choice',label:'Multiple choice'},{id:'true-false',label:'True / false'},{id:'scenario',label:'Psychology scenarios'},{id:'mixed',label:'Mixed practice'},{id:'case-study',label:'Psychology case study'},{id:'research',label:'Research reasoning'},{id:'ethics',label:'Ethics & judgment'},{id:'identification',label:'Identification'},{id:'fill-blank',label:'Fill in the blank'}].map(item=><button key={item.id} disabled={busy} aria-pressed={quizOptions.style===item.id} onClick={()=>setQuizOptions({...quizOptions,style:item.id as QuizOptions['style']})}>{item.label}</button>)}</div></fieldset><fieldset><legend>Difficulty</legend><div className="quiz-choice-chips">{[{id:'easy',label:'Foundations'},{id:'medium',label:'Intermediate'},{id:'hard',label:'Advanced'},{id:'board',label:'Board-style'}].map(item=><button key={item.id} disabled={busy} aria-pressed={quizOptions.difficulty===item.id} onClick={()=>setQuizOptions({...quizOptions,difficulty:item.id as QuizOptions['difficulty']})}>{item.label}</button>)}</div></fieldset><fieldset><legend>Learning mode</legend><div className="quiz-choice-chips"><button disabled={busy} aria-pressed={mode==='study'} onClick={()=>setMode('study')}>Study - explain each answer</button><button disabled={busy} aria-pressed={mode==='exam'} onClick={()=>setMode('exam')}>Exam - feedback at the end</button></div></fieldset><fieldset><legend>Timer</legend><div className="quiz-choice-chips"><button disabled={busy} aria-pressed={!timerMinutes&&!questionSeconds} onClick={()=>{setTimerMinutes(0);setQuestionSeconds(0)}}>No timer</button>{[5,10,20,30,60,120,180].map(value=><button key={value} disabled={busy} aria-pressed={timerMinutes===value} onClick={()=>{setTimerMinutes(value);setQuestionSeconds(0)}}>{value} min total</button>)}</div><small>Per question</small><div className="quiz-choice-chips">{[30,60,90,120].map(value=><button key={value} disabled={busy} aria-pressed={questionSeconds===value} onClick={()=>{setQuestionSeconds(value);setTimerMinutes(0)}}>{value} sec</button>)}</div></fieldset><fieldset><legend>Custom timer (optional)</legend><label>Total minutes<input aria-label="Custom total minutes" type="number" min={0} max={300} disabled={busy} value={timerMinutes} onChange={e=>{setTimerMinutes(Math.max(0,Math.min(300,Number(e.target.value))));setQuestionSeconds(0)}}/></label><label>Seconds per question<input aria-label="Custom seconds per question" type="number" min={0} max={600} disabled={busy} value={questionSeconds} onChange={e=>{setQuestionSeconds(Math.max(0,Math.min(600,Number(e.target.value))));setTimerMinutes(0)}}/></label><small>Set either timer to 0 for untimed practice.</small></fieldset><fieldset><legend>Practice order</legend><label><input type="checkbox" disabled={busy} checked={shuffleQuestions} onChange={e=>setShuffleQuestions(e.target.checked)}/>Shuffle questions each attempt</label><label><input type="checkbox" disabled={busy} checked={shuffleAnswers} onChange={e=>setShuffleAnswers(e.target.checked)}/>Shuffle multiple-choice options</label></fieldset></div>}
       {task !== 'summary'&&task!=='reviewer'&&<div className="quiz-choice-chips" aria-label="Quick question count">{(task==='quiz'?[5,10,15,20,30,50,75,100]:[5,10,20,30,50,100]).map(value=><button key={value} disabled={busy} aria-pressed={count===value} onClick={()=>setCount(value)}>{value} {task==='quiz'?'questions':'cards'}</button>)}</div>}
       {task !== 'summary' && task!=='reviewer' && <label>Number of {task === 'quiz' ? 'questions' : 'cards'}<input aria-label={task === 'quiz' ? 'Number of questions' : 'Number of cards'} disabled={busy} type="number" min={1} max={100} value={count} onChange={event => {setCount(Number(event.target.value));setDraft(null)}}/></label>}
