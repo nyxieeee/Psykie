@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { workspaceStorage } from '../utils/workspaceStorage'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import { supabase, supabaseConfigured } from '../utils/supabase'
 
 export interface StudyCard {
   id: string
@@ -261,6 +262,25 @@ export const useStudyStore = create<StudyStoreState>()(
           notes: [newNote, ...state.notes],
         }))
         get().logActivity(`Created Note: ${newNote.title}`, `${newNote.category} · Just now`, 'note')
+        if (supabaseConfigured && supabase) {
+          supabase.from('notes').insert([{
+            id,
+            title: newNote.title,
+            file_name: newNote.fileName,
+            file_size: newNote.fileSize,
+            category: newNote.category,
+            date: newNote.date,
+            summary: newNote.summary,
+            key_topics: newNote.keyTopics || [],
+            key_concepts: newNote.keyConcepts || [],
+            important_terms: newNote.importantTerms || [],
+            flashcards_generated: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }]).then(({ error }) => {
+            if (error) console.warn('Supabase note insert sync:', error.message)
+          })
+        }
         return id
       },
 
@@ -268,12 +288,23 @@ export const useStudyStore = create<StudyStoreState>()(
         set((state) => ({
           notes: state.notes.filter((n) => n.id !== noteId),
         }))
+        if (supabaseConfigured && supabase) {
+          supabase.from('notes').delete().eq('id', noteId).then(({ error }) => {
+            if (error) console.warn('Supabase note deletion sync:', error.message)
+          })
+        }
       },
 
       updateNoteSummary: (noteId, summary) => {
+        const updated_at = new Date().toISOString()
         set((state) => ({
           notes: state.notes.map((n) => (n.id === noteId ? { ...n, summary } : n)),
         }))
+        if (supabaseConfigured && supabase) {
+          supabase.from('notes').update({ summary, updated_at }).eq('id', noteId).then(({ error }) => {
+            if (error) console.warn('Supabase note update sync:', error.message)
+          })
+        }
       },
 
       generateFlashcardsFromNote: (noteId) => {

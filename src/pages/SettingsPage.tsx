@@ -3,7 +3,7 @@ import { AIConnectionPanel } from '../components/AIConnectionPanel'
 import { WorkspaceBackupPanel } from '../components/WorkspaceBackupPanel'
 import { requestBrowserNotifications } from '../utils/notifications'
 import { workspaceStorage } from '../utils/workspaceStorage'
-import { ArrowRight, Bell, Camera, CheckCircle, Desktop, Key, Moon, ShieldCheck, Sun, User, X } from '@phosphor-icons/react'
+import { ArrowRight, Bell, Camera, CheckCircle, Desktop, Key, Moon, ShieldCheck, Sun, Trash, User, X } from '@phosphor-icons/react'
 import { useRef, useState } from 'react'
 import { ReferenceHeader } from '../components/ReferenceUI'
 import { ViewportOverlay } from '../components/ViewportOverlay'
@@ -14,7 +14,7 @@ const defaultPreferences: Preferences = { theme: 'light', accent: DEFAULT_ACCENT
 function loadPreferences(): Preferences { try { const saved = JSON.parse(workspaceStorage.getItem('psykie-preferences') || localStorage.getItem('psykie-device-appearance') || '{}'); return { ...defaultPreferences, ...saved, accent: normalizeAccent(saved.accent) } } catch { return defaultPreferences } }
 export function SettingsPage() {
   const user = useUser()
-  const { setUser, logout, sessionSource, error: authError } = useAuthStore()
+  const { setUser, logout, deleteAccount, sessionSource, error: authError } = useAuthStore()
   const [active, setActive] = useState('profile')
   const [profile, setProfile] = useState({ name: user?.name || '', email: user?.email || '', role: user?.role || 'student', avatar: user?.avatar || '' })
   const [preferences, setPreferences] = useState(loadPreferences)
@@ -22,6 +22,9 @@ export function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [confirmLogout, setConfirmLogout] = useState(false)
+  const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   const photoRef = useRef<HTMLInputElement>(null)
   const sections = [{ id: 'profile', label: 'Profile', icon: User }, { id: 'appearance', label: 'Appearance', icon: Sun }, { id: 'notifications', label: 'Notifications', icon: Bell }, { id: 'privacy', label: 'Privacy & security', icon: ShieldCheck }, { id: 'connections', label: 'AI connection', icon: Key }, { id: 'account', label: 'Account', icon: Key }]
   const save = async () => {
@@ -52,8 +55,26 @@ export function SettingsPage() {
         {(active === 'profile' || active === 'appearance' || active === 'notifications') && <div className="ref-settings-card-grid">{active !== 'notifications' && <section className="ref-panel"><h2>Appearance</h2><p>Choose how Psykie looks on your device. Changes apply immediately.</p><div className="ref-theme-options">{[{ id: 'light', label: 'Light', icon: Sun }, { id: 'dark', label: 'Dark', icon: Moon }, { id: 'system', label: 'System', icon: Desktop }].map(theme => <button key={theme.id} className={preferences.theme === theme.id ? 'selected' : ''} aria-pressed={preferences.theme === theme.id} onClick={() => changeAppearance({theme:theme.id})}><theme.icon size={23} />{theme.label}</button>)}</div><h3>Accent color</h3><div className="ref-accent-options">{[DEFAULT_ACCENT, '#a64b5b', '#c77b89', '#5485ff', '#49b59e', '#ff9b62'].map(color => <button aria-label={'Accent ' + color} aria-pressed={preferences.accent === color} key={color} style={{ background: color }} className={preferences.accent === color ? 'selected' : ''} onClick={() => changeAppearance({accent:color})} />)}</div></section>}{active !== 'appearance' && <section className="ref-panel"><h2>Notifications</h2><p>Get reminders and a weekly overview in the notification bell. Browser alerts work while Psykie is open.</p>{[{ field: 'reminders' as const, title: 'Study reminders', text: 'Gentle reminders for your study goals.' }, { field: 'weekly' as const, title: 'Weekly summary', text: 'See a summary of your recent study activity.' }].map(item => <div className="ref-preference-row" key={item.field}><span><strong>{item.title}</strong><small>{item.text}</small></span><button role="switch" aria-checked={preferences[item.field]} aria-label={item.title} className={'ref-switch '+(preferences[item.field]?'on':'')} onClick={() => toggle(item.field)}><span /></button></div>)}<button className="ref-secondary" onClick={() => { void requestBrowserNotifications().then(() => { setSaved(true); setSaveError('') }).catch(error => setSaveError(error.message)) }}>Enable browser alerts</button></section>}</div>}
         {active === 'privacy' && <WorkspaceBackupPanel/>}
         {active === 'connections' && <AIConnectionPanel/>}
-        {active === 'account' && <section className="ref-panel ref-account-settings"><h2>Your account</h2><p>Signed in as {user?.email}. Save a private cloud backup from Privacy & security to access this workspace on another device.</p><button className="ref-secondary" onClick={() => setConfirmLogout(true)}>Log Out<ArrowRight size={17} /></button></section>}
+        {active === 'account' && <section className="ref-panel ref-account-settings">
+          <h2>Your account</h2>
+          <p>Signed in as <strong>{user?.email}</strong>. Save a private cloud backup from Privacy & security to access this workspace on another device.</p>
+          <div style={{ margin: '18px 0 24px' }}>
+            <button className="ref-secondary" onClick={() => setConfirmLogout(true)}>Log Out<ArrowRight size={17} /></button>
+          </div>
+          <div className="ref-danger-zone" style={{ borderTop: '1px solid var(--ref-border)', paddingTop: '20px', marginTop: '20px' }}>
+            <h3 style={{ color: '#d93d59', fontSize: 16, fontWeight: 700, margin: '0 0 6px' }}>Danger zone</h3>
+            <p style={{ fontSize: 13, color: 'var(--ref-muted)', margin: '0 0 14px' }}>Permanently delete your account, saved notes, flashcards, study materials, and personal data. This action cannot be undone.</p>
+            <button
+              className="ref-danger-btn"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 9999, background: '#d93d59', color: '#ffffff', border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
+              onClick={() => setConfirmDeleteAccount(true)}
+            >
+              <Trash size={16} /> Delete account
+            </button>
+          </div>
+        </section>}
         {authError && <p className="ref-form-error" role="alert">{authError}</p>}{saveError && <p className="ref-form-error" role="alert">{saveError}</p>}<div className="ref-settings-footer">{saved && <span role="status"><CheckCircle size={17} weight="fill" />Changes saved</span>}<button className="ref-secondary" onClick={() => { setPreferences(loadPreferences()); setProfile({ name: user?.name || '', email: user?.email || '', role: user?.role || 'student', avatar: user?.avatar || '' }) }}>Cancel</button><button className="ref-primary" onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</button></div></div></div>
     {confirmLogout && <ViewportOverlay onDismiss={() => setConfirmLogout(false)}><div className="glass-modal ref-form-dialog"><div className="ref-panel-title"><h2>Log out of Psykie?</h2><button aria-label="Close" onClick={() => setConfirmLogout(false)}><X size={20} /></button></div><p>Your saved study materials will be here when you return.</p><div className="ref-action-row"><button className="ref-secondary" onClick={() => setConfirmLogout(false)}>Cancel</button><button className="ref-primary" onClick={logout}>Log out</button></div></div></ViewportOverlay>}
+    {confirmDeleteAccount && <ViewportOverlay onDismiss={() => { if (!deletingAccount) setConfirmDeleteAccount(false) }}><div className="glass-modal ref-form-dialog"><div className="ref-panel-title"><h2 style={{ color: '#d93d59' }}>Delete your account?</h2><button aria-label="Close" disabled={deletingAccount} onClick={() => setConfirmDeleteAccount(false)}><X size={20} /></button></div><p>This action is <strong>permanent</strong>. All your notes, study materials, flashcards, quizzes, and personal profile data will be permanently erased from Psykie.</p>{deleteError && <p role="alert" className="ref-form-error">{deleteError}</p>}<div className="ref-action-row" style={{ display: 'flex', gap: 10, marginTop: 20 }}><button className="ref-secondary" disabled={deletingAccount} onClick={() => setConfirmDeleteAccount(false)}>Keep account</button><button className="ref-primary" style={{ background: '#d93d59', borderColor: '#d93d59', color: '#fff' }} disabled={deletingAccount} onClick={async () => { setDeletingAccount(true); setDeleteError(''); try { const ok = await deleteAccount(); if (!ok) throw new Error(useAuthStore.getState().error || 'Failed to delete account.') } catch(err) { setDeleteError(err instanceof Error ? err.message : 'Failed to delete account.'); setDeletingAccount(false) } }}>{deletingAccount ? 'Deleting account…' : 'Yes, delete my account'}</button></div></div></ViewportOverlay>}
   </div>
 }

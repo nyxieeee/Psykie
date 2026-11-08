@@ -247,7 +247,7 @@ export function NotesPage() {
                 {isHandwriting ? <PenNib size={15} weight="fill" /> : <Scribble size={15} />}
                 {isHandwriting ? 'Handwriting' : 'Text'}
               </button>
-              <button aria-label="Delete current note" onClick={() => deleteNote(active.id)}>
+              <button aria-label="Delete current note" onClick={() => { const id = active.id; setSelectedId(''); workspaceStorage.removeItem('psykie-hw-' + id); deleteNote(id) }}>
                 <Trash size={17} />
               </button>
             </div>

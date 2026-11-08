@@ -43,6 +43,7 @@ interface AuthActions {
   checkAuth: () => Promise<void>
   setUser: (user: User | null) => Promise<boolean>
   completeAccountRole: (role: AccountRole) => Promise<boolean>
+  deleteAccount: () => Promise<boolean>
 }
 export const useAuthStore = create<AuthState & AuthActions>()(persist((set, get) => ({
   ...initialState,
@@ -169,6 +170,35 @@ export const useAuthStore = create<AuthState & AuthActions>()(persist((set, get)
       }
       set({ user: { ...updated, email }, error: null }); return true
     } catch(error) { set({ error: error instanceof Error ? error.message : 'Profile could not be saved.' }); return false }
+  },
+  deleteAccount: async () => {
+    set({ isLoading: true, error: null })
+    try {
+      const current = get().user
+      if (!current) return false
+
+      if (get().sessionSource === 'supabase' && supabaseConfigured) {
+        const client = requireSupabase()
+        const { error } = await client.rpc('delete_user_account')
+        if (error) {
+          console.warn('RPC delete_user_account error, attempting direct delete:', error)
+          await client.from('profiles').delete().eq('id', current.id)
+        }
+        try { await endSocialSession() } catch { /* ignore */ }
+      } else if (get().sessionSource === 'local') {
+        const email = current.email.trim().toLowerCase()
+        const existing = accounts()
+        delete existing[email]
+        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(existing))
+      }
+
+      loadAccountWorkspace(null)
+      set({ ...initialState, sessionSource: 'local', isSessionReady: true, notice: 'Your account has been deleted.' })
+      return true
+    } catch(error) {
+      set({ isLoading: false, error: error instanceof Error ? error.message : 'Account deletion failed. Please try again.' })
+      return false
+    }
   },
 }), { name: 'auth-storage', partialize: state => ({ user: state.user, isAuthenticated: state.isAuthenticated, sessionSource: state.sessionSource }) }))
 export const useUser = () => useAuthStore(state => state.user)
