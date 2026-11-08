@@ -113,3 +113,9 @@ body .ai-source-options button[aria-pressed=true] { border-color:var(--ref-accen
   .ai-source-options { grid-template-columns:repeat(2,minmax(0,1fr)); }
   body .ref-quizzes-page .ref-question-text { font-size:18px; }
 }
+.quiz-question-map { margin:16px 0; border:1px solid var(--fn-border); border-radius:16px; padding:12px 14px; }
+.quiz-question-map>summary { cursor:pointer; color:var(--fn-muted); font-size:13px; font-weight:700; }
+.quiz-question-map .study-question-nav { max-height:220px; overflow-y:auto; }
+.quiz-written-answer { display:grid; gap:10px; margin:24px 0; font-weight:700; }
+.quiz-written-answer input { width:100%; min-height:48px; padding:12px 16px; border:1px solid var(--fn-border); border-radius:16px; background:var(--fn-card); color:var(--fn-text); font:inherit; }
+.quiz-written-answer small { font-weight:400; color:var(--fn-muted); }

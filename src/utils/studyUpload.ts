@@ -1,7 +1,8 @@
+import { waitForStudyRequest } from './studyGeneration'
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
-export const MAX_SOURCE_LENGTH = 25000
-export const MAX_OCR_PAGES = 5
+export const MAX_SOURCE_LENGTH = 1000000
+export const MAX_OCR_PAGES = 50
 export const STUDY_UPLOAD_ACCEPT = '.pdf,.docx,.pptx,.odt,.odp,.ods,.xlsx,.txt,.md,.csv,.json,.html,.htm,.rtf,.jpg,.jpeg,.png,.webp,.gif,.bmp'
 export const canReadStudyUpload = (file:File) => STUDY_UPLOAD_ACCEPT.split(',').includes('.'+file.name.split('.').pop()?.toLowerCase()) || file.type.startsWith('text/')
 type UploadOptions = {ocr?: (image: string, signal?: AbortSignal) => Promise<string>; onProgress?: (message: string) => void; signal?: AbortSignal}
@@ -67,7 +68,7 @@ export async function readStudyUpload(file: File, options: UploadOptions = {}): 
     pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
     const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false }).promise
     try {
-      if (pdf.numPages > 100) throw new Error('Choose a PDF with 100 pages or fewer, or paste an excerpt.')
+      if (pdf.numPages > 1000) throw new Error('Choose a PDF with 1,000 pages or fewer, or paste an excerpt.')
       const pages: {number: number; text: string; scanned: boolean}[] = []
       for (let number = 1; number <= pdf.numPages; number++) {
         options.signal?.throwIfAborted()
@@ -80,11 +81,12 @@ export async function readStudyUpload(file: File, options: UploadOptions = {}): 
           scanned = operators.fnArray.some(op => [pdfjs.OPS.paintImageXObject, pdfjs.OPS.paintInlineImageXObject, pdfjs.OPS.paintImageXObjectRepeat].includes(op)) || (!pageText && operators.fnArray.length > 0)
         }
         pages.push({number, text:pageText, scanned})
-        if (pages.reduce((length,item) => length+item.text.length,0) > MAX_SOURCE_LENGTH) throw new Error('This document exceeds 25,000 characters. Upload a shorter excerpt.')
+        if (pages.reduce((length,item) => length+item.text.length,0) > MAX_SOURCE_LENGTH) throw new Error('This document exceeds 1,000,000 characters. Upload a shorter excerpt.')
       }
       const scans = pages.filter(page => page.scanned)
       if (scans.length > MAX_OCR_PAGES) throw new Error(`This PDF has ${scans.length} scanned pages. Upload up to ${MAX_OCR_PAGES} scanned pages at a time so OCR stays within your AI allowance. No OCR requests were sent.`)
       if (scans.length) requireOCR(options)
+      let ocrRequests=0
       for (const page of pages) {
         options.signal?.throwIfAborted()
         if (page.scanned) {
@@ -99,6 +101,7 @@ export async function readStudyUpload(file: File, options: UploadOptions = {}): 
           options.signal?.addEventListener('abort',cancel,{once:true})
           try { await render.promise } finally { options.signal?.removeEventListener('abort',cancel) }
           options.signal?.throwIfAborted()
+          if(ocrRequests++)await waitForStudyRequest(options.signal)
           page.text = (await requireOCR(options)(canvasImage(canvas),options.signal)) || page.text
           original.cleanup()
         }
@@ -110,6 +113,6 @@ export async function readStudyUpload(file: File, options: UploadOptions = {}): 
   options.signal?.throwIfAborted()
   text = text.split(String.fromCharCode(0)).join('').trim()
   if (!text) throw new Error('No readable text found. Try a clearer image or scan, or paste the text manually.')
-  if (text.length > MAX_SOURCE_LENGTH) throw new Error('This document exceeds 25,000 characters. Upload a shorter excerpt or paste the sections you want to study.')
+  if (text.length > MAX_SOURCE_LENGTH) throw new Error('This document exceeds 1,000,000 characters. Upload a shorter excerpt or paste the sections you want to study.')
   return text
 }

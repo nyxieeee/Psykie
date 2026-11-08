@@ -1,8 +1,8 @@
-import { downloadWord, printFlashcards, reviewerText } from '../utils/studyExport'
+import { downloadWord, printFlashcards, printStudyDocument, reviewerText, downloadStudySlides } from '../utils/studyExport'
 import { plainText } from '../../supabase/functions/_shared/plainText'
 import { ReviewerContent } from '../components/ReviewerContent'
 import { StudyFilePicker } from '../components/StudyFilePicker'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, BookOpen, Cards, ChartBar, DownloadSimple, FileText, Folder, PencilSimple, Plus, Sparkle, Star, Trash, X } from '@phosphor-icons/react'
 import { AIGenerator } from '../components/AIGenerator'
@@ -19,7 +19,7 @@ import '../study-workflows.css'
 
 const subjects = ['General Psychology','Cognitive Psychology','Developmental Psychology','Abnormal Psychology','Social Psychology','Biological Psychology','Research Methods','Statistics','Psychological Assessment','Ethics']
 const emptyForm = {title:'',text:'',summary:'',category:'General Psychology',folderId:'',tags:'',sourceName:''}
-type Generation = {task: AITask; text: string; category: string; sourceName: string; ids: string[]}
+type Generation = {task: AITask; text: string; category: string; sourceName: string; ids: string[]; purpose?:'simplify'|'mnemonics'}
 
 export function StudyBoxPage() {
   const navigate = useNavigate(), location = useLocation()
@@ -34,7 +34,7 @@ export function StudyBoxPage() {
   const [modal,setModal] = useState<'material'|'folder'|'delete'|null>(null), [editId,setEditId] = useState(''), [folderEdit,setFolderEdit] = useState(''), [folderName,setFolderName] = useState('')
   const [deletion,setDeletion] = useState<{kind:'material'|'folder';id:string}|null>(null)
   const [form,setForm] = useState(emptyForm), [sourceMode,setSourceMode] = useState('file'), [incomingFile,setIncomingFile] = useState<File|null>(null), [noteId,setNoteId] = useState('')
-  const [ocr,setOCR] = useState(false), [reading,setReading] = useState(false), [progress,setProgress] = useState('')
+  const [reading,setReading] = useState(false), [progress,setProgress] = useState('')
   const [error,setError] = useState(''), [notice,setNotice] = useState(''), [generation,setGeneration] = useState<Generation|null>(null)
   const [savingReviewer,setSavingReviewer]=useState(false)
   const [extractionError,setExtractionError]=useState('')
@@ -42,9 +42,9 @@ export function StudyBoxPage() {
   useEffect(() => () => controller.current?.abort(), [])
   const visible = items.filter(item => (folder==='all' || item.folderId===folder) && (view!=='favorites' || item.favorite) && [item.title,item.category,item.sourceName,...item.tags].join(' ').toLowerCase().includes(search.toLowerCase())).sort((a,b) => sort==='name' ? a.title.localeCompare(b.title) : b.updatedAt.localeCompare(a.updatedAt))
   const active = items.find(item=>item.id===activeId)
-  const commit = (next: LibraryMaterial[]) => {
+  const commit = useCallback((next: LibraryMaterial[]) => {
     try { saveLibrary(next);setItems(next);return true } catch { setError('Your browser could not save the library. Free some site storage or download a copy of your material first.');return false }
-  }
+  },[])
   const commitFolders = (next: LibraryFolder[]) => {
     try { workspaceStorage.setItem(LIBRARY_FOLDERS_KEY,JSON.stringify(next));setFolders(next);return true } catch {setError('Your browser could not save this folder. Check available site storage.');return false}
   }
@@ -60,7 +60,7 @@ export function StudyBoxPage() {
   }
   const toggleFavorite = (item: LibraryMaterial) => {setError('');commit(items.map(value=>value.id===item.id?{...value,favorite:!value.favorite}:value))}
   const openMaterial = (item?: LibraryMaterial) => {
-    setError('');setNotice('');setEditId(item?.id||'');setSourceMode(item?'text':'file');setIncomingFile(null);setNoteId('');setOCR(false)
+    setError('');setNotice('');setEditId(item?.id||'');setSourceMode(item?'text':'file');setIncomingFile(null);setNoteId('')
     setForm(item?{title:item.title,text:item.text,summary:item.summary||'',category:item.category,folderId:item.folderId||'',tags:item.tags.join(', '),sourceName:item.sourceName}:{...emptyForm,folderId:folder==='all'?'':folder})
     setExtractionError(item?.extractionError||'');setModal('material')
   }
@@ -72,7 +72,7 @@ export function StudyBoxPage() {
     if(!canReadStudyUpload(file)){setNotice('This file can be saved as an original. Add readable text to use it for quizzes or flashcards.');return}
     controller.current=new AbortController();setReading(true)
     try {
-      const text=await readStudyUpload(file,{ocr:ocr?extractImageText:undefined,signal:controller.current.signal,onProgress:setProgress})
+      const text=await readStudyUpload(file,{ocr:extractImageText,signal:controller.current.signal,onProgress:setProgress})
       setIncomingFile(file);setForm(previous=>({...previous,title:previous.title||file.name.replace(/\.[^.]+$/,''),text,sourceName:file.name}))
     } catch(error) {if(!controller.current.signal.aborted){const message=error instanceof Error?error.message:'Could not read this material.';setExtractionError(message);setError(message+' You can still save the original file, or paste its text below.')}}
     finally {setReading(false);setProgress('')}
@@ -81,7 +81,7 @@ export function StudyBoxPage() {
     event.preventDefault();setError('')
     const tags=[...new Set(form.tags.split(',').map(tag=>tag.trim()).filter(Boolean))]
     if(tags.length>10||tags.some(tag=>tag.length>30)){setError('Use up to 10 tags, with 30 characters or fewer per tag.');return}
-    if(!form.title.trim()||(!form.text.trim()&&!incomingFile&&!items.find(item=>item.id===editId)?.fileId)||form.text.length>MAX_SOURCE_LENGTH){setError('Enter a title, then choose a file or add up to 25,000 characters of study text.');return}
+    if(!form.title.trim()||(!form.text.trim()&&!incomingFile&&!items.find(item=>item.id===editId)?.fileId)||form.text.length>MAX_SOURCE_LENGTH){setError('Enter a title, then choose a file or add up to 1,000,000 characters of study text.');return}
     const existing=items.find(item=>item.id===editId), now=new Date().toISOString()
     const item:LibraryMaterial={...existing,id:existing?.id||'material-'+crypto.randomUUID(),title:form.title.trim(),text:form.text.trim(),summary:form.summary.trim()||undefined,category:form.category,folderId:form.folderId||null,tags,favorite:existing?.favorite||false,kind:existing?.kind||(incomingFile?'upload':sourceMode==='note'?'note':'text'),sourceName:form.sourceName||form.title.trim(),createdAt:existing?.createdAt||now,updatedAt:now,fileId:existing?.fileId,ownsFile:existing?.ownsFile,extractionError:form.text.trim()?undefined:extractionError||undefined}
     let storedId=''
@@ -89,22 +89,31 @@ export function StudyBoxPage() {
     if(!commit(existing?items.map(value=>value.id===existing.id?item:value):[item,...items])){if(storedId)await deleteDocumentFile(storedId).catch(()=>{});return}
     setModal(null);setSelected([]);setFolder('all');setView('all');setSearch('');setActiveId(item.id);setPreviewTab('source');setNotice('Material saved to your library.')
   }
-  const extractSavedSource = async (useOCR: boolean) => {
-    if(!active?.fileId||reading)return
-    const material=active,abort=new AbortController()
+  const autoReadAttempted=useRef(new Set<string>())
+  const extractSavedSource = useCallback(async (material: LibraryMaterial) => {
+    if(!material.fileId)return
+    const abort=new AbortController()
     controller.current=abort;setReading(true);setError('');setNotice('');setProgress('Opening saved original...')
     try {
       const file=await getDocumentFile(material.fileId!)
       abort.signal.throwIfAborted()
       if(!file)throw Error('The original file is unavailable in this browser. Upload it again using Add material, or paste its text using Edit material.')
-      const text=await readStudyUpload(file,{ocr:useOCR?extractImageText:undefined,signal:abort.signal,onProgress:setProgress})
+      const text=await readStudyUpload(file,{ocr:extractImageText,signal:abort.signal,onProgress:setProgress})
       abort.signal.throwIfAborted()
       const next=readLibrary().map(item=>item.id===material.id?{...item,text,extractionError:undefined,updatedAt:new Date().toISOString()}:item)
       if(commit(next))setNotice('Source text extracted and saved. You can now create practice from this material.')
     } catch(error) {
       if(!abort.signal.aborted){const message=error instanceof Error?error.message:'Could not extract source text.';commit(readLibrary().map(item=>item.id===material.id?{...item,extractionError:message}:item));setError(message)}
     } finally {setReading(false);setProgress('')}
-  }
+  },[commit])
+  useEffect(()=>{
+    if(!active?.fileId||active.text.trim()||(active.extractionError&&!active.extractionError.includes('Enable AI OCR'))||reading||modal||autoReadAttempted.current.has(active.id)||!canReadStudyUpload({name:active.sourceName,type:''} as File))return
+    const timer=window.setTimeout(()=>{
+      autoReadAttempted.current.add(active.id)
+      void extractSavedSource(active)
+    },0)
+    return ()=>window.clearTimeout(timer)
+  },[active,reading,modal,extractSavedSource])
   const study = (task: AITask) => {
     setError('');setNotice('')
     if(active?.reviewer&&!selected.length&&(task==='quiz'||task==='flashcards')) {
@@ -176,29 +185,29 @@ export function StudyBoxPage() {
         <div className="workflow-back"><button className="ref-secondary" onClick={()=>{setActiveId('');setSelected([])}}><ArrowLeft size={16}/>Back to Library</button></div>
         <div className="ref-panel-title"><div><small>{active.category}</small><h2>{plainText(active.title)}</h2></div><button aria-label="Edit material" onClick={()=>openMaterial(active)}><PencilSimple size={18}/></button><button aria-label="Delete material" onClick={()=>{setDeletion({kind:'material',id:active.id});setModal('delete')}}><Trash size={18}/></button></div>
         <div className="library-study-actions"><p>{active.reviewer?'Practice with the included cards and questions. No extra AI request is needed.':selected.length?`Study actions use the ${selected.length} selected materials.`:'Create practice from this saved source.'}</p><div className="study-actions">{active.reviewer?<><button className="ref-primary" onClick={()=>study('quiz')}><ChartBar size={17}/>Start self-test</button><button className="ref-secondary" onClick={()=>study('flashcards')}><Cards size={17}/>Study flashcards</button></>:<><button className="ref-primary" disabled={!active.text.trim()} onClick={()=>study('reviewer')}><Sparkle size={17}/>Generate reviewer</button><button className="ref-secondary" disabled={!active.text.trim()} onClick={()=>study('quiz')}><ChartBar size={17}/>Quiz me on this</button><button className="ref-secondary" disabled={!active.text.trim()} onClick={()=>study('flashcards')}><Cards size={17}/>Make flashcards</button><button className="ref-secondary" disabled={!active.text.trim()} onClick={()=>study('summary')}><Sparkle size={17}/>Summarize</button></>}</div></div>
-        {active.reviewer?<><p className="library-source-name">Based on: {active.sourceName}</p><div className="reviewer-source-links">{active.sourceIds?.map(id=>{const source=items.find(item=>item.id===id);return source?<button key={id} className="ref-secondary" onClick={()=>choose(id)}><FileText size={15}/>{source.title}</button>:null})}</div><ReviewerContent key={active.id} draft={active.reviewer} category={active.category}/></>:<>        <p className="library-source-name">{!active.text.trim()&&<span>Original file saved. Source text has not been extracted yet. </span>}{active.sourceName} | Updated {new Date(active.updatedAt).toLocaleDateString()}</p><ReferenceTabs items={[{id:'source',label:'Source text'},{id:'summary',label:'AI summary'}]} value={previewTab} onChange={setPreviewTab}/>
-        {previewTab==='source'&&!active.text.trim()?<div className="library-empty"><FileText size={32}/><h3>Source text is not ready</h3><p>{active.extractionError||'The original file was saved without readable text. Retry extraction for a digital document, or use AI OCR for a photo or scanned PDF.'}</p>{reading?<><p role="status">{progress||'Reading source...'}</p><button className="ref-secondary" onClick={()=>controller.current?.abort()}>Cancel extraction</button></>:<><div className="study-actions">{active.fileId&&<><button className="ref-primary" onClick={()=>void extractSavedSource(false)}>Extract source text</button><button className="ref-secondary" onClick={()=>void extractSavedSource(true)}>Read with AI OCR</button></>}<button className="ref-secondary" onClick={()=>openMaterial(active)}>Paste source text</button></div>{active.fileId&&<p>AI OCR sends scanned pages to Mistral and uses your AI allowance. Up to 5 scanned pages per PDF.</p>}</>}</div>:previewTab==='summary'&&!active.summary?<div className="library-empty"><Sparkle size={30}/><p>Build a study summary from this material. Your original text stays intact.</p><button className="ref-secondary" onClick={()=>{setSelected([]);try{setGeneration({task:'summary',text:librarySource([active]),category:active.category,sourceName:active.title,ids:[active.id]});setError('')}catch(error){setError(error instanceof Error?error.message:'Source is too long.')}}}>Generate material summary</button></div>:<div className="library-reading" tabIndex={0} aria-label={previewTab==='summary'?'Saved material summary':'Saved material text'}>{plainText(previewTab==='summary'?active.summary||'':active.text)}</div>}
+        {active.reviewer?<><p className="library-source-name">Based on: {active.sourceName}</p><div className="reviewer-source-links">{active.sourceIds?.map(id=>{const source=items.find(item=>item.id===id);return source?<button key={id} className="ref-secondary" onClick={()=>choose(id)}><FileText size={15}/>{source.title}</button>:null})}</div><div className="study-actions"><button className="ref-secondary" onClick={()=>setGeneration({task:'summary',text:active.text,category:active.category,sourceName:active.title,ids:[active.id],purpose:'simplify'})}>Explain simply</button><button className="ref-secondary" onClick={()=>setGeneration({task:'summary',text:active.text,category:active.category,sourceName:active.title,ids:[active.id],purpose:'mnemonics'})}>Make memory aids</button><button className="ref-secondary" onClick={()=>void downloadStudySlides(active.title,active.reviewer!).catch(()=>setError('Slide download failed. Please try again.'))}>Download study slides (.pptx)</button></div><ReviewerContent key={active.id} draft={active.reviewer} category={active.category}/></>:<>        <p className="library-source-name">{!active.text.trim()&&<span>Original file saved. Source text has not been extracted yet. </span>}{active.sourceName} | Updated {new Date(active.updatedAt).toLocaleDateString()}</p><ReferenceTabs items={[{id:'source',label:'Source text'},{id:'summary',label:'AI summary'}]} value={previewTab} onChange={setPreviewTab}/>
+        {previewTab==='source'&&!active.text.trim()?<div className="library-empty"><FileText size={32}/><h3>Source text is not ready</h3><p>{active.extractionError||'Automatic reading did not finish. Retry to extract text from your saved file; scanned pages use AI OCR.'}</p>{reading?<><p role="status">{progress||'Reading source...'}</p><button className="ref-secondary" onClick={()=>controller.current?.abort()}>Cancel extraction</button></>:<><div className="study-actions">{active.fileId&&<><button className="ref-primary" onClick={()=>void extractSavedSource(active)}>Retry reading file</button></>}<button className="ref-secondary" onClick={()=>openMaterial(active)}>Paste source text</button></div>{active.fileId&&<p>AI OCR sends scanned pages to Mistral and uses your AI allowance. Up to 50 scanned pages per PDF.</p>}</>}</div>:previewTab==='summary'&&!active.summary?<div className="library-empty"><Sparkle size={30}/><p>Build a study summary from this material. Your original text stays intact.</p><button className="ref-secondary" onClick={()=>{setSelected([]);try{setGeneration({task:'summary',text:librarySource([active]),category:active.category,sourceName:active.title,ids:[active.id]});setError('')}catch(error){setError(error instanceof Error?error.message:'Source is too long.')}}}>Generate material summary</button></div>:<div className="library-reading" tabIndex={0} aria-label={previewTab==='summary'?'Saved material summary':'Saved material text'}>{plainText(previewTab==='summary'?active.summary||'':active.text)}</div>}
         {(previewTab==='summary'&&active.summary||active.kind==='summary')&&<p className="ref-inline-notice">AI-generated summary. Check it against your original source.</p>}
 </>}
-        <div className="library-reader-footer"><button className="ref-text-action" disabled={!active.text.trim()||previewTab==='summary'&&!active.summary} onClick={saveToNotes}>Save {previewTab==='summary'?'summary':'text'} to Notes</button><button className="ref-text-action" disabled={!active.text.trim()||previewTab==='summary'&&!active.summary} onClick={()=>void download(false)}><DownloadSimple size={15}/>Download Word (.docx)</button>{!!active.reviewer?.cards.length&&<button className="ref-text-action" onClick={()=>{try{printFlashcards(active.title,active.reviewer!.cards)}catch(error){setError(error instanceof Error?error.message:'Print failed.')}}}>Print flashcards</button>}{active.fileId&&<button className="ref-text-action" onClick={()=>void download(true)}>Download original</button>}</div>
+        <div className="library-reader-footer"><button className="ref-text-action" disabled={!active.text.trim()||previewTab==='summary'&&!active.summary} onClick={saveToNotes}>Save {previewTab==='summary'?'summary':'text'} to Notes</button><button className="ref-text-action" disabled={!active.text.trim()||previewTab==='summary'&&!active.summary} onClick={()=>void download(false)}><DownloadSimple size={15}/>Download Word (.docx)</button><button className="ref-text-action" disabled={!active.text.trim()} onClick={()=>{try{printStudyDocument(active.title,active.reviewer?reviewerText(active.reviewer):previewTab==='summary'?active.summary||'':active.text)}catch(error){setError(error instanceof Error?error.message:'Print failed.')}}}>Print / Save as PDF</button>{!!active.reviewer?.cards.length&&<button className="ref-text-action" onClick={()=>{try{printFlashcards(active.title,active.reviewer!.cards)}catch(error){setError(error instanceof Error?error.message:'Print failed.')}}}>Print flashcards</button>}{active.fileId&&<button className="ref-text-action" onClick={()=>void download(true)}>Download original</button>}</div>
       </>:<ReferenceEmpty>Select a material to read, organize, and study it.</ReferenceEmpty>}</section>}
     </div>
     {modal==='material'&&<ViewportOverlay onDismiss={dismiss}><form className="glass-modal ref-form-dialog library-material-dialog" onSubmit={saveMaterial}><div className="ref-panel-title"><h2>{editId?'Edit material':'Add study material'}</h2><button type="button" aria-label="Close material editor" onClick={dismiss}><X size={20}/></button></div>
       {!editId&&<><label>Material source<select aria-label="Material source" disabled={reading} value={sourceMode} onChange={e=>{setSourceMode(e.target.value);setIncomingFile(null);setNoteId('');setForm(previous=>({...previous,text:'',sourceName:''}));setError('')}}><option value="file">Upload a file</option><option value="text">Paste or write text</option><option value="note">Import a saved note</option></select></label>
-        {sourceMode==='file'&&<><label className="study-ocr-toggle"><input type="checkbox" aria-label="Use AI OCR" checked={ocr} disabled={reading} onChange={e=>setOCR(e.target.checked)}/><span>Use AI OCR for photos and scanned pages<small>Sends images to Mistral when selected and uses your AI allowance. Up to 5 scanned pages per PDF.</small></span></label><StudyFilePicker disabled={reading} onSelect={file=>void upload(file)} hint="Any file up to 10 MB. PDF, Word, slides and text can be read for study. Photos and scans need AI OCR."/>{incomingFile&&<p>Original: {incomingFile.name}</p>}{incomingFile&&!form.text.trim()&&!reading&&<p role="status" className="ref-inline-notice">The original file is ready to save. Add readable text below to use it for quizzes or flashcards.</p>}</>}
+        {sourceMode==='file'&&<><p className="ref-inline-notice">Text is extracted automatically. Photos and scanned PDF pages are read with AI OCR using your AI allowance (up to 50 scanned pages per PDF).</p><StudyFilePicker disabled={reading} onSelect={file=>void upload(file)} hint="Choose a file up to 10 MB. Supported documents and scans are read automatically."/>{incomingFile&&<p>Original: {incomingFile.name}</p>}{incomingFile&&!form.text.trim()&&!reading&&<p role="status" className="ref-inline-notice">The original file is ready to save. Add readable text below to use it for quizzes or flashcards.</p>}</>}
         {sourceMode==='note'&&<label>Saved note<select aria-label="Saved note to import" value={noteId} onChange={e=>{const note=notes.find(item=>item.id===e.target.value);setNoteId(e.target.value);if(note)setForm(previous=>({...previous,title:note.title,text:note.summary,category:note.category,sourceName:note.title}))}}><option value="">Choose a note</option>{notes.map(note=><option key={note.id} value={note.id}>{note.title}</option>)}</select>{!notes.length&&<small>No saved notes yet. Create one in Notes, or choose another material source.</small>}</label>}
       </>}
       {reading&&<div><p role="status">{progress||'Saving original file...'}</p><button type="button" className="ref-text-action" onClick={()=>controller.current?.abort()}>Cancel reading</button></div>}
       <label>Material title<input aria-label="Material title" required maxLength={200} value={form.title} disabled={reading} onChange={e=>setForm({...form,title:e.target.value})}/></label>
       <div className="study-setup-grid"><label>Subject<select aria-label="Material subject" value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>{[...new Set([...subjects,form.category])].map(name=><option key={name}>{name}</option>)}</select></label><label>Folder<select aria-label="Material folder" value={form.folderId} onChange={e=>setForm({...form,folderId:e.target.value})}><option value="">Unfiled</option>{folders.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label></div>
       <label>Tags<input aria-label="Material tags" value={form.tags} placeholder="e.g. memory, exam prep, theories" onChange={e=>setForm({...form,tags:e.target.value})}/><small>Separate tags with commas, up to 10.</small></label>
-      <label>Review and edit study text<textarea aria-label="Material text" rows={9} maxLength={MAX_SOURCE_LENGTH} disabled={reading} value={form.text} onChange={e=>setForm({...form,text:e.target.value})}/></label><small>{form.text.length.toLocaleString()} / 25,000 characters. Saved text is reused without another OCR request.</small>
+      <label>{sourceMode==='file'?'Extracted text (optional to edit)':'Study text'}<textarea aria-label="Material text" rows={9} maxLength={MAX_SOURCE_LENGTH} disabled={reading} value={form.text} onChange={e=>setForm({...form,text:e.target.value})}/></label><small>{form.text.length.toLocaleString()} / 1,000,000 characters. Saved text is reused without another OCR request.</small>
       {editId&&form.summary&&<label>Saved summary<textarea aria-label="Edit saved summary" rows={5} maxLength={MAX_SOURCE_LENGTH} value={form.summary} onChange={e=>setForm({...form,summary:e.target.value})}/></label>}
       {error&&<p role="alert" className="ref-form-error">{error}</p>}<button className="ref-primary" disabled={reading||!form.title.trim()||(!form.text.trim()&&!incomingFile&&!items.find(item=>item.id===editId)?.fileId)||form.text.length>MAX_SOURCE_LENGTH}>Save material</button>
     </form></ViewportOverlay>}
     {modal==='folder'&&<ViewportOverlay onDismiss={dismiss}><form className="glass-modal ref-form-dialog" onSubmit={e=>{e.preventDefault();const name=folderName.trim();if(!name)return;if(folders.some(item=>item.id!==folderEdit&&item.name.toLowerCase()===name.toLowerCase())){setError('A folder with this name already exists.');return}if(commitFolders(folderEdit?folders.map(item=>item.id===folderEdit?{...item,name}:item):[...folders,{id:'folder-'+crypto.randomUUID(),name}]))setModal(null)}}><div className="ref-panel-title"><h2>{folderEdit?'Rename folder':'New library folder'}</h2><button type="button" aria-label="Close folder editor" onClick={dismiss}><X size={20}/></button></div><label>Folder name<input aria-label="Folder name" required maxLength={80} value={folderName} onChange={e=>setFolderName(e.target.value)}/></label>{error&&<p role="alert" className="ref-form-error">{error}</p>}<button className="ref-primary">Save folder</button></form></ViewportOverlay>}
     {modal==='delete'&&deletion&&<ViewportOverlay onDismiss={dismiss}><section className="glass-modal ref-form-dialog"><h2>Remove {deletion.kind==='folder'?'folder':'material'}?</h2><p>{deletion.kind==='folder'?'Materials will stay in your library as unfiled items.':'This removes the library text and any original file uploaded here. Documents referenced from the vault and saved notes stay in their original pages.'}</p>{error&&<p role="alert" className="ref-form-error">{error}</p>}<div className="study-actions"><button className="ref-secondary" onClick={dismiss}>Cancel</button><button className="ref-primary" onClick={()=>void remove()}>Remove {deletion.kind}</button></div></section></ViewportOverlay>}
-    {generation&&<AIGenerator task={generation.task} saving={savingReviewer} initialText={generation.text} initialSourceName={generation.sourceName} category={generation.category} saveError={error} saveLabel={generation.task==='reviewer'?'Save reviewer':generation.task==='summary'?'Save summary to library':undefined} onClose={()=>{setGeneration(null);setError('')}} onSave={async(draft,settings)=>{
+    {generation&&<AIGenerator task={generation.task} saving={savingReviewer} initialInstructions={generation.purpose==='simplify'?'Explain the supplied psychology study material in plain language for a beginner. Use short sections, concrete examples and a brief self-check. Retain important qualifications.':generation.purpose==='mnemonics'?'Create memorable psychology study aids from the supplied material: acronyms, comparisons and short memory cues. Explain exactly what each cue stands for. Label invented memory aids as learning tools; do not present them as scientific facts.':''} initialText={generation.text} initialSourceName={generation.sourceName} category={generation.category} saveError={error} saveLabel={generation.task==='reviewer'?'Save reviewer':generation.task==='summary'?'Save summary to library':undefined} onClose={()=>{setGeneration(null);setError('')}} onSave={async(draft,settings)=>{
       if(generation.task==='reviewer') {
         setSavingReviewer(true);setError('');let stored=''
         try {
@@ -217,9 +226,9 @@ export function StudyBoxPage() {
 
       if(generation.task==='summary'){
         const summary=draft.summary+'\n\n'+draft.keyPoints.join('\n'),now=new Date().toISOString()
-        if(summary.length>MAX_SOURCE_LENGTH){setError('This summary exceeds 25,000 characters. Generate a shorter draft before saving.');return}
-        if(generation.ids.length===1){if(!commit(items.map(item=>item.id===generation.ids[0]?{...item,summary,updatedAt:now}:item)))return;setActiveId(generation.ids[0]);setPreviewTab('summary')}
-        else {const item:LibraryMaterial={id:'material-'+crypto.randomUUID(),title:draft.title.trim()||'Study summary',text:summary,category:settings.category,folderId:null,tags:[],favorite:false,kind:'summary',sourceName:generation.sourceName,sourceIds:generation.ids,createdAt:now,updatedAt:now};if(!commit([item,...items]))return;setActiveId(item.id);setPreviewTab('source')}
+        if(summary.length>MAX_SOURCE_LENGTH){setError('This summary exceeds 1,000,000 characters. Generate a shorter draft before saving.');return}
+        if(generation.ids.length===1&&!generation.purpose){if(!commit(items.map(item=>item.id===generation.ids[0]?{...item,summary,updatedAt:now}:item)))return;setActiveId(generation.ids[0]);setPreviewTab('summary')}
+        else {const item:LibraryMaterial={id:'material-'+crypto.randomUUID(),title:generation.purpose?generation.sourceName+(generation.purpose==='simplify'?' - simple explanation':' - memory aids'):draft.title.trim()||'Study summary',text:summary,category:settings.category,folderId:null,tags:[],favorite:false,kind:'summary',sourceName:generation.sourceName,sourceIds:generation.ids,createdAt:now,updatedAt:now};if(!commit([item,...items]))return;setActiveId(item.id);setPreviewTab('source')}
         setSelected([]);setFolder('all');setView('all');setSearch('');setNotice('Summary saved. Your original materials are unchanged.')
       }else{const id=createDeck(draft.title,settings.category);draft.cards.forEach(card=>addCard(id,card.question,card.answer,settings.category));navigate('/flashcards',{state:{deckId:id}})}
       setGeneration(null);setError('')

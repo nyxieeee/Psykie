@@ -18,7 +18,7 @@ export function librarySource(items: LibraryMaterial[]): string {
   if (!items.length) throw new Error('Choose a study material first.')
   if(items.some(item=>!item.text.trim()))throw new Error('One of these files has no study text yet. Open Edit material and add readable text before generating practice.')
   const text = items.map(item => `Source: ${item.title}\n${item.text}`).join('\n\n---\n\n')
-  if (text.length > 25000) throw new Error('Selected materials exceed 25,000 characters. Choose fewer materials or edit them into shorter excerpts.')
+  if (text.length > 1000000) throw new Error('Selected materials exceed 1,000,000 characters. Choose a smaller set of materials.')
   return text
 }
 export function saveDocumentToLibrary(file: {id: string; name: string}, text: string): LibraryMaterial {

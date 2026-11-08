@@ -1,5 +1,23 @@
 ﻿# Reference redesign verification
 
+## Long quizzes and uploaded study material
+
+The France Notes study flow is adapted for psychology: 5–100 questions/cards, small AI batches, persisted generation checkpoints, editable question drafts, study/exam feedback, custom or preset timers up to three hours, shuffled practice, identification/fill-in questions, case/research/ethics practice, answer history, printable quizzes/results, Word downloads and reviewer PowerPoint exports. Memory aids and simpler explanations save as separate Library materials. Nursing content, medication tools and podcasts are excluded.
+
+Supported uploads extract text automatically; scanned pages use Mistral OCR. Originals remain available. Limits: 10 MB per file, 1,000 PDF pages, 50 scanned pages and 1,000,000 source characters. OCR and generation consume the account's allowance. Requests in a long operation are spaced about eight seconds apart. Long sources are processed by section; quizzes use section summaries where needed. An exhausted allowance stops the operation with completed generation batches available for review or resumption.
+
+Run these serially (browser scripts mock authentication and model output):
+
+```powershell
+node scripts/check-study-generation.mjs
+node scripts/run-ai-ui.cjs scripts/check-long-quizzes.cjs
+node scripts/run-ai-ui.cjs scripts/check-large-source.cjs
+node scripts/run-ai-ui.cjs scripts/check-ocr.cjs
+node scripts/run-ai-ui.cjs scripts/check-reviewer-tools.cjs
+```
+
+These cover 100-question batching, bounded requests, cancellation and resumption; a browser quiz recovering from a provider error; written answers and persistence; a real 120-page PDF; OCR; real PowerPoint downloads; and separate reviewer tools. They do not establish live model quality or available provider quota.
+
 Start the app with `npm.cmd run dev -- --host 127.0.0.1`.
 
 The checks use Playwright and installed Microsoft Edge. They use isolated browser contexts and the app's demo stores.

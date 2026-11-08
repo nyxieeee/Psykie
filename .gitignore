@@ -66,3 +66,4 @@ supabase/.branches/
 
 # Downloaded OAuth client credentials
 client_secret_*.json
+Markdowns/
