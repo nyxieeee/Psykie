@@ -244,7 +244,7 @@ export function NotesPage() {
                 title={isHandwriting ? 'Switch to text' : 'Switch to handwriting'}
                 aria-label={isHandwriting ? 'Switch to text mode' : 'Switch to handwriting mode'}
                 onClick={toggleHandwriting}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20, border: '1px solid #f9a8d4', color: isHandwriting ? '#be185d' : '#9ca3af', background: isHandwriting ? '#fdf2f8' : 'transparent', cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20, border: '1px solid var(--ref-border)', color: isHandwriting ? 'var(--ref-accent)' : 'var(--ref-muted)', background: isHandwriting ? 'var(--ref-soft)' : 'transparent', cursor: 'pointer' }}
               >
                 {isHandwriting ? <PenNib size={15} weight="fill" /> : <Scribble size={15} />}
                 {isHandwriting ? 'Handwriting' : 'Text'}
@@ -324,10 +324,10 @@ export function NotesPage() {
           </div>
           {/* Kind toggle */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-            <button type="button" onClick={() => setNewKind('text')} style={{ flex: 1, padding: '8px', borderRadius: 12, border: `1.5px solid ${newKind === 'text' ? '#f472b6' : '#e5e7eb'}`, background: newKind === 'text' ? '#fdf2f8' : 'white', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <button type="button" onClick={() => setNewKind('text')} className="ref-secondary note-kind-option" aria-pressed={newKind === 'text'}>
               <FileText size={16} />Text note
             </button>
-            <button type="button" onClick={() => setNewKind('handwriting')} style={{ flex: 1, padding: '8px', borderRadius: 12, border: `1.5px solid ${newKind === 'handwriting' ? '#f472b6' : '#e5e7eb'}`, background: newKind === 'handwriting' ? '#fdf2f8' : 'white', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <button type="button" onClick={() => setNewKind('handwriting')} className="ref-secondary note-kind-option" aria-pressed={newKind === 'handwriting'}>
               <Scribble size={16} />Handwritten
             </button>
           </div>

@@ -1,5 +1,5 @@
+import { applyAppearance } from '../utils/appearance'
 import { useWorkspaceNotices } from '../hooks/useWorkspaceNotices'
-import { workspaceStorage } from '../utils/workspaceStorage'
 import { ArrowRight, Bell, BookOpen, CalendarBlank, Cards, ChartBar, FileText, Folder, GearSix, House, List, MagnifyingGlass, Question, SignOut, Sparkle, Users, X, Stethoscope } from '@phosphor-icons/react'
 import { useEffect, useRef, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -28,18 +28,7 @@ export function AppLayout() {
   }
   useEffect(() => { setMobileOpen(false); setNotifications(false) }, [location.pathname])
   useEffect(() => { const handle = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setSearchOpen(value => !value) } if (event.key === 'Escape') { setNotifications(false); setMobileOpen(false) } }; window.addEventListener('keydown', handle); return () => window.removeEventListener('keydown', handle) }, [])
-  useEffect(() => {
-    const media = matchMedia('(prefers-color-scheme:dark)')
-    const apply = () => {
-      let prefs: {theme?: string; accent?: string} = {}
-      try { prefs = JSON.parse(workspaceStorage.getItem('psykie-preferences') || '{}') } catch { /* Defaults. */ }
-      document.documentElement.dataset.psykieTheme = prefs.theme === 'system' ? (media.matches ? 'dark' : 'light') : prefs.theme || 'light'
-      document.documentElement.style.setProperty('--ref-accent', prefs.accent || '#7054c4')
-    }
-    apply()
-    media.addEventListener('change', apply)
-    return () => media.removeEventListener('change', apply)
-  }, [])
+  useEffect(() => { applyAppearance() }, [user?.id])
   const initials = (user?.name || 'Your account').split(' ').map(word => word[0]).join('').slice(0, 2)
   const dsmResults = DSM5_TR_CHAPTERS.flatMap(ch => ch.disorders.map(d => ({ title: `${d.name}${d.icdCode ? ` (${d.icdCode})` : ''}`, type: 'DSM-5-TR', path: '/dsm', state: { query: d.name } })))
   const results = [

@@ -1,0 +1,132 @@
+﻿/* France Notes' current dusty-rose / warm-charcoal palette.
+   Source: France Notes/src/index.css. Theme colors live here; layout stays separate. */
+:root {
+  color-scheme:light;
+  --fn-bg:#FBF4F2; --fn-card:#FFFFFF; --fn-secondary:#F8E6E5;
+  --fn-pink:#BE5B6C; --fn-hover:#A64B5B; --fn-accent:#EFC9CC;
+  --fn-text:#4A3237; --fn-muted:#8E747A; --fn-border:#F0E0DE;
+  --fn-success:#7FB592; --fn-warning:#E5B76A; --fn-error:#D46A7B; --fn-soft:#FCEDEC;
+  --fn-shadow:190,91,108; --fn-button-text:#fff;
+  --fn-cloud-tint:#fbf4f28a; --fn-sidebar:#fffcfbeF;
+  --ref-ink:var(--fn-text); --ref-muted:var(--fn-muted); --ref-border:var(--fn-border);
+  --ref-surface:var(--fn-card); --ref-soft:var(--fn-soft); --ref-accent:var(--fn-pink);
+  --surface-bg:var(--fn-bg); --surface-card:var(--fn-card); --surface-border:var(--fn-border);
+  --surface-border-subtle:var(--fn-border); --psykie-gradient:var(--ref-accent); --psykie-gradient-hover:var(--fn-hover);
+  --pink-500:var(--fn-pink); --pink-600:var(--fn-hover); --purple-500:var(--fn-pink); --purple-600:var(--fn-hover);
+}
+:root[data-psykie-theme=dark] {
+  color-scheme:dark;
+  --fn-bg:#1C1517; --fn-card:#261D20; --fn-secondary:#33272B;
+  --fn-pink:#D9798A; --fn-hover:#E592A1; --fn-accent:#6B3F48;
+  --fn-text:#F7ECEE; --fn-muted:#C3ADB2; --fn-border:#3A2D31;
+  --fn-success:#8CC7A0; --fn-warning:#EBC27C; --fn-error:#EC8D9C; --fn-soft:#2E2226;
+  --fn-shadow:0,0,0; --fn-button-text:#1C1517;
+  --fn-cloud-tint:#1c1517ed; --fn-sidebar:#261d20f5;
+  --ref-ink:var(--fn-text); --ref-muted:var(--fn-muted); --ref-border:var(--fn-border);
+  --ref-surface:var(--fn-card); --ref-soft:var(--fn-soft); --ref-accent:var(--fn-pink);
+}
+:root[data-psykie-theme] body { background:var(--fn-bg); color:var(--fn-text); }
+:root[data-psykie-theme] body .psykie-frame { background:var(--fn-bg); color:var(--fn-text); }
+:root[data-psykie-theme] body .ref-workspace { background:linear-gradient(var(--fn-cloud-tint),var(--fn-cloud-tint)),url('/psykie-clouds.png') right top / cover fixed no-repeat,var(--fn-bg); }
+:root[data-psykie-theme] body :is(.ref-sidebar,.ref-mobile-sidebar) { background:var(--fn-sidebar); border-color:var(--fn-border); }
+:root[data-psykie-theme] body :is(.ref-topbar,.ref-mobile-dock,.mindy-header) { background:color-mix(in srgb,var(--fn-card) 94%,transparent); border-color:var(--fn-border); }
+:root[data-psykie-theme] body .ref-brand span { background:none; color:var(--ref-accent); }
+:root[data-psykie-theme] body :is(.ref-main-nav,.ref-sidebar-bottom nav) button { color:var(--fn-muted); }
+:root[data-psykie-theme] body :is(.ref-main-nav,.ref-sidebar-bottom nav) button:hover { background:var(--fn-soft); color:var(--fn-text); }
+:root[data-psykie-theme] body :is(.ref-main-nav,.ref-sidebar-bottom nav) button.active { background:var(--fn-secondary); color:var(--ref-accent); }
+:root[data-psykie-theme] body .ref-main-nav button svg { color:inherit; }
+:root[data-psykie-theme] body :is(.nav-section-label,.ref-breadcrumb,.ref-breadcrumb span,.ref-global-search,.ref-global-search kbd,.ref-sidebar-profile small,.ref-notification-button,.ref-notification-button svg) { color:var(--fn-muted); }
+:root[data-psykie-theme] body :is(.ref-breadcrumb strong,.ref-sidebar-profile strong) { color:var(--fn-text); }
+:root[data-psykie-theme] body :is(.ref-panel,.dashboard-panel,.overview-metric,.overview-tool,.quick-action,.ref-deck,.ref-stat,.ref-note-item,.library-material,.ref-notebook-sidebar,.ref-notes-list,.ref-note-editor,.ref-profile-popover,.ref-notification-popover,.mindy-examples,.mindy-research-results) { background:var(--fn-card); border-color:var(--fn-border); box-shadow:0 2px 14px rgba(var(--fn-shadow),.07); color:var(--fn-text); }
+:root[data-psykie-theme] body :is(.overview-heading h1,.overview-metric strong,.overview-tool strong,.ref-page-header h1,.ref-panel-title h2,.reference-page h2,.reference-page h3,.reference-page h4,.ref-note-title h2,.ref-note-select strong,.ref-deck-select strong,.mindy-header h1,.mindy-empty h2,.mindy-response-heading strong) { color:var(--fn-text); }
+:root[data-psykie-theme] body :is(.ref-page-header p,.overview-heading p,.overview-heading time,.overview-heading .eyebrow,.overview-metric small,.overview-tool small,.empty-copy,.ref-empty,.ref-note-select p,.ref-note-meta,.ref-note-meta small,.ref-deck-select small,.ref-stat small,.ref-study-options,.ref-study-picker,.ref-result-row small,.ref-question-heading p,.ref-question-heading small,.ref-help-categories p,.ref-auth-subtitle,.ref-auth-switch,.ref-profile-settings>p,.ref-settings-content p,.library-material-open small,.library-material-open p,.library-source-name,.mindy-header p,.mindy-empty p,.mindy-disclosure,.mindy-history-select small,.mindy-history-select time,.mindy-response-heading time,.research-domain,.research-source-policy summary) { color:var(--fn-muted); }
+:root[data-psykie-theme] body :is(.ref-primary,.dream-button,.ref-small-primary,.btn-primary,.btn-pink,.btn-3d-primary,.ref-round-button,.mindy-prompt button,.mindy-composer .ref-round-button,.ref-auth-fields>.ref-primary) { background:var(--ref-accent); color:var(--fn-button-text); border-color:transparent; box-shadow:0 3px 10px rgba(var(--fn-shadow),.13); }
+:root[data-psykie-theme] body :is(.ref-primary,.dream-button,.btn-primary,.ref-round-button):hover:not(:disabled) { background:var(--fn-hover); filter:none; }
+:root[data-psykie-theme] body :is(.ref-secondary,.ref-square-button,.ref-download,.ref-theme-options button,.mindy-icon-button,.mindy-suggestions button,.ref-social-button) { background:var(--fn-card); color:var(--fn-text); border-color:var(--fn-border); box-shadow:none; }
+:root[data-psykie-theme] body :is(.ref-text-action,.ref-favorite,.ref-upload-note,.ref-help-support a,.ref-auth-switch a,.ref-auth-switch button,.ref-auth-options button,.ref-notebook svg,.library-favorite,.library-material-open>.ref-icon,.ref-editor-toolbar svg,.ref-search svg,.ref-global-search svg,.research-query>svg,.research-result-title,.mindy-response-footer button,.mindy-references,.ref-mobile-menu,.ref-drawer-close) { color:var(--ref-accent); }
+:root[data-psykie-theme] body :is(.ref-avatar,.pastel-icon,.ref-icon,.ref-tag,.category-chip,.ref-note-meta .ref-tag,.library-tags>span,.ref-tabs button>span,.ref-notebook small) { background:var(--fn-soft); color:var(--ref-accent); border-color:var(--fn-border); box-shadow:none; }
+:root[data-psykie-theme] body :is(.ref-notebook.selected,.ref-notebook-list .selected,.ref-notebooks .selected,.ref-note-item.selected,.library-material.selected,.library-folders button.selected,.ref-settings-nav button.selected,.ref-theme-options button.selected,.ref-answer-options label.selected,.mindy-history-item.selected) { background:var(--fn-secondary); color:var(--ref-accent); border-color:var(--fn-accent); }
+:root[data-psykie-theme] body .ref-deck.selected { border-color:var(--ref-accent); box-shadow:0 0 0 1px var(--ref-accent); }
+:root[data-psykie-theme] body :is(.ref-tabs.motion-tabs,.ref-tabs) { background:var(--fn-secondary); border-color:var(--fn-border); }
+:root[data-psykie-theme] body .ref-tabs-pill { background:var(--fn-card); border-color:var(--fn-border); box-shadow:0 1px 4px rgba(var(--fn-shadow),.1); }
+:root[data-psykie-theme] body .ref-tabs.motion-tabs>button { color:var(--fn-muted); }
+:root[data-psykie-theme] body .ref-tabs.motion-tabs>button.selected { background:transparent; color:var(--ref-accent); }
+:root[data-psykie-theme] body :is(.ref-tabs:not(.motion-tabs) button.selected,.ref-mobile-dock button.active) { color:var(--ref-accent); }
+:root[data-psykie-theme] body :is(.ref-search,.ref-global-search,.ref-auth-input,.ref-profile-fields input,.ref-profile-fields select,.ref-form-dialog input,.ref-form-dialog select,.ref-form-dialog textarea,.research-query,.research-library-toolbar input,.research-library-toolbar select,.research-collection-form input,.research-filters select,.ref-study-picker select,.library-collection-heading select,.mindy-composer,.mindy-prompt,.ref-note-ask,.ref-list-sort select,.ref-panel-title select) { background:var(--fn-card); color:var(--fn-text); border-color:var(--fn-border); box-shadow:none; }
+:root[data-psykie-theme] body :is(input,textarea,select,[contenteditable=true]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]) { color:var(--fn-text); caret-color:var(--ref-accent); }
+:root[data-psykie-theme] body :is(.ref-form-dialog,.ref-settings-content,.ref-auth-form,.t-modal) :is(input,textarea,select):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]) { background:var(--fn-card); border-color:var(--fn-border); }
+:root[data-psykie-theme] body :is(input,textarea)::placeholder { color:var(--fn-muted); opacity:.85; }
+:root[data-psykie-theme] body :is(input[type=checkbox],input[type=radio],input[type=range]) { accent-color:var(--ref-accent); }
+:root[data-psykie-theme] body :is(.ref-search,.ref-auth-input,.research-query):focus-within { outline-color:var(--ref-accent); border-color:var(--ref-accent); }
+:root[data-psykie-theme] body :is(.glass-modal,.ref-form-dialog,.t-modal) { background:var(--fn-card); border-color:var(--fn-border); color:var(--fn-text); }
+:root[data-psykie-theme] body :is(.ref-form-dialog,.ref-auth-form,.t-modal) :is(h2,h3,label) { color:var(--fn-text); }
+:root[data-psykie-theme] body :is(.ref-form-dialog,.t-modal) p { color:var(--fn-muted); }
+:root[data-psykie-theme] body .study-start { background:linear-gradient(110deg,color-mix(in srgb,var(--fn-secondary) 92%,transparent),color-mix(in srgb,var(--fn-soft) 78%,transparent)),url('/psykie-clouds.png') right center / cover; border-color:var(--fn-border); }
+:root[data-psykie-theme] body .study-start p { color:var(--fn-muted); }
+:root[data-psykie-theme] body .study-start>svg { color:var(--ref-accent); }
+:root[data-psykie-theme] body .study-start h2 { color:var(--fn-text); }
+:root[data-psykie-theme] body :is(.study-progress span,.ref-deck-progress>span,.ref-question-progress>span,.ref-switch.on) { background:var(--ref-accent); }
+:root[data-psykie-theme] body :is(.study-progress,.ref-deck-progress,.ref-question-progress) { background:var(--fn-secondary); }
+:root[data-psykie-theme] body :is(.ref-inline-notice,.ref-form-error,.mindy-notice,.study-review-item>div,.library-selection) { background:var(--fn-soft); border-color:var(--fn-border); color:var(--ref-accent); }
+:root[data-psykie-theme] body .ref-form-error { color:var(--fn-error); }
+:root[data-psykie-theme] body .ref-calendar-day { background:var(--fn-card); border-color:var(--fn-border); color:var(--fn-text); }
+:root[data-psykie-theme] body .ref-calendar-day.outside { color:var(--fn-muted); background:var(--fn-soft); }
+:root[data-psykie-theme] body .ref-calendar-day.selected { background:var(--fn-secondary); border-color:var(--ref-accent); }
+:root[data-psykie-theme] body .ref-calendar-day .today { background:var(--ref-accent); color:var(--fn-button-text); }
+:root[data-psykie-theme] body :is(.ref-calendar-weekdays,.ref-month-grid,.ref-file-heading,.ref-client-heading,.ref-editor-toolbar,.ref-note-ask,.ref-study-footer,.ref-study-options,.study-support,.ref-page-header,.ref-sidebar-profile,.ref-main-content .ref-section-divider) { border-color:var(--fn-border); }
+:root[data-psykie-theme] body .mindy-workspace { background:linear-gradient(var(--fn-cloud-tint),var(--fn-cloud-tint)),url('/psykie-clouds.png') center / cover; }
+:root[data-psykie-theme] body :is(.mindy-history,.mindy-composer,.ref-note-ask) { background:var(--fn-card); border-color:var(--fn-border); }
+:root[data-psykie-theme] body .mindy-compose-area { background:transparent; }
+:root[data-psykie-theme] body .mindy-user-message p { background:var(--fn-secondary); color:var(--fn-text); border-color:var(--fn-border); }
+:root[data-psykie-theme] body .mindy-response-content>p { color:var(--fn-text); }
+:root[data-psykie-theme] body :is(.mindy-subject-button,.mindy-references,.mindy-more>div) { background:var(--fn-card); color:var(--fn-muted); border-color:var(--fn-border); }
+:root[data-psykie-theme] body .ref-cloud-card { background:linear-gradient(color-mix(in srgb,var(--fn-secondary) 80%,transparent),var(--fn-cloud-tint)),url('/psykie-clouds.png') right center / cover; border-color:var(--fn-border); }
+:root[data-psykie-theme] body :is(.flashcard-face,.flashcard-face-content) { background:var(--fn-card); color:var(--fn-text); border-color:var(--fn-border); }
+:root[data-psykie-theme] body .flashcard-back { background:var(--fn-soft); }
+:root[data-psykie-theme] body :is(.flashcard-question,.flashcard-answer) { color:var(--fn-text); }
+:root[data-psykie-theme] body :is(.flashcard-category,.flashcard-hint) { color:var(--fn-muted); }
+:root[data-psykie-theme] body .flashcard-flip-label { background:var(--ref-accent); color:var(--fn-button-text); }
+:root[data-psykie-theme] body :is(.ref-help-support,.ref-help-banner) { background:linear-gradient(color-mix(in srgb,var(--fn-soft) 88%,transparent),var(--fn-cloud-tint)),url('/psykie-clouds.png') center / cover; border-color:var(--fn-border); }
+:root[data-psykie-theme] body :is(.ref-faq>button,.ref-faq ol,.ref-faq) { background:var(--fn-card); color:var(--fn-text); border-color:var(--fn-border); }
+:root[data-psykie-theme] body :is(.ref-faq>button>span,.ref-faq li>span) { background:var(--fn-secondary); color:var(--ref-accent); }
+:root[data-psykie-theme] body .ref-auth-page { background:var(--fn-bg); color:var(--fn-text); }
+:root[data-psykie-theme] body :is(.ref-auth-card,.ref-auth-form) { background:var(--fn-card); border-color:var(--fn-border); }
+:root[data-psykie-theme] body .ref-auth-illustration { background:linear-gradient(color-mix(in srgb,var(--fn-secondary) 38%,transparent),var(--fn-cloud-tint)),url('/psykie-clouds.png') center / cover; }
+:root[data-psykie-theme] body .ref-auth-illustration h1 { color:var(--fn-text); }
+:root[data-psykie-theme] body :is(.ref-help-support h2,.ref-help-support p,.ref-faq strong) { color:var(--fn-text); }
+:root[data-psykie-theme] body .skip-link { background:var(--fn-card); color:var(--ref-accent); border-color:var(--ref-accent); }
+:root[data-psykie-theme] body .dsm-page :is(.text-pink-400,.text-pink-500,.text-pink-600,.text-pink-700) { color:var(--ref-accent); }
+:root[data-psykie-theme] body .dsm-page :is(.bg-pink-500,[class*='from-pink-500']) { background:var(--ref-accent); color:var(--fn-button-text); }
+:root[data-psykie-theme] body .dsm-page :is(.bg-pink-50,.bg-pink-100) { background:var(--fn-soft); }
+:root[data-psykie-theme=dark] body .dsm-page :is(.bg-white,[class*='bg-white/']) { background:var(--fn-card); border-color:var(--fn-border); }
+:root[data-psykie-theme=dark] body .dsm-page :is(.text-neutral-800,.text-neutral-700,.text-neutral-600,.text-neutral-500) { color:var(--fn-text); }
+:root[data-psykie-theme=dark] body .dsm-page :is(.text-neutral-400,.text-neutral-500) { color:var(--fn-muted); }
+:root[data-psykie-theme=dark] body .reference-page :is(.text-slate-800,.text-slate-700,.text-slate-600,.text-neutral-800,.text-neutral-700,.text-neutral-600) { color:var(--fn-text); }
+:root[data-psykie-theme=dark] body .reference-page :is(.text-slate-500,.text-slate-400,.text-neutral-500,.text-neutral-400) { color:var(--fn-muted); }
+:root[data-psykie-theme=dark] body :is(.ref-editor-content,.ref-editor-toolbar,.ref-note-ask,.ref-note-ask input,.ref-profile-settings,.ref-uploaded-preview,.ref-detail-section,.ref-client-row,.ref-file-row,.ref-result-row,.ref-question-heading,.ref-faq ol,.study-review-item,.ref-help-categories>button,.library-reading) { background:var(--fn-card); color:var(--fn-text); border-color:var(--fn-border); }
+:root[data-psykie-theme=dark] body .reference-page :is(input,textarea,select,[contenteditable=true]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]) { background:var(--fn-card); color:var(--fn-text); }
+:root[data-psykie-theme=dark] body .reference-page :is(.bg-white,.bg-slate-50,.bg-neutral-50,.bg-pink-50,.bg-purple-50) { background:var(--fn-card); }
+:root[data-psykie-theme=dark] body .ref-deck-due { color:var(--ref-accent); }
+@media(max-width:800px) { :root[data-psykie-theme] body .ref-workspace { background-attachment:scroll; } }
+/* Override earlier compound selectors with the same scope in both themes. */
+:root[data-psykie-theme] body .psykie-frame .study-start { background:linear-gradient(110deg,color-mix(in srgb,var(--fn-secondary) 92%,transparent),color-mix(in srgb,var(--fn-soft) 78%,transparent)),url('/psykie-clouds.png') right center / cover; border-color:var(--fn-border); }
+:root[data-psykie-theme] body .psykie-frame :is(.ref-global-search,.ref-search) { background:var(--fn-card); color:var(--fn-muted); }
+:root[data-psykie-theme] body .psykie-frame .mindy-suggestions button svg { color:var(--ref-accent); }
+:root[data-psykie-theme] body .note-kind-option { flex:1; padding:8px; font-size:12px; }
+:root[data-psykie-theme] body .note-kind-option[aria-pressed=true] { background:var(--fn-secondary); color:var(--ref-accent); border-color:var(--ref-accent); }
+:root[data-psykie-theme] body .dsm-page .dsm-intro { background:var(--fn-card); border-color:var(--fn-border); }
+:root[data-psykie-theme=dark] body .dsm-page :is([class*='bg-neutral-100'],[class*='bg-neutral-200'],[class*='bg-white/20']) { background:var(--fn-secondary); }
+:root[data-psykie-theme] body :is(.mindy-heading p,.study-support p,.mindy-suggestions button,.mindy-disclosure,.ref-auth-password-hint,.ref-auth-options,.ref-detail-section p,.ref-help-categories p) { color:var(--fn-muted); }
+:root[data-psykie-theme] body :is(.ref-profile-photo button,.mindy-composer>svg,.mindy-icon-button svg,.ref-auth-input>svg,.ref-auth-input button) { color:var(--ref-accent); }
+:root[data-psykie-theme] body .ref-profile-photo button { background:var(--fn-card); border-color:var(--fn-border); }
+:root[data-psykie-theme] body .ref-switch:not(.on) { background:var(--fn-secondary); }
+:root[data-psykie-theme] body .viewport-overlay { background-color:rgba(28,21,23,.45); }
+:root[data-psykie-theme] body .ref-auth-roles>button { background:var(--fn-card); color:var(--fn-text); border-color:var(--fn-border); }
+:root[data-psykie-theme] body .ref-auth-roles>button.selected { background:var(--fn-secondary); color:var(--ref-accent); border-color:var(--ref-accent); }
+:root[data-psykie-theme] body :is(.dsm-book-single,.dsm-book-spread) { background:color-mix(in srgb,var(--fn-accent) 80%,var(--fn-pink)); border-color:var(--fn-border); box-shadow:0 24px 60px -22px rgba(var(--fn-shadow),.28),0 4px 0 var(--fn-accent); }
+:root[data-psykie-theme] body .dsm-book-spine { background:linear-gradient(90deg,var(--fn-accent),var(--fn-secondary),var(--fn-accent)); }
+:root[data-psykie-theme] body .dsm-paper[data-paper=cream] { --paper-text:#4A3237; --paper-accent:#BE5B6C; background:#FAF7F2; color:var(--paper-text); }
+:root[data-psykie-theme] body .dsm-paper[data-paper=rose] { --paper-text:#4A3237; --paper-accent:#BE5B6C; background:#FCEDEC; color:var(--paper-text); }
+:root[data-psykie-theme] body .dsm-paper[data-paper=slate] { --paper-text:#F7ECEE; --paper-accent:#D9798A; background:#261D20; color:var(--paper-text); }
+:root[data-psykie-theme] body .dsm-paper[data-paper] :is(h1,h2,h3,h4,p,li,span,strong) { color:var(--paper-text); }
+:root[data-psykie-theme] body .dsm-paper[data-paper] [class*='text-pink-'] { color:var(--paper-accent); }

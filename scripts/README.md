@@ -45,3 +45,9 @@ Run `node scripts/run-ai-ui.cjs scripts/check-motion.cjs` to check forward/back/
 ## Connected account workflows
 
 Run `node scripts/run-ai-ui.cjs scripts/check-connected-workspace.cjs` for private cloud snapshot uploads/downloads, account isolation, recovery copies, failed saves, notification preferences, handwriting OCR preserving its source, and password recovery/update. Network responses are mocked and no real emails are sent. Apply `supabase/migrations/202611080001_workspace_backups.sql` before live backup use; configure auth email delivery and redirects using `GMAIL_SETUP.md`.
+
+## France Notes pink and dark theme
+
+`src/theme.css` uses the current theme variables from France Notes' `src/index.css`: dusty rose `#BE5B6C` with warm cream `#FBF4F2`, and rose `#D9798A` with warm charcoal `#1C1517` in dark mode. Psykie's cloud artwork, layout, and motion remain in place. Shared appearance handling migrates the old default violet accents, restores the theme before React renders, follows system color changes, and preserves a non-sensitive device preference for authentication screens. Custom accent choices remain supported.
+
+Run `node scripts/run-ai-ui.cjs scripts/check-theme.cjs` to verify both palettes across student/clinical routes, dialogs, phone/tablet layouts, legacy defaults, system-mode changes, and sign-in appearance. Uses mocked authentication; no AI requests. Screenshots go to ignored `artifacts/theme/`.

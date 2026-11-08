@@ -230,6 +230,7 @@ function BookSheet({
 
   return (
     <div
+      data-paper={paperTheme}
       className={`dsm-paper p-8 sm:p-11 border flex flex-col justify-between select-text w-full h-full ${bgClass} ${roundedCorners} ${gutterShadow}`}
       style={{
         minHeight: 700,
@@ -344,7 +345,7 @@ export function DSMPage() {
   const [jumpPageInput, setJumpPageInput] = useState('')
   const [fontSizeMultiplier, setFontSizeMultiplier] = useState(1)
   const [spreadMode, setSpreadMode] = useState<'single' | 'spread'>('single')
-  const [paperTheme, setPaperTheme] = useState<'cream' | 'rose' | 'slate'>('cream')
+  const [paperTheme, setPaperTheme] = useState<'cream' | 'rose' | 'slate'>(() => document.documentElement.dataset.psykieTheme === 'dark' ? 'slate' : 'cream')
   const [showTOC, setShowTOC] = useState(false)
 
   const previousReaderPage = useCallback(() => setCurrentPageNumber(page => Math.max(1, page - (spreadMode === 'spread' ? (page === 2 ? 1 : 2) : 1))), [spreadMode])
@@ -418,9 +419,9 @@ export function DSMPage() {
   return (
     <div className="reference-page dsm-page">
       {/* Header Banner */}
-      <div className="ref-panel" style={{ marginBottom: 20, background: 'linear-gradient(135deg, #fdf2f8 0%, #f5f3ff 100%)', borderColor: '#f9a8d4' }}>
+      <div className="ref-panel dsm-intro">
         <div className="flex items-start gap-4 flex-wrap sm:flex-nowrap">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm" style={{ background: 'linear-gradient(135deg, #ec4899, #8b5cf6)' }}>
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm" style={{ background: 'linear-gradient(135deg, var(--ref-accent), var(--fn-hover))' }}>
             <BookOpen size={26} className="text-white" weight="duotone" />
           </div>
           <div className="flex-1 min-w-0">

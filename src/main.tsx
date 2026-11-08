@@ -6,6 +6,11 @@ import './index.css'
 import './workspace.css'
 import './reference.css'
 import './design-system.css'
+import './theme.css'
+import { watchAppearance } from './utils/appearance'
+
+const stopWatchingAppearance = watchAppearance()
+if (import.meta.hot) import.meta.hot.dispose(stopWatchingAppearance)
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

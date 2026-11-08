@@ -100,7 +100,7 @@ body .overview-workflow .mindy-suggestions button { background:#f7f5fa; color:#6
 .overview-agenda { margin-top:24px; }
 /* DSM's split view also works on small screens. */
 body .dsm-page { max-width:none!important; }
-body .dsm-page>.ref-panel:first-child { background:#fff!important; border-color:var(--ref-border)!important; }
+body .dsm-page>.ref-panel:first-child { background:var(--ref-surface); border-color:var(--ref-border); margin-bottom:20px; }
 body .dsm-chapter-layout { display:grid; grid-template-columns:240px minmax(0,1fr); gap:24px; }
 body .dsm-chapter-layout>aside { width:auto!important; min-width:0; }
 body .dsm-page :is(.rounded-3xl,.rounded-2xl) { border-radius:10px; box-shadow:none; }
