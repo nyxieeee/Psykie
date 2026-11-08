@@ -1,8 +1,8 @@
 import { MagnifyingGlass, Plus } from '@phosphor-icons/react'
 import { useLayoutEffect, useRef, type ReactNode } from 'react'
 
-export function ReferenceHeader({ title, subtitle, action, onAction }: { title: string; subtitle: string; action?: string; onAction?: () => void }) {
-  return <header className="ref-page-header"><div><h1>{title}</h1><p>{subtitle}</p></div>{action && <button className="ref-primary" onClick={onAction}><Plus size={19} />{action}</button>}</header>
+export function ReferenceHeader({ title, subtitle, action, onAction, actions }: { title: string; subtitle: string; action?: string; onAction?: () => void; actions?: ReactNode }) {
+  return <header className="ref-page-header"><div><h1>{title}</h1><p>{subtitle}</p></div>{(action||actions)&&<div className="page-header-actions">{actions}{action && <button className="ref-primary" onClick={onAction}><Plus size={19} />{action}</button>}</div>}</header>
 }
 export function ReferenceSearch({ value, onChange, placeholder = 'Search…' }: { value: string; onChange: (value: string) => void; placeholder?: string }) {
   return <label className="ref-search"><MagnifyingGlass size={17} /><input type="search" aria-label={placeholder} placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)} /></label>

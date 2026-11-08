@@ -8,7 +8,7 @@ import {
 } from '@phosphor-icons/react'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ReferenceEmpty, ReferenceStart, ReferenceHeader, ReferenceSearch, ReferenceTabs } from '../components/ReferenceUI'
+import { ReferenceStart, ReferenceHeader, ReferenceSearch, ReferenceTabs } from '../components/ReferenceUI'
 import { ViewportOverlay } from '../components/ViewportOverlay'
 import { useStudyStore } from '../store'
 import '../notes.css'
@@ -34,7 +34,7 @@ const EMPTY_DRAWING: HandwritingDrawing = { strokes: [], paper: 'lined', pages: 
 export function NotesPage() {
   const { notes, addNote, deleteNote, updateNoteSummary, createDeck, addCard } = useStudyStore()
   const navigate = useNavigate(), location = useLocation()
-  const [selectedId, setSelectedId] = useState(notes[0]?.id || '')
+  const [selectedId, setSelectedId] = useState('')
   const [browserOpen,setBrowserOpen] = useState(() => window.innerWidth > 900)
   const [notebook, setNotebook] = useState('all')
   const [tab, setTab] = useState('all')
@@ -56,7 +56,7 @@ export function NotesPage() {
   const uploadRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef<HTMLDivElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout>>()
-  const active = notes.find(note => note.id === selectedId) || notes[0]
+  const active = notes.find(note => note.id === selectedId)
 
   // Handwriting state stored per note in workspaceStorage
   const getDrawing = (id: string): HandwritingDrawing => {
@@ -104,7 +104,7 @@ export function NotesPage() {
   useEffect(() => {
     const id = (location.state as {noteId?: string} | null)?.noteId
     if (!id || !notes.some(note => note.id === id)) return
-    setSelectedId(id); setNotebook('all'); setTab('all')
+    setSelectedId(id); setNotebook('all'); setTab('all'); if(window.innerWidth<=900)setBrowserOpen(false)
     navigate(location.pathname, {replace:true,state:null})
   }, [location.state, location.pathname, navigate, notes])
 
@@ -159,6 +159,7 @@ export function NotesPage() {
   return <div className="reference-page ref-notes-page" data-browser-open={browserOpen || !active}>
     <ReferenceHeader
       title="Notes"
+      actions={<button className="ref-secondary" onClick={()=>{setNewKind('handwriting');setShowNew(true)}}><Scribble size={18}/>Handwritten note</button>}
       subtitle="A little clarity, one thought at a time."
       action="New note"
       onAction={() => { setNewKind('text'); setShowNew(true) }}
@@ -307,7 +308,7 @@ export function NotesPage() {
             )}
           </>
         ) : (
-          <ReferenceEmpty>Choose a note, or create your first one.</ReferenceEmpty>
+          <ReferenceStart icon={<FileText size={30}/>} title="Your space to think" action="Write a note" onAction={()=>{setNewKind('text');setShowNew(true)}}>Open a note from the list, or start with a blank page. Your writing saves automatically.</ReferenceStart>
         )}
       </section>
     </div>
@@ -345,7 +346,7 @@ export function NotesPage() {
         } else {
           const id = createDeck(draft.title, settings.category)
           draft.cards.forEach(card => addCard(id, card.question, card.answer, settings.category))
-          setNotice(draft.cards.length + ' AI flashcards saved')
+          navigate('/flashcards',{state:{deckId:id}})
         }
         setAITask(null)
       }} />

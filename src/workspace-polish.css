@@ -1,5 +1,7 @@
 body :is(.ref-page-header,.overview-heading) h1 { font-weight:800; letter-spacing:-.6px; }
 body :is(.ref-panel-title,.overview-section-heading) h2 { font-weight:800; }
+.page-header-actions { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+@media(max-width:600px) { .page-header-actions { width:100%; } .page-header-actions>button { flex:1; justify-content:center; } }
 .workspace-journey { margin-bottom:24px; padding:22px; border:1px solid var(--ref-border); border-radius:16px; background:var(--ref-surface); }
 .journey-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; }
 .journey-heading .eyebrow,.study-start .eyebrow { display:block; color:var(--ref-accent); font-size:10px; font-weight:800; letter-spacing:1.4px; margin-bottom:7px; }

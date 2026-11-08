@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { BookOpen, Cards, ChartBar, DownloadSimple, FileText, Folder, PencilSimple, Plus, Sparkle, Star, Trash, X } from '@phosphor-icons/react'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { ArrowLeft, BookOpen, Cards, ChartBar, DownloadSimple, FileText, Folder, PencilSimple, Plus, Sparkle, Star, Trash, X } from '@phosphor-icons/react'
 import { AIGenerator } from '../components/AIGenerator'
 import { ReferenceEmpty, ReferenceHeader, ReferenceSearch, ReferenceTabs } from '../components/ReferenceUI'
 import { ViewportOverlay } from '../components/ViewportOverlay'
@@ -11,6 +11,7 @@ import { MAX_SOURCE_LENGTH, STUDY_UPLOAD_ACCEPT, readStudyUpload } from '../util
 import { LIBRARY_FOLDERS_KEY, LibraryFolder, LibraryMaterial, librarySource, readLibrary, saveLibrary } from '../utils/studyLibrary'
 import { readWorkspaceList, workspaceStorage } from '../utils/workspaceStorage'
 import '../library.css'
+import '../study-workflows.css'
 
 const subjects = ['General Psychology','Cognitive Psychology','Developmental Psychology','Abnormal Psychology','Social Psychology','Biological Psychology','Research Methods','Statistics','Psychological Assessment','Ethics']
 const emptyForm = {title:'',text:'',summary:'',category:'General Psychology',folderId:'',tags:'',sourceName:''}
@@ -22,7 +23,10 @@ export function StudyBoxPage() {
   const [items,setItems] = useState<LibraryMaterial[]>(readLibrary)
   const [folders,setFolders] = useState<LibraryFolder[]>(() => readWorkspaceList(LIBRARY_FOLDERS_KEY))
   const [folder,setFolder] = useState('all'), [view,setView] = useState('all'), [search,setSearch] = useState(''), [sort,setSort] = useState('recent')
-  const [activeId,setActiveId] = useState(''), [selected,setSelected] = useState<string[]>([]), [previewTab,setPreviewTab] = useState('source')
+  const [params,setParams] = useSearchParams()
+  const activeId = params.get('material') || ''
+  const setActiveId = (id:string) => setParams(previous=>{const next=new URLSearchParams(previous);if(id)next.set('material',id);else next.delete('material');return next})
+  const [selected,setSelected] = useState<string[]>([]), [previewTab,setPreviewTab] = useState('source')
   const [modal,setModal] = useState<'material'|'folder'|'delete'|null>(null), [editId,setEditId] = useState(''), [folderEdit,setFolderEdit] = useState(''), [folderName,setFolderName] = useState('')
   const [deletion,setDeletion] = useState<{kind:'material'|'folder';id:string}|null>(null)
   const [form,setForm] = useState(emptyForm), [sourceMode,setSourceMode] = useState('file'), [incomingFile,setIncomingFile] = useState<File|null>(null), [noteId,setNoteId] = useState('')
@@ -31,7 +35,7 @@ export function StudyBoxPage() {
   const controller = useRef<AbortController|null>(null), previewRef = useRef<HTMLElement>(null)
   useEffect(() => () => controller.current?.abort(), [])
   const visible = items.filter(item => (folder==='all' || item.folderId===folder) && (view!=='favorites' || item.favorite) && [item.title,item.category,item.sourceName,...item.tags].join(' ').toLowerCase().includes(search.toLowerCase())).sort((a,b) => sort==='name' ? a.title.localeCompare(b.title) : b.updatedAt.localeCompare(a.updatedAt))
-  const active = visible.find(item=>item.id===activeId) || visible[0]
+  const active = items.find(item=>item.id===activeId)
   const commit = (next: LibraryMaterial[]) => {
     try { saveLibrary(next);setItems(next);return true } catch { setError('Your browser could not save the library. Free some site storage or download a copy of your material first.');return false }
   }
@@ -41,11 +45,11 @@ export function StudyBoxPage() {
   useEffect(() => {
     const id=(location.state as {materialId?:string}|null)?.materialId
     if (!id) return
-    setItems(readLibrary());setActiveId(id);setFolder('all');setView('all');setSearch('')
-    navigate(location.pathname,{replace:true,state:null})
+    setItems(readLibrary());setSelected([]);setFolder('all');setView('all');setSearch('')
+    navigate(location.pathname+'?material='+encodeURIComponent(id),{replace:true,state:null})
   },[location.state,location.pathname,navigate])
   const choose = (id: string) => {
-    setActiveId(id);setPreviewTab('source')
+    setSelected([]);setActiveId(id);setPreviewTab('source')
     if (window.innerWidth<980) requestAnimationFrame(()=>previewRef.current?.scrollIntoView({block:'start',behavior:'instant'}))
   }
   const toggleFavorite = (item: LibraryMaterial) => {setError('');commit(items.map(value=>value.id===item.id?{...value,favorite:!value.favorite}:value))}
@@ -74,11 +78,11 @@ export function StudyBoxPage() {
     let storedId=''
     if(incomingFile){setReading(true);controller.current=new AbortController();try{storedId='library-file-'+crypto.randomUUID();await storeDocumentFile(storedId,incomingFile);controller.current.signal.throwIfAborted();item.fileId=storedId;item.ownsFile=true}catch(error){if(storedId)await deleteDocumentFile(storedId).catch(()=>{});setReading(false);if(!controller.current.signal.aborted)setError('The original file could not be saved. Try again.');return}setReading(false)}
     if(!commit(existing?items.map(value=>value.id===existing.id?item:value):[item,...items])){if(storedId)await deleteDocumentFile(storedId).catch(()=>{});return}
-    setModal(null);setFolder('all');setView('all');setSearch('');setActiveId(item.id);setPreviewTab('source');setNotice('Material saved to your Study Box.')
+    setModal(null);setSelected([]);setFolder('all');setView('all');setSearch('');setActiveId(item.id);setPreviewTab('source');setNotice('Material saved to your Study Box.')
   }
   const study = (task: AITask) => {
     setError('');setNotice('')
-    const sources=selected.length?items.filter(item=>selected.includes(item.id)):active?[active]:[]
+    const sources=active?[active]:selected.length?items.filter(item=>selected.includes(item.id)):[]
     try {
       const text=librarySource(sources), category=sources.every(item=>item.category===sources[0].category)?sources[0].category:'General Psychology', sourceName=sources.length===1?sources[0].title:`${sources.length} Study Box materials`
       if(task==='quiz')navigate('/quizzes',{state:{studyText:text,sourceName,category}})
@@ -117,10 +121,11 @@ export function StudyBoxPage() {
     setDeletion(null);setModal(null)
   }
   return <div className="reference-page study-library-page">
-    <ReferenceHeader title="A home for everything you learn." subtitle="Collect your psychology readings, organize your ideas, and turn them into practice." action="Add material" onAction={()=>openMaterial()}/>
-    <div className="library-intro"><p><BookOpen size={18}/>{items.length} materials <span>|</span> {folders.length} folders <span>|</span> {items.filter(item=>item.favorite).length} favorites</p><button className="ref-secondary" onClick={()=>navigate('/documents')}>Open document vault</button></div>
+    <ReferenceHeader title="Study Box" subtitle="Your readings and notes, ready to turn into practice." action="Add material" onAction={()=>openMaterial()}/>
+    {!active&&<div className="library-intro"><p><BookOpen size={18}/>{items.length} materials <span>|</span> {folders.length} folders <span>|</span> {items.filter(item=>item.favorite).length} favorites</p><button className="ref-secondary" onClick={()=>navigate('/documents')}>Open document vault</button></div>}
     {error&&!modal&&!generation&&<p role="alert" className="ref-form-error">{error}</p>}{notice&&<p role="status" className="ref-inline-notice">{notice}</p>}
-    <div className="library-layout">
+    <div className="library-layout" data-view={active?'reader':'browse'}>
+      {!active&&<>
       <aside className="ref-panel library-folders"><div className="ref-panel-title"><h2>Folders</h2><button aria-label="New library folder" onClick={()=>{setFolderEdit('');setFolderName('');setError('');setModal('folder')}}><Plus size={19}/></button></div>
         <button className={folder==='all'&&view==='all'?'selected':''} onClick={()=>{setFolder('all');setView('all')}}><BookOpen size={19}/>All materials<small>{items.length}</small></button>
         <button className={view==='favorites'?'selected':''} onClick={()=>{setFolder('all');setView('favorites')}}><Star size={19}/>Favorites<small>{items.filter(item=>item.favorite).length}</small></button>
@@ -130,17 +135,19 @@ export function StudyBoxPage() {
       <section className="ref-panel library-collection"><div className="library-collection-heading"><h2>{view==='favorites'?'Favorites':folders.find(item=>item.id===folder)?.name||'Your materials'}</h2><select aria-label="Sort library" value={sort} onChange={e=>setSort(e.target.value)}><option value="recent">Recently updated</option><option value="name">Name A-Z</option></select></div><ReferenceSearch value={search} onChange={setSearch} placeholder="Search materials, subjects, or tags..."/>
         {!!visible.length&&<div className="library-select-row"><label><input type="checkbox" aria-label="Select visible materials" checked={visible.every(item=>selected.includes(item.id))} onChange={e=>setSelected(e.target.checked?[...new Set([...selected,...visible.map(item=>item.id)])]:selected.filter(id=>!visible.some(item=>item.id===id)))}/>Select visible</label><small>{visible.length} materials</small></div>}
         {!!selected.length&&<div className="library-selection" aria-label="Selected study materials"><strong>{selected.length} selected</strong><button className="ref-text-action" onClick={()=>{setSelected([]);setError('')}}>Clear selection</button><div className="study-actions"><button className="ref-secondary" onClick={()=>study('quiz')}><ChartBar size={16}/>Quiz selected</button><button className="ref-secondary" onClick={()=>study('flashcards')}><Cards size={16}/>Cards from selected</button><button className="ref-secondary" onClick={()=>study('summary')}><Sparkle size={16}/>Summarize selected</button></div></div>}
-        <div className="library-material-list">{visible.map(item=><article key={item.id} className={'library-material'+(active?.id===item.id?' selected':'')}><input type="checkbox" aria-label={'Select material '+item.title} checked={selected.includes(item.id)} onChange={()=>setSelected(previous=>previous.includes(item.id)?previous.filter(id=>id!==item.id):[...previous,item.id])}/><button className="library-material-open" aria-label={'Open material '+item.title} onClick={()=>choose(item.id)}><span className="ref-icon tint-2"><FileText size={22}/></span><span><strong>{item.title}</strong><small>{item.category} | {item.kind==='summary'?'AI summary':item.kind==='upload'?'Uploaded file':item.kind==='document'?'Document vault':item.kind==='note'?'Saved note':'Text material'}</small><p>{item.text.slice(0,110)}</p><span className="library-tags">{item.tags.map(tag=><span key={tag}>{tag}</span>)}</span></span></button><button className="library-favorite" aria-label={(item.favorite?'Unfavorite ':'Favorite ')+item.title} onClick={()=>toggleFavorite(item)}><Star size={18} weight={item.favorite?'fill':'regular'}/></button></article>)}</div>
+        <div className="library-material-list">{visible.map(item=><article key={item.id} className={'library-material'+(selected.includes(item.id)?' selected':'')}><input type="checkbox" aria-label={'Select material '+item.title} checked={selected.includes(item.id)} onChange={()=>setSelected(previous=>previous.includes(item.id)?previous.filter(id=>id!==item.id):[...previous,item.id])}/><button className="library-material-open" aria-label={'Open material '+item.title} onClick={()=>choose(item.id)}><span className="material-paper-preview" aria-hidden="true"><FileText size={24}/><strong>{item.title}</strong><span>{item.text.replace(/[#*_`>]/g,'').slice(0,180)}</span></span><span><strong>{item.title}</strong><small>{item.category} | {item.kind==='summary'?'AI summary':item.kind==='upload'?'Uploaded file':item.kind==='document'?'Document vault':item.kind==='note'?'Saved note':'Text material'}</small><p>{item.text.slice(0,110)}</p><span className="library-tags">{item.tags.map(tag=><span key={tag}>{tag}</span>)}</span></span></button><button className="library-favorite" aria-label={(item.favorite?'Unfavorite ':'Favorite ')+item.title} onClick={()=>toggleFavorite(item)}><Star size={18} weight={item.favorite?'fill':'regular'}/></button></article>)}</div>
         {!visible.length&&<div className="library-empty"><BookOpen size={40}/><h3>{items.length?'No matching materials':'Build your Study Box'}</h3><p>{items.length?'Try another folder or search.':'Add a reading, a photo of your notes, or text you want to understand. Keep the extracted text and study it whenever you need.'}</p><button className="ref-primary" onClick={()=>openMaterial()}>{items.length?'Add another material':'Add your first material'}</button></div>}
       </section>
-      <section ref={previewRef} className="ref-panel library-reader" aria-label="Material reader">{active?<>
+      </>}
+      {active&&<section ref={previewRef} className="ref-panel library-reader" aria-label="Material reader">{active?<>
+        <div className="workflow-back"><button className="ref-secondary" onClick={()=>{setActiveId('');setSelected([])}}><ArrowLeft size={16}/>Back to Study Box</button></div>
         <div className="ref-panel-title"><div><small>{active.category}</small><h2>{active.title}</h2></div><button aria-label="Edit material" onClick={()=>openMaterial(active)}><PencilSimple size={18}/></button><button aria-label="Delete material" onClick={()=>{setDeletion({kind:'material',id:active.id});setModal('delete')}}><Trash size={18}/></button></div>
+        <div className="library-study-actions"><p>{selected.length?`Study actions use the ${selected.length} selected materials.`:'Study actions use the saved source text.'}</p><div className="study-actions"><button className="ref-primary" onClick={()=>study('quiz')}><ChartBar size={17}/>Quiz me on this</button><button className="ref-secondary" onClick={()=>study('flashcards')}><Cards size={17}/>Make flashcards</button><button className="ref-secondary" onClick={()=>study('summary')}><Sparkle size={17}/>Summarize</button></div></div>
         <p className="library-source-name">{active.sourceName} | Updated {new Date(active.updatedAt).toLocaleDateString()}</p><ReferenceTabs items={[{id:'source',label:'Source text'},{id:'summary',label:'AI summary'}]} value={previewTab} onChange={setPreviewTab}/>
         {previewTab==='summary'&&!active.summary?<div className="library-empty"><Sparkle size={30}/><p>Build a study summary from this material. Your original text stays intact.</p><button className="ref-secondary" onClick={()=>{setSelected([]);try{setGeneration({task:'summary',text:librarySource([active]),category:active.category,sourceName:active.title,ids:[active.id]});setError('')}catch(error){setError(error instanceof Error?error.message:'Source is too long.')}}}>Generate material summary</button></div>:<div className="library-reading" tabIndex={0} aria-label={previewTab==='summary'?'Saved material summary':'Saved material text'}>{previewTab==='summary'?active.summary:active.text}</div>}
         {(previewTab==='summary'&&active.summary||active.kind==='summary')&&<p className="ref-inline-notice">AI-generated summary. Check it against your original source.</p>}
-        <div className="library-study-actions"><p>{selected.length?`Study actions use the ${selected.length} selected materials.`:'Study actions use the saved source text.'}</p><div className="study-actions"><button className="ref-primary" onClick={()=>study('quiz')}><ChartBar size={17}/>Quiz me on this</button><button className="ref-secondary" onClick={()=>study('flashcards')}><Cards size={17}/>Make flashcards</button><button className="ref-secondary" onClick={()=>study('summary')}><Sparkle size={17}/>Summarize</button></div></div>
         <div className="library-reader-footer"><button className="ref-text-action" disabled={previewTab==='summary'&&!active.summary} onClick={saveToNotes}>Save {previewTab==='summary'?'summary':'text'} to Notes</button><button className="ref-text-action" disabled={previewTab==='summary'&&!active.summary} onClick={()=>void download(false)}><DownloadSimple size={15}/>Download text</button>{active.fileId&&<button className="ref-text-action" onClick={()=>void download(true)}>Download original</button>}</div>
-      </>:<ReferenceEmpty>Select a material to read, organize, and study it.</ReferenceEmpty>}</section>
+      </>:<ReferenceEmpty>Select a material to read, organize, and study it.</ReferenceEmpty>}</section>}
     </div>
     {modal==='material'&&<ViewportOverlay onDismiss={dismiss}><form className="glass-modal ref-form-dialog library-material-dialog" onSubmit={saveMaterial}><div className="ref-panel-title"><h2>{editId?'Edit material':'Add study material'}</h2><button type="button" aria-label="Close material editor" onClick={dismiss}><X size={20}/></button></div>
       {!editId&&<><label>Material source<select aria-label="Material source" disabled={reading} value={sourceMode} onChange={e=>{setSourceMode(e.target.value);setIncomingFile(null);setNoteId('');setForm(previous=>({...previous,text:'',sourceName:''}));setError('')}}><option value="file">Upload a file</option><option value="text">Paste or write text</option><option value="note">Import a saved note</option></select></label>
