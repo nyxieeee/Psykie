@@ -12,10 +12,27 @@ function requiredText(value: unknown, max: number, name: string) {
   return value.trim()
 }
 function getKey(rt: Runtime) { const key = rt.env('MISTRAL_API_KEY'); if (!key) throw new RequestError(503, 'AI is not available for this workspace yet.'); return key }
-async function mistral(rt: Runtime, path: string, payload: unknown) {
-  const response = await rt.fetch('https://api.mistral.ai/v1/' + path, { method: 'POST', headers: { Authorization: 'Bearer ' + getKey(rt), 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(65000) })
-  if (!response.ok) throw new RequestError(response.status === 429 ? 429 : 502, response.status === 429 ? "Mistral's request or usage allowance has been reached. Wait before retrying, or ask the workspace owner to check the model's included allowance." : 'The AI service could not complete this request. Please try again.', response.status === 429 ? 'MISTRAL_RATE_LIMIT' : 'MISTRAL_REQUEST_FAILED')
-  return response.json()
+async function mistral(rt: Runtime, path: string, payload: unknown, retries = 2): Promise<any> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const response = await rt.fetch('https://api.mistral.ai/v1/' + path, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + getKey(rt), 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(65000)
+    })
+    if (response.ok) return response.json()
+    if (response.status === 429 && attempt < retries) {
+      await new Promise(resolve => setTimeout(resolve, 1500 * (attempt + 1)))
+      continue
+    }
+    throw new RequestError(
+      response.status === 429 ? 429 : 502,
+      response.status === 429
+        ? "Mistral's request or usage allowance has been reached. Wait a moment before retrying, or ask the workspace owner to check the model's included allowance."
+        : 'The AI service could not complete this request. Please try again.',
+      response.status === 429 ? 'MISTRAL_RATE_LIMIT' : 'MISTRAL_REQUEST_FAILED'
+    )
+  }
 }
 async function structured(rt: Runtime, name: string, schema: unknown, instruction: string, input: unknown) {
   const data = await mistral(rt, 'chat/completions', {
