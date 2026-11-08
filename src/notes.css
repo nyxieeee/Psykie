@@ -21,7 +21,7 @@ body .ref-notes-page .ref-note-list-toolbar .ref-tabs { flex:none; width:100%; }
 body .ref-notes-page .ref-note-list-toolbar .ref-tabs button { flex:1; padding:7px 6px; font-size:11px; }
 body .ref-notes-page .ref-note-list-toolbar .ref-search { flex:none; width:100%; max-width:none; padding:8px 10px; }
 body .ref-notes-page .ref-list-sort { padding:8px 0; }
-body .ref-notes-page .ref-list-sort select { padding:4px; font-size:10px; }
+:root[data-psykie-theme] body .ref-notes-page .ref-list-sort select { height:28px; min-height:28px; padding:3px 10px; border-radius:8px; font-size:11px; line-height:1.2; }
 body .ref-notes-page .ref-note-results { flex:1; min-height:0; max-height:none; }
 body .ref-notes-page .ref-note-select { padding:12px 28px 12px 10px; gap:9px; }
 body .ref-notes-page .ref-note-select>.ref-icon { width:34px; height:38px; flex-shrink:0; }
