@@ -21,6 +21,66 @@ const subjects = ['General Psychology','Cognitive Psychology','Developmental Psy
 const emptyForm = {title:'',text:'',summary:'',category:'General Psychology',folderId:'',tags:'',sourceName:''}
 type Generation = {task: AITask; text: string; category: string; sourceName: string; ids: string[]; purpose?:'simplify'|'mnemonics'}
 
+function renderLibraryContent(text: string, isSummary: boolean) {
+  if (!text.trim()) return null
+  const clean = plainText(text)
+  if (isSummary) {
+    if (/SOURCE SECTION \d+/i.test(clean)) {
+      const parts = clean.split(/(?=SOURCE SECTION \d+)/i).filter(Boolean)
+      return (
+        <div className="library-summary-stream">
+          <div className="library-ai-header">
+            <div className="library-ai-avatar"><Sparkle size={20} weight="fill" /></div>
+            <div>
+              <h4>Mindy AI Study Summary</h4>
+              <p>Key takeaways and clinical concepts synthesized from your material</p>
+            </div>
+          </div>
+          {parts.map((section, idx) => {
+            const lines = section.trim().split(/\n+/).filter(Boolean)
+            const titleMatch = lines[0]?.match(/SOURCE SECTION (\d+)/i)
+            const sectionNum = titleMatch ? titleMatch[1] : `${idx + 1}`
+            const contentLines = titleMatch ? lines.slice(1) : lines
+            return (
+              <div key={idx} className="library-summary-section">
+                <span className="library-section-badge"><Sparkle size={12} weight="fill" /> Section {sectionNum}</span>
+                {contentLines.map((line, pIdx) => <p key={pIdx} className="library-summary-p">{line}</p>)}
+              </div>
+            )
+          })}
+        </div>
+      )
+    }
+    const paragraphs = clean.split(/\n\n+/).filter(Boolean)
+    return (
+      <div className="library-summary-stream">
+        <div className="library-ai-header">
+          <div className="library-ai-avatar"><Sparkle size={20} weight="fill" /></div>
+          <div>
+            <h4>Mindy AI Study Summary</h4>
+            <p>Key takeaways and clinical concepts synthesized from your material</p>
+          </div>
+        </div>
+        <div className="library-summary-section">
+          {paragraphs.map((p, idx) => <p key={idx} className="library-summary-p">{p}</p>)}
+        </div>
+      </div>
+    )
+  }
+  const paragraphs = clean.split(/\n\n+/).filter(Boolean)
+  return (
+    <div className="library-reading-paper">
+      {paragraphs.map((paragraph, idx) => {
+        const trimmed = paragraph.trim()
+        if (trimmed.length > 2 && trimmed.length < 75 && !trimmed.endsWith('.') && !trimmed.includes('\n')) {
+          return <h3 key={idx} className="library-doc-heading">{trimmed}</h3>
+        }
+        return <p key={idx} className="library-doc-paragraph">{trimmed}</p>
+      })}
+    </div>
+  )
+}
+
 export function StudyBoxPage() {
   const navigate = useNavigate(), location = useLocation()
   const {notes, addNote, createDeck, addCard} = useStudyStore()
@@ -182,11 +242,37 @@ export function StudyBoxPage() {
       </section>
       </>}
       {active&&<section ref={previewRef} className="ref-panel library-reader" aria-label="Material reader">{active?<>
-        <div className="workflow-back"><button className="ref-secondary" onClick={()=>{setActiveId('');setSelected([])}}><ArrowLeft size={16}/>Back to Library</button></div>
-        <div className="ref-panel-title"><div><small>{active.category}</small><h2>{plainText(active.title)}</h2></div><button aria-label="Edit material" onClick={()=>openMaterial(active)}><PencilSimple size={18}/></button><button aria-label="Delete material" onClick={()=>{setDeletion({kind:'material',id:active.id});setModal('delete')}}><Trash size={18}/></button></div>
-        <div className="library-study-actions"><p>{active.reviewer?'Practice with the included cards and questions. No extra AI request is needed.':selected.length?`Study actions use the ${selected.length} selected materials.`:'Create practice from this saved source.'}</p><div className="study-actions">{active.reviewer?<><button className="ref-primary" onClick={()=>study('quiz')}><ChartBar size={17}/>Start self-test</button><button className="ref-secondary" onClick={()=>study('flashcards')}><Cards size={17}/>Study flashcards</button></>:<><button className="ref-primary" disabled={!active.text.trim()} onClick={()=>study('reviewer')}><Sparkle size={17}/>Generate reviewer</button><button className="ref-secondary" disabled={!active.text.trim()} onClick={()=>study('quiz')}><ChartBar size={17}/>Quiz me on this</button><button className="ref-secondary" disabled={!active.text.trim()} onClick={()=>study('flashcards')}><Cards size={17}/>Make flashcards</button><button className="ref-secondary" disabled={!active.text.trim()} onClick={()=>study('summary')}><Sparkle size={17}/>Summarize</button></>}</div></div>
-        {active.reviewer?<><p className="library-source-name">Based on: {active.sourceName}</p><div className="reviewer-source-links">{active.sourceIds?.map(id=>{const source=items.find(item=>item.id===id);return source?<button key={id} className="ref-secondary" onClick={()=>choose(id)}><FileText size={15}/>{source.title}</button>:null})}</div><div className="study-actions"><button className="ref-secondary" onClick={()=>setGeneration({task:'summary',text:active.text,category:active.category,sourceName:active.title,ids:[active.id],purpose:'simplify'})}>Explain simply</button><button className="ref-secondary" onClick={()=>setGeneration({task:'summary',text:active.text,category:active.category,sourceName:active.title,ids:[active.id],purpose:'mnemonics'})}>Make memory aids</button><button className="ref-secondary" onClick={()=>void downloadStudySlides(active.title,active.reviewer!).catch(()=>setError('Slide download failed. Please try again.'))}>Download study slides (.pptx)</button></div><ReviewerContent key={active.id} draft={active.reviewer} category={active.category}/></>:<>        <p className="library-source-name">{!active.text.trim()&&<span>Original file saved. Source text has not been extracted yet. </span>}{active.sourceName} | Updated {new Date(active.updatedAt).toLocaleDateString()}</p><ReferenceTabs items={[{id:'source',label:'Source text'},{id:'summary',label:'AI summary'}]} value={previewTab} onChange={setPreviewTab}/>
-        {previewTab==='source'&&!active.text.trim()?<div className="library-empty"><FileText size={32}/><h3>Source text is not ready</h3><p>{active.extractionError||'Automatic reading did not finish. Retry to extract text from your saved file; scanned pages use AI OCR.'}</p>{reading?<><p role="status">{progress||'Reading source...'}</p><button className="ref-secondary" onClick={()=>controller.current?.abort()}>Cancel extraction</button></>:<><div className="study-actions">{active.fileId&&<><button className="ref-primary" onClick={()=>void extractSavedSource(active)}>Retry reading file</button></>}<button className="ref-secondary" onClick={()=>openMaterial(active)}>Paste source text</button></div>{active.fileId&&<p>AI OCR sends scanned pages to Mistral and uses your AI allowance. Up to 50 scanned pages per PDF.</p>}</>}</div>:previewTab==='summary'&&!active.summary?<div className="library-empty"><Sparkle size={30}/><p>Build a study summary from this material. Your original text stays intact.</p><button className="ref-secondary" onClick={()=>{setSelected([]);try{setGeneration({task:'summary',text:librarySource([active]),category:active.category,sourceName:active.title,ids:[active.id]});setError('')}catch(error){setError(error instanceof Error?error.message:'Source is too long.')}}}>Generate material summary</button></div>:<div className="library-reading" tabIndex={0} aria-label={previewTab==='summary'?'Saved material summary':'Saved material text'}>{plainText(previewTab==='summary'?active.summary||'':active.text)}</div>}
+        <div className="library-reader-topbar">
+          <button className="ref-secondary library-back-btn" onClick={()=>{setActiveId('');setSelected([])}}><ArrowLeft size={16}/>Back to Library</button>
+          <div className="library-reader-tools">
+            <button className="ref-icon-btn" aria-label="Edit material" title="Edit material" onClick={()=>openMaterial(active)}><PencilSimple size={18}/></button>
+            <button className="ref-icon-btn" aria-label="Delete material" title="Delete material" onClick={()=>{setDeletion({kind:'material',id:active.id});setModal('delete')}}><Trash size={18}/></button>
+          </div>
+        </div>
+        <div className="library-reader-header">
+          <span className="library-category-badge">{active.category}</span>
+          <h2 className="library-reader-title">{plainText(active.title)}</h2>
+          <p className="library-source-meta"><FileText size={14}/><span>{active.sourceName}</span><span>·</span><span>Updated {new Date(active.updatedAt).toLocaleDateString()}</span>{active.text.trim()&&<><span>·</span><span>{active.text.trim().split(/\s+/).length.toLocaleString()} words</span></>}</p>
+        </div>
+        <div className="library-study-actions">
+          <p className="library-study-actions-hint">{active.reviewer?'Practice with the included cards and questions. No extra AI request is needed.':selected.length?`Study actions use the ${selected.length} selected materials.`:'Turn this material into active practice:'}</p>
+          <div className="study-actions">
+            {active.reviewer?<>
+              <button className="ref-primary" onClick={()=>study('quiz')}><ChartBar size={17}/>Start self-test</button>
+              <button className="ref-secondary" onClick={()=>study('flashcards')}><Cards size={17}/>Study flashcards</button>
+            </>:<>
+              <button className="ref-primary" disabled={!active.text.trim()} onClick={()=>study('reviewer')}><Sparkle size={17}/>Generate reviewer</button>
+              <button className="ref-secondary" disabled={!active.text.trim()} onClick={()=>study('quiz')}><ChartBar size={17}/>Quiz me on this</button>
+              <button className="ref-secondary" disabled={!active.text.trim()} onClick={()=>study('flashcards')}><Cards size={17}/>Make flashcards</button>
+              <button className="ref-secondary" disabled={!active.text.trim()} onClick={()=>study('summary')}><Sparkle size={17}/>Summarize</button>
+            </>}
+          </div>
+        </div>
+        {active.reviewer?<><p className="library-source-name">Based on: {active.sourceName}</p><div className="reviewer-source-links">{active.sourceIds?.map(id=>{const source=items.find(item=>item.id===id);return source?<button key={id} className="ref-secondary" onClick={()=>choose(id)}><FileText size={15}/>{source.title}</button>:null})}</div><div className="study-actions"><button className="ref-secondary" onClick={()=>setGeneration({task:'summary',text:active.text,category:active.category,sourceName:active.title,ids:[active.id],purpose:'simplify'})}>Explain simply</button><button className="ref-secondary" onClick={()=>setGeneration({task:'summary',text:active.text,category:active.category,sourceName:active.title,ids:[active.id],purpose:'mnemonics'})}>Make memory aids</button><button className="ref-secondary" onClick={()=>void downloadStudySlides(active.title,active.reviewer!).catch(()=>setError('Slide download failed. Please try again.'))}>Download study slides (.pptx)</button></div><ReviewerContent key={active.id} draft={active.reviewer} category={active.category}/></>:<>
+        <div className="library-reader-tabs-wrapper">
+          <ReferenceTabs items={[{id:'source',label:'Source text'},{id:'summary',label:'AI summary'}]} value={previewTab} onChange={setPreviewTab}/>
+        </div>
+        {previewTab==='source'&&!active.text.trim()?<div className="library-empty"><FileText size={32}/><h3>Source text is not ready</h3><p>{active.extractionError||'Automatic reading did not finish. Retry to extract text from your saved file; scanned pages use AI OCR.'}</p>{reading?<><p role="status">{progress||'Reading source...'}</p><button className="ref-secondary" onClick={()=>controller.current?.abort()}>Cancel extraction</button></>:<><div className="study-actions">{active.fileId&&<><button className="ref-primary" onClick={()=>void extractSavedSource(active)}>Retry reading file</button></>}<button className="ref-secondary" onClick={()=>openMaterial(active)}>Paste source text</button></div>{active.fileId&&<p>AI OCR sends scanned pages to Mistral and uses your AI allowance. Up to 50 scanned pages per PDF.</p>}</>}</div>:previewTab==='summary'&&!active.summary?<div className="library-empty"><Sparkle size={30}/><p>Build a study summary from this material. Your original text stays intact.</p><button className="ref-secondary" onClick={()=>{setSelected([]);try{setGeneration({task:'summary',text:librarySource([active]),category:active.category,sourceName:active.title,ids:[active.id]});setError('')}catch(error){setError(error instanceof Error?error.message:'Source is too long.')}}}>Generate material summary</button></div>:<div className="library-reading" tabIndex={0} aria-label={previewTab==='summary'?'Saved material summary':'Saved material text'}>{renderLibraryContent(previewTab==='summary'?active.summary||'':active.text, previewTab==='summary')}</div>}
         {(previewTab==='summary'&&active.summary||active.kind==='summary')&&<p className="ref-inline-notice">AI-generated summary. Check it against your original source.</p>}
 </>}
         <div className="library-reader-footer"><button className="ref-text-action" disabled={!active.text.trim()||previewTab==='summary'&&!active.summary} onClick={saveToNotes}>Save {previewTab==='summary'?'summary':'text'} to Notes</button><button className="ref-text-action" disabled={!active.text.trim()||previewTab==='summary'&&!active.summary} onClick={()=>void download(false)}><DownloadSimple size={15}/>Download Word (.docx)</button><button className="ref-text-action" disabled={!active.text.trim()} onClick={()=>{try{printStudyDocument(active.title,active.reviewer?reviewerText(active.reviewer):previewTab==='summary'?active.summary||'':active.text)}catch(error){setError(error instanceof Error?error.message:'Print failed.')}}}>Print / Save as PDF</button>{!!active.reviewer?.cards.length&&<button className="ref-text-action" onClick={()=>{try{printFlashcards(active.title,active.reviewer!.cards)}catch(error){setError(error instanceof Error?error.message:'Print failed.')}}}>Print flashcards</button>}{active.fileId&&<button className="ref-text-action" onClick={()=>void download(true)}>Download original</button>}</div>
