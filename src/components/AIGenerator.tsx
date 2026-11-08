@@ -7,7 +7,7 @@ import { useStudyStore } from '../store'
 import { readLibrary } from '../utils/studyLibrary'
 import '../study-workflows.css'
 
-export type GenerationSettings = { category: string; quizOptions: QuizOptions; timerMinutes: number; sourceName: string }
+export type GenerationSettings = { category: string; quizOptions: QuizOptions; timerMinutes: number; sourceName: string; mode: 'study' | 'exam' }
 export const PSYCHOLOGY_SUBJECTS = [
   'General Psychology',
   'Cognitive Psychology',
@@ -44,6 +44,7 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', ca
   const [topic, setTopic] = useState(''), [fileName, setFileName] = useState(initialSourceName), [reading, setReading] = useState(false)
   const [subject, setSubject] = useState(category), [noteId, setNoteId] = useState('')
   const [quizOptions, setQuizOptions] = useState<QuizOptions>({style: 'multiple-choice', difficulty: 'medium'})
+  const [mode,setMode] = useState<'study'|'exam'>('study')
   const [timerMinutes, setTimerMinutes] = useState(0)
   const [ocrEnabled, setOCREnabled] = useState(false), [readProgress, setReadProgress] = useState('')
   const source = [topic.trim() && `Requested topics and focus: ${topic.trim()}`, text.trim() && `Study material:\n${text.trim()}`].filter(Boolean).join('\n\n')
@@ -83,6 +84,7 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', ca
       {task === 'quiz' && <div className="study-setup-grid">
         <label>Question style<select aria-label="Question style" disabled={busy} value={quizOptions.style} onChange={e => {setQuizOptions({...quizOptions,style:e.target.value as QuizOptions['style']});setDraft(null)}}><option value="multiple-choice">Multiple choice</option><option value="true-false">True / false</option><option value="scenario">Psychology scenarios</option><option value="mixed">Mixed practice</option></select></label>
         <label>Difficulty<select aria-label="Difficulty" disabled={busy} value={quizOptions.difficulty} onChange={e => {setQuizOptions({...quizOptions,difficulty:e.target.value as QuizOptions['difficulty']});setDraft(null)}}><option value="easy">Foundations</option><option value="medium">Intermediate</option><option value="hard">Advanced</option><option value="board">Board-style practice</option></select></label>
+        <label>Learning mode<select aria-label="Learning mode" disabled={busy} value={mode} onChange={event=>setMode(event.target.value as 'study'|'exam')}><option value="study">Study - explain each answer</option><option value="exam">Exam - feedback at the end</option></select></label>
         <label>Practice timer<select aria-label="Practice timer" disabled={busy} value={timerMinutes} onChange={e => setTimerMinutes(Number(e.target.value))}><option value={0}>Untimed</option><option value={5}>5 minutes</option><option value={10}>10 minutes</option><option value={20}>20 minutes</option><option value={30}>30 minutes</option></select></label>
       </div>}
       {task !== 'summary' && <label>Number of {task === 'quiz' ? 'questions' : 'cards'}<input aria-label={task === 'quiz' ? 'Number of questions' : 'Number of cards'} disabled={busy} type="number" min={1} max={task === 'quiz' ? 15 : 20} value={count} onChange={event => {setCount(Number(event.target.value));setDraft(null)}}/></label>}
@@ -94,7 +96,7 @@ export function AIGenerator({ task, initialText = '', initialSourceName = '', ca
       {draft && <section className="ai-draft-preview" aria-label="AI draft preview"><h3>{draft.title}</h3>
         {task === 'summary' ? <><p>{draft.summary}</p><ul>{draft.keyPoints.map((point,index) => <li key={index}>{point}</li>)}</ul></> : task === 'flashcards' ? <ol>{draft.cards.map((card,index) => <li key={index}><strong>{card.question}</strong><p>{card.answer}</p></li>)}</ol> : <ol>{draft.questions.map((question,index) => <li key={index}><strong>{question.question}</strong><ul>{question.options.map((option,answer) => <li key={answer}>{option}{answer === question.correct ? ' (correct)' : ''}</li>)}</ul><p>{question.explanation}</p></li>)}</ol>}
         <p className="ref-inline-notice">AI-generated draft. Check accuracy against your source material. Psychology practice is educational and does not replace an official exam or professional judgment.</p>
-        <button className="ref-primary ref-wide" onClick={() => onSave(draft, {category:subject, quizOptions, timerMinutes, sourceName:fileName || topic.trim().slice(0, 120) || 'Pasted study material'})}>{saveLabel || (task === 'summary' ? 'Save as a new note' : task === 'quiz' ? 'Save quiz' : 'Save flashcards')}</button>
+        <button className="ref-primary ref-wide" onClick={() => onSave(draft, {category:subject, quizOptions, timerMinutes, mode, sourceName:fileName || topic.trim().slice(0, 120) || 'Pasted study material'})}>{saveLabel || (task === 'summary' ? 'Save as a new note' : task === 'quiz' ? 'Save quiz' : 'Save flashcards')}</button>
       </section>}
     </section>
   </ViewportOverlay>

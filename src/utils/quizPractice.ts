@@ -9,15 +9,17 @@ export type StudyQuiz = {
   id: string; title: string; category: string; difficulty: QuizOptions['difficulty']
   questionsCount: number; passingScore: number; questions: AIQuestion[]; createdAt: string
   style?: QuizOptions['style']; sourceName?: string; timerMinutes?: number; attempts?: QuizAttempt[]
+  mode?: 'study' | 'exam'
   lastAttempt?: {score: number; percentage: number; date: string}
 }
 export type QuizSession = {
   id: string; quizId: string; questions: AIQuestion[]; index: number
   answers: (number | null)[]; flagged: number[]; startedAt: number; deadline: number | null
+  mode?: 'study' | 'exam'; checkedAnswers?: number[]
 }
 
 export function createQuizSession(quiz: StudyQuiz, questions = quiz.questions, now = Date.now()): QuizSession {
-  return {id: crypto.randomUUID(), quizId: quiz.id, questions, index: 0, answers: questions.map(() => null), flagged: [], startedAt: now, deadline: quiz.timerMinutes ? now + quiz.timerMinutes * 60000 : null}
+  return {id: crypto.randomUUID(), quizId: quiz.id, questions, index: 0, answers: questions.map(() => null), flagged: [], startedAt: now, deadline: quiz.timerMinutes ? now + quiz.timerMinutes * 60000 : null, mode:quiz.mode || 'exam', checkedAnswers:[]}
 }
 export function completeQuizSession(quiz: StudyQuiz, session: QuizSession, timedOut = false, now = Date.now()): QuizAttempt {
   const score = session.questions.filter((question, index) => session.answers[index] === question.correct).length
