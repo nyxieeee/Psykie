@@ -4,13 +4,14 @@ import { workspaceStorage } from '../utils/workspaceStorage'
 import { HandwritingCanvas, HandwritingDrawing, handwritingImages } from '../components/HandwritingCanvas'
 import {
   ArrowRight, CheckCircle, Trash, FileText, Folder, Link as LinkIcon, ListBullets,
-  Plus, Star, TextB, TextItalic, TextUnderline, UploadSimple, X, Scribble, PenNib
+  Plus, Star, TextB, TextItalic, TextUnderline, UploadSimple, X, Scribble, PenNib, SidebarSimple
 } from '@phosphor-icons/react'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ReferenceEmpty, ReferenceHeader, ReferenceSearch, ReferenceTabs } from '../components/ReferenceUI'
 import { ViewportOverlay } from '../components/ViewportOverlay'
 import { useStudyStore } from '../store'
+import '../notes.css'
 
 function sanitizeNoteHtml(html: string) {
   const source = new DOMParser().parseFromString(html, 'text/html')
@@ -34,6 +35,7 @@ export function NotesPage() {
   const { notes, addNote, deleteNote, updateNoteSummary, createDeck, addCard } = useStudyStore()
   const navigate = useNavigate(), location = useLocation()
   const [selectedId, setSelectedId] = useState(notes[0]?.id || '')
+  const [browserOpen,setBrowserOpen] = useState(() => window.innerWidth > 900)
   const [notebook, setNotebook] = useState('all')
   const [tab, setTab] = useState('all')
   const [search, setSearch] = useState('')
@@ -63,7 +65,8 @@ export function NotesPage() {
       return stored ? JSON.parse(stored) : { ...EMPTY_DRAWING }
     } catch { return { ...EMPTY_DRAWING } }
   }
-  const [drawing, setDrawing] = useState<HandwritingDrawing>(() => active ? getDrawing(active.id) : { ...EMPTY_DRAWING })
+  const [ink,setInk] = useState(() => ({id:active?.id || '',drawing:active ? getDrawing(active.id) : {...EMPTY_DRAWING}}))
+  const drawing = ink.id === active?.id ? ink.drawing : active ? getDrawing(active.id) : {...EMPTY_DRAWING}
   const [isHandwriting, setIsHandwriting] = useState(() => {
     if (!active) return false
     try { return workspaceStorage.getItem('psykie-note-hw-mode-' + active.id) === 'true' } catch { return false }
@@ -81,7 +84,7 @@ export function NotesPage() {
   // Switch drawing state when active note changes
   useEffect(() => {
     if (!active) return
-    setDrawing(getDrawing(active.id))
+    setInk({id:active.id,drawing:getDrawing(active.id)})
     try { setIsHandwriting(workspaceStorage.getItem('psykie-note-hw-mode-' + active.id) === 'true') } catch { setIsHandwriting(false) }
   }, [active])
 
@@ -120,7 +123,7 @@ export function NotesPage() {
 
   const saveDrawing = (d: HandwritingDrawing) => {
     if (!active) return
-    setDrawing(d)
+    setInk({id:active.id,drawing:d})
     workspaceStorage.setItem('psykie-hw-' + active.id, JSON.stringify(d))
     setSaved(false)
     clearTimeout(timer.current)
@@ -150,17 +153,18 @@ export function NotesPage() {
       workspaceStorage.setItem('psykie-note-hw-mode-' + id, 'true')
       workspaceStorage.setItem('psykie-hw-' + id, JSON.stringify({ ...EMPTY_DRAWING }))
     }
-    setSelectedId(id); setShowNew(false); setTitle(''); setContent(''); setNotebook('all'); setTab('all')
+    setSelectedId(id); setShowNew(false); setTitle(''); setContent(''); setNotebook('all'); setTab('all'); if(window.innerWidth<=900)setBrowserOpen(false)
   }
 
-  return <div className="reference-page ref-notes-page">
+  return <div className="reference-page ref-notes-page" data-browser-open={browserOpen || !active}>
     <ReferenceHeader
       title="Notes"
       subtitle="A little clarity, one thought at a time."
       action="New note"
       onAction={() => { setNewKind('text'); setShowNew(true) }}
     />
-    <div className="ref-notes-layout">
+    <div className="notes-viewbar"><p>{active ? <><strong>{active.title}</strong><span>{isHandwriting?'Handwritten note':'Text note'}</span></> : 'Your notebooks and writing space'}</p>{active&&<button className="ref-secondary" aria-controls="notes-browser" aria-expanded={browserOpen} onClick={()=>setBrowserOpen(value=>!value)}><SidebarSimple size={18}/>{browserOpen?'Focus editor':'Show notes'}</button>}</div>
+    <div className="ref-notes-layout"><div className="notes-browser" id="notes-browser">
       <aside className="ref-panel ref-notebooks">
         <div className="ref-panel-title">
           <h2>Notebooks</h2>
@@ -173,14 +177,7 @@ export function NotesPage() {
             </button>
           </div>
         </div>
-        <button className={`ref-notebook ${notebook === 'all' ? 'selected' : ''}`} onClick={() => setNotebook('all')}>
-          <Folder size={23} weight="duotone" /><span>All notes</span><small>{notes.length}</small>
-        </button>
-        {categories.map((name, index) => (
-          <button key={name} className={`ref-notebook tint-${index % 4} ${notebook === name ? 'selected' : ''}`} onClick={() => setNotebook(name)}>
-            <Folder size={22} weight="duotone" /><span>{name}</span><small>{notes.filter(note => note.category === name).length}</small>
-          </button>
-        ))}
+        <label className="notes-notebook-filter"><span className="sr-only">Filter notebooks</span><Folder size={18}/><select aria-label="Filter notebooks" value={notebook} onChange={event=>setNotebook(event.target.value)}><option value="all">All notes ({notes.length})</option>{categories.map(name=><option key={name} value={name}>{name} ({notes.filter(note=>note.category===name).length})</option>)}</select></label>
         <button className="ref-text-action ref-upload-note" onClick={() => uploadRef.current?.click()}>
           <UploadSimple size={17} />Import text
         </button>
@@ -188,7 +185,7 @@ export function NotesPage() {
           const file = e.target.files?.[0]; if (!file) return
           const text = await file.text()
           const id = addNote({ title: file.name.replace(/\.[^.]+$/, ''), fileName: file.name, fileSize: `${Math.max(1, Math.round(file.size / 1024))} KB`, category: 'General Psychology', summary: text, keyTopics: [], keyConcepts: [], importantTerms: [] })
-          setSelectedId(id); setNotebook('all'); e.target.value = ''
+          setSelectedId(id); setNotebook('all'); if(window.innerWidth<=900)setBrowserOpen(false); e.target.value = ''
         }} />
       </aside>
 
@@ -206,7 +203,7 @@ export function NotesPage() {
         <div className="ref-note-results">
           {filtered.map((note, index) => (
             <article key={note.id} className={`ref-note-item ${active?.id === note.id ? 'selected' : ''}`}>
-              <button className="ref-note-select" onClick={() => setSelectedId(note.id)}>
+              <button className="ref-note-select" onClick={() => {setSelectedId(note.id);if(window.innerWidth<=900)setBrowserOpen(false)}}>
                 <span className={`ref-icon tint-${index % 4}`}>
                   {note.fileSize === 'Handwritten note' ? <Scribble size={26} /> : <FileText size={26} />}
                 </span>
@@ -228,7 +225,7 @@ export function NotesPage() {
         </div>
       </section>
 
-      <section className="ref-panel ref-note-detail">
+      </div><section className="ref-panel ref-note-detail">
         {active ? (
           <>
             <div className="ref-note-title">
@@ -273,7 +270,7 @@ export function NotesPage() {
               </div>
             )}
 
-            {isHandwriting&&<div className="note-ink-ai"><strong>Turn your handwriting into study material</strong><p>Read these pages with AI, review the extracted text, then make a quiz, summary, or flashcards. Sends up to five page images to Mistral and uses your AI allowance.</p><button className="ref-secondary" disabled={readingInk} onClick={async()=>{
+            {isHandwriting&&<div className="note-ink-ai"><button className="ref-secondary" disabled={readingInk} onClick={async()=>{
               setReadingInk(true);setInkError('');const controller=new AbortController();inkController.current=controller
               try {
                 const sourceId=active.id,images=handwritingImages(drawing),pages:string[]=[]
@@ -281,12 +278,12 @@ export function NotesPage() {
                 if(controller.signal.aborted)return
                 const text=pages.join('\n\n').trim();if(!text)throw new Error('No readable handwriting was found. Try clearer, larger writing.');if(text.length>25000)throw new Error('The extracted text is too long. Read fewer pages.')
                 const source=notes.find(note=>note.id===sourceId);if(!source)throw new Error('The source note is no longer available.')
-                const id=addNote({title:source.title+' - transcript',fileName:source.title+'.txt',fileSize:'AI handwriting transcript',category:source.category,summary:text,keyTopics:[],keyConcepts:[],importantTerms:[]});setSelectedId(id);setNotebook('all');setTab('all')
+                const id=addNote({title:source.title+' - transcript',fileName:source.title+'.txt',fileSize:'AI handwriting transcript',category:source.category,summary:text,keyTopics:[],keyConcepts:[],importantTerms:[]});setSelectedId(id);setNotebook('all');setTab('all');if(window.innerWidth<=900)setBrowserOpen(false)
               }catch(error){if(!controller.signal.aborted)setInkError(error instanceof Error?error.message:'Handwriting could not be read.')}finally{setReadingInk(false);setInkProgress('')}
-            }}>Read handwriting with AI</button>{readingInk&&<><p role="status">{inkProgress}</p><button className="ref-text-action" onClick={()=>inkController.current?.abort()}>Cancel reading</button></>}{inkError&&<p role="alert" className="ref-form-error">{inkError}</p>}</div>}
+            }}>Read handwriting with AI</button><small>Sends up to 5 page images to Mistral. Your original ink is kept.</small>{readingInk&&<><p role="status">{inkProgress}</p><button className="ref-text-action" onClick={()=>inkController.current?.abort()}>Cancel reading</button></>}{inkError&&<p role="alert" className="ref-form-error">{inkError}</p>}</div>}
             <div className="ref-editor-content">
               {isHandwriting ? (
-                <HandwritingCanvas drawing={drawing} onChange={saveDrawing} />
+                <HandwritingCanvas key={active.id} drawing={drawing} onChange={saveDrawing} />
               ) : (
                 <>
                   <h3>Overview</h3>

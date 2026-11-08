@@ -1,0 +1,75 @@
+﻿/* The editor owns the space; notebook navigation and the note list share one browser. */
+body .ref-notes-page .notes-viewbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:-4px 0 14px; }
+.notes-viewbar>p { display:flex; flex-wrap:wrap; align-items:center; gap:10px; min-width:0; color:var(--ref-muted); font-size:12px; }
+.notes-viewbar>p strong { color:var(--ref-ink); font-weight:650; overflow-wrap:anywhere; }
+.notes-viewbar>p>span { color:var(--ref-muted); font-size:11px; }
+.notes-viewbar>button { flex-shrink:0; }
+body .ref-notes-page .ref-notes-layout { display:grid; grid-template-columns:280px minmax(0,1fr); gap:16px; height:calc(100dvh - 255px); min-height:500px; max-height:none; align-items:stretch; }
+body .ref-notes-page[data-browser-open=false] .ref-notes-layout { grid-template-columns:minmax(0,1fr); }
+body .ref-notes-page[data-browser-open=false] .notes-browser { display:none; }
+.notes-browser { display:flex; flex-direction:column; gap:10px; min-width:0; min-height:0; }
+body .ref-notes-page .ref-notebooks { display:block; flex:none; width:100%; padding:14px; }
+body .ref-notes-page .ref-notebooks .ref-panel-title { margin-bottom:10px; padding:0; }
+body .ref-notes-page .ref-notebooks .ref-panel-title button { padding:4px; }
+.notes-notebook-filter { display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--ref-soft); border:1px solid var(--ref-border); border-radius:8px; color:var(--ref-accent); }
+.notes-notebook-filter>svg { flex-shrink:0; }
+.notes-notebook-filter>select { min-width:0; flex:1; width:100%; border:0; outline:none; font-size:12px; background:transparent!important; color:var(--ref-ink); }
+body .ref-notes-page .ref-upload-note { margin:10px 0 0; font-size:11px; }
+body .ref-notes-page .ref-note-list { flex:1; min-height:0; max-height:none; padding:10px; }
+body .ref-notes-page .ref-note-list-toolbar { display:flex; flex-direction:column; align-items:stretch; gap:8px; padding-bottom:10px; }
+body .ref-notes-page .ref-note-list-toolbar .ref-tabs { flex:none; width:100%; }
+body .ref-notes-page .ref-note-list-toolbar .ref-tabs button { flex:1; padding:7px 6px; font-size:11px; }
+body .ref-notes-page .ref-note-list-toolbar .ref-search { flex:none; width:100%; max-width:none; padding:8px 10px; }
+body .ref-notes-page .ref-list-sort { padding:8px 0; }
+body .ref-notes-page .ref-list-sort select { padding:4px; font-size:10px; }
+body .ref-notes-page .ref-note-results { flex:1; min-height:0; max-height:none; }
+body .ref-notes-page .ref-note-select { padding:12px 28px 12px 10px; gap:9px; }
+body .ref-notes-page .ref-note-select>.ref-icon { width:34px; height:38px; flex-shrink:0; }
+body .ref-notes-page .ref-note-select strong { font-size:13px; }
+body .ref-notes-page .ref-note-detail { min-height:0; max-height:none; padding:16px; }
+body .ref-notes-page .ref-note-title { flex-wrap:wrap; gap:10px; flex-shrink:0; padding-bottom:12px; }
+body .ref-notes-page .ref-note-title h2 { font-size:18px; min-width:90px; }
+body .ref-notes-page .ref-save-status { font-size:10px; }
+body .ref-notes-page .ref-editor-toolbar { flex-shrink:0; padding:12px 0; gap:10px; }
+body .ref-notes-page .ref-editor-toolbar .ref-text-action { margin-left:0; font-size:11px; padding:5px; }
+body .ref-notes-page .ref-editor-content { flex:1; min-height:0; padding:14px 2px 24px; overflow-y:auto; scrollbar-gutter:stable; }
+body .ref-notes-page .ref-editor-content>[contenteditable] { min-height:300px; font-size:15px; line-height:1.9; max-width:820px; margin-inline:auto; }
+body .ref-notes-page .ref-editor-content>h3 { max-width:820px; margin:0 auto 12px; }
+body .ref-notes-page .note-ink-ai { display:flex; flex-wrap:wrap; align-items:center; gap:6px 12px; flex-shrink:0; padding:10px 0; margin:0; border:0; border-bottom:1px solid var(--ref-border); border-radius:0; background:transparent; }
+body .ref-notes-page .note-ink-ai>button { min-height:32px; padding:6px 10px; font-size:11px; }
+.note-ink-ai>small { flex:1 1 180px; color:var(--ref-muted); font-size:11px; line-height:1.6; }
+body .ref-notes-page .note-ink-ai>p { margin:0; }
+body .ref-notes-page .ref-note-ask { flex-shrink:0; margin-top:8px; }
+/* Handwriting groups wrap as units, instead of scattering individual controls. */
+.handwriting-canvas { display:flex; flex-direction:column; gap:14px; }
+.ink-toolbar { position:sticky; top:-14px; z-index:10; display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:10px; border:1px solid var(--ref-border); border-radius:10px; background:var(--ref-surface); box-shadow:0 2px 8px #00000005; }
+.ink-tool-group { display:flex; align-items:center; gap:4px; flex:none; }
+.ink-tool-group+.ink-tool-group { border-left:1px solid var(--ref-border); padding-left:10px; }
+.ink-toolbar button { display:inline-flex; align-items:center; justify-content:center; min-width:32px; min-height:32px; border-radius:7px; color:var(--ref-muted); }
+.ink-toolbar button:hover:not(:disabled) { background:var(--ref-soft); color:var(--ref-accent); }
+.ink-toolbar button[aria-pressed=true] { background:var(--ref-soft); color:var(--ref-accent); }
+.ink-toolbar .ink-tool-button[aria-pressed=true] { background:var(--ref-accent); color:var(--fn-button-text); }
+.ink-toolbar button:disabled { opacity:.35; }
+.ink-toolbar .ink-color { width:26px; height:26px; min-width:26px; min-height:26px; border:3px solid var(--ref-surface); box-shadow:0 0 0 1px var(--ref-border); border-radius:50%; }
+.ink-toolbar .ink-color[aria-pressed=true] { box-shadow:0 0 0 2px var(--ref-accent); }
+.ink-options { margin-left:auto; display:flex; align-items:center; gap:8px; }
+.ink-options button { gap:5px; padding:5px 7px; font-size:11px; }
+.ink-options select { padding:6px 8px; border:1px solid var(--ref-border); border-radius:7px; background:var(--ref-surface); color:var(--ref-ink); font-size:11px; min-width:0; max-width:100px; }
+@media(max-width:1150px) { body .ref-notes-page .ref-notes-layout { grid-template-columns:240px minmax(0,1fr); gap:12px; } }
+@media(max-width:900px) {
+  body .ref-notes-page .ref-notes-layout { grid-template-columns:minmax(0,1fr); height:calc(100dvh - 265px); min-height:480px; }
+  body .ref-notes-page[data-browser-open=true] .ref-note-detail { display:none; }
+  body .ref-notes-page[data-browser-open=true] .notes-browser { display:flex; }
+  body .ref-notes-page .ref-note-detail { padding:14px; }
+  .notes-viewbar>p>span { display:none; }
+  body .ref-notes-page .notes-viewbar>button { padding:8px 10px; font-size:11px; }
+  .ink-toolbar { gap:8px; padding:8px; }
+  .ink-options { margin-left:0; }
+}
+@media(max-width:480px) {
+  body .ref-notes-page .ref-notes-layout { min-height:480px; }
+  .notes-viewbar>p strong { max-width:140px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  body .ref-notes-page .ref-editor-toolbar { gap:7px; }
+  .ink-tool-group+.ink-tool-group { padding-left:7px; }
+  .ink-options>button>span { display:none; }
+}

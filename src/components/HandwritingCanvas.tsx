@@ -370,82 +370,17 @@ export function HandwritingCanvas({ drawing, onChange }: {
     : null
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* Toolbar */}
-      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1.5 p-2 rounded-2xl bg-white/95 backdrop-blur border border-pink-100/80 shadow-sm shadow-pink-200/40">
-        {([
-          { id: 'pen' as Tool, icon: PenNib, label: 'Pen' },
-          { id: 'highlighter' as Tool, icon: Highlighter, label: 'Highlighter' },
-          { id: 'eraser' as Tool, icon: Eraser, label: 'Eraser' },
-        ]).map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTool(t.id)}
-            aria-label={t.label}
-            title={t.label}
-            className={`p-2 rounded-xl transition-colors ${tool === t.id ? 'bg-pink-500 text-white' : 'text-neutral-500 hover:bg-pink-50'}`}
-          >
-            <t.icon size={19} weight={tool === t.id ? 'fill' : 'regular'} />
-          </button>
-        ))}
-
-        <span className="w-px h-6 bg-pink-100 mx-1" />
-
-        {tool !== 'eraser' && (tool === 'pen' ? PEN_COLORS : HIGHLIGHTER_COLORS).map(c => {
-          const selected = (tool === 'pen' ? penColor : highlightColor) === c
-          return (
-            <button
-              key={c}
-              onClick={() => (tool === 'pen' ? setPenColor(c) : setHighlightColor(c))}
-              aria-label={`Color ${c}`}
-              className={`w-6 h-6 rounded-full border-2 transition-transform ${selected ? 'border-neutral-700 scale-110' : 'border-white shadow'}`}
-              style={{ background: c }}
-            />
-          )
-        })}
-
-        {tool === 'pen' && (
-          <>
-            <span className="w-px h-6 bg-pink-100 mx-1" />
-            {PEN_SIZES.map((s, i) => (
-              <button
-                key={s}
-                onClick={() => setPenSize(s)}
-                aria-label={['Fine', 'Medium', 'Bold'][i]}
-                title={['Fine', 'Medium', 'Bold'][i]}
-                className={`w-8 h-8 rounded-xl flex items-center justify-center ${penSize === s ? 'bg-pink-50' : 'hover:bg-pink-50'}`}
-              >
-                <span className="rounded-full bg-neutral-800" style={{ width: 4 + i * 3, height: 4 + i * 3 }} />
-              </button>
-            ))}
-          </>
-        )}
-
-        <span className="w-px h-6 bg-pink-100 mx-1" />
-        <button onClick={undo} disabled={historySize.undo === 0} className="p-2 rounded-xl disabled:opacity-30 hover:bg-pink-50 transition-colors" aria-label="Undo" title="Undo"><ArrowCounterClockwise size={18} /></button>
-        <button onClick={redo} disabled={historySize.redo === 0} className="p-2 rounded-xl disabled:opacity-30 hover:bg-pink-50 transition-colors" aria-label="Redo" title="Redo"><ArrowClockwise size={18} /></button>
-
-        <div className="ml-auto flex items-center gap-1.5">
-          <button
-            onClick={() => { setFingerDraws(f => !f); setPenNotice(false) }}
-            title={fingerDraws ? 'Finger draws — tap to scroll with finger instead' : 'Finger scrolls — tap to draw with finger'}
-            aria-pressed={fingerDraws}
-            className={`p-2 rounded-xl text-xs flex items-center gap-1 ${fingerDraws ? 'bg-pink-50 text-pink-500' : 'text-neutral-500 hover:bg-pink-50'}`}
-          >
-            <HandPointing size={18} weight={fingerDraws ? 'fill' : 'regular'} />
-            <span className="hidden sm:inline">{fingerDraws ? 'Finger draws' : 'Finger scrolls'}</span>
-          </button>
-          <select
-            value={paper}
-            onChange={e => commit({ paper: e.target.value as Paper })}
-            className="text-xs bg-white border border-pink-200 rounded-full px-2.5 py-1.5 outline-none"
-            aria-label="Paper style"
-          >
-            <option value="lined">Lined</option>
-            <option value="grid">Grid</option>
-            <option value="dotted">Dotted</option>
-            <option value="blank">Blank</option>
-          </select>
+    <div className="handwriting-canvas">
+      <div className="ink-toolbar" aria-label="Handwriting tools">
+        <div className="ink-tool-group" role="group" aria-label="Drawing tools">
+          {([{id:'pen' as Tool,icon:PenNib,label:'Pen'},{id:'highlighter' as Tool,icon:Highlighter,label:'Highlighter'},{id:'eraser' as Tool,icon:Eraser,label:'Eraser'}]).map(item=><button key={item.id} className="ink-tool-button" type="button" onClick={()=>setTool(item.id)} aria-label={item.label} title={item.label} aria-pressed={tool===item.id}><item.icon size={19} weight={tool===item.id?'fill':'regular'}/></button>)}
+        </div>
+        {tool!=='eraser'&&<div className="ink-tool-group" role="group" aria-label="Ink colors">{(tool==='pen'?PEN_COLORS:HIGHLIGHTER_COLORS).map(color=><button key={color} type="button" className="ink-color" aria-label={'Color '+color} aria-pressed={(tool==='pen'?penColor:highlightColor)===color} style={{background:color}} onClick={()=>tool==='pen'?setPenColor(color):setHighlightColor(color)}/>)}</div>}
+        {tool==='pen'&&<div className="ink-tool-group" role="group" aria-label="Pen size">{PEN_SIZES.map((size,index)=><button key={size} type="button" aria-label={['Fine','Medium','Bold'][index]} title={['Fine','Medium','Bold'][index]} aria-pressed={penSize===size} onClick={()=>setPenSize(size)}><span style={{display:'block',width:4+index*3,height:4+index*3,borderRadius:'50%',background:'currentColor'}}/></button>)}</div>}
+        <div className="ink-tool-group" role="group" aria-label="Stroke history"><button type="button" onClick={undo} disabled={historySize.undo===0} aria-label="Undo" title="Undo"><ArrowCounterClockwise size={18}/></button><button type="button" onClick={redo} disabled={historySize.redo===0} aria-label="Redo" title="Redo"><ArrowClockwise size={18}/></button></div>
+        <div className="ink-options">
+          <button type="button" onClick={()=>{setFingerDraws(value=>!value);setPenNotice(false)}} title={fingerDraws?'Finger draws - tap to scroll with finger instead':'Finger scrolls - tap to draw with finger'} aria-label={fingerDraws?'Finger draws':'Finger scrolls'} aria-pressed={fingerDraws}><HandPointing size={18} weight={fingerDraws?'fill':'regular'}/><span>{fingerDraws?'Finger draws':'Finger scrolls'}</span></button>
+          <select value={paper} onChange={event=>commit({paper:event.target.value as Paper})} aria-label="Paper style"><option value="lined">Lined</option><option value="grid">Grid</option><option value="dotted">Dotted</option><option value="blank">Blank</option></select>
         </div>
       </div>
 
