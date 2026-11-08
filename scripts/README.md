@@ -41,3 +41,7 @@ The shared tabs, panel entrance and modal motion adapt free patterns by Jakub An
 DSM book turns use the existing Framer Motion dependency and Psykie's own `BookTurn` component. Outgoing copies are hidden from assistive technology and removed after the turn. Perspective remains local to the book; page controls and modal positioning remain outside it. Single-page and spread modes share keyboard, scrubber, jump and contents navigation. Reduced-motion preferences update live and show pages immediately.
 
 Run `node scripts/run-ai-ui.cjs scripts/check-motion.cjs` to check forward/back/rapid turns, spread pairing, end bounds, contents, mobile overflow, live reduced-motion changes, tab resize alignment and modal dismissal. The tests mock authentication and make no model requests. Screenshots go to ignored `artifacts/motion/`.
+
+## Connected account workflows
+
+Run `node scripts/run-ai-ui.cjs scripts/check-connected-workspace.cjs` for private cloud snapshot uploads/downloads, account isolation, recovery copies, failed saves, notification preferences, handwriting OCR preserving its source, and password recovery/update. Network responses are mocked and no real emails are sent. Apply `supabase/migrations/202611080001_workspace_backups.sql` before live backup use; configure auth email delivery and redirects using `GMAIL_SETUP.md`.

@@ -50,22 +50,26 @@ async function generate(rt: Runtime, body: Record<string, unknown>) {
     if (size > 30000) throw new RequestError(400, 'The conversation is too long. Start a new chat.')
     const liveResearch = body.liveResearch === true
     let researchContext = ''
+    let researchStatus = liveResearch ? 'empty' : 'off'
+    let researchSources: {title:string;url:string;source:string}[] = []
     if (liveResearch && messages.length > 0) {
       const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')?.content || ''
       if (lastUserMsg) {
         try {
           const res = await research(rt, { query: lastUserMsg.slice(0, 400) })
           if (res.results && res.results.length > 0) {
-            researchContext = '\n\nVerified Real-Time Research Sources:\n' + res.results.slice(0, 5).map(r => `• "${r.title}" (${r.source}, ${r.domain}): ${r.summary}\n  URL: ${r.url}`).join('\n')
+            researchStatus = 'used'
+            researchSources = res.results.slice(0,5).map(({title,url,source}) => ({title,url,source}))
+            researchContext = '\n\nRetrieved research sources (not independent verification):\n' + res.results.slice(0, 5).map(r => `• "${r.title}" (${r.source}, ${r.domain}): ${r.summary}\n  URL: ${r.url}`).join('\n')
           }
-        } catch { /* proceed without blocking chat */ }
+        } catch { researchStatus = 'unavailable' }
       }
     }
-    const systemPrompt = SYSTEM + (researchContext ? `\nIncorporate and cite these verified real-time research findings in APA 7 style where relevant:\n${researchContext}` : '\nProvide rigorous, evidence-based psychological explanations, DSM-5-TR diagnostic criteria analysis, and clinical formulation guidance.')
+    const systemPrompt = SYSTEM + (researchContext ? `\nIncorporate these retrieved sources where relevant. Cite their URLs, do not invent authors, publication dates, or study findings:\n${researchContext}` : '\nProvide rigorous, evidence-based psychological explanations, DSM-5-TR diagnostic criteria analysis, and clinical formulation guidance.')
     const data = await mistral(rt, 'chat/completions', { model: rt.env('MISTRAL_MODEL') || 'ministral-8b-latest', messages: [{ role: 'system', content: systemPrompt }, ...messages], max_tokens: 2500, temperature: 0.3 })
     const answer = data.choices?.[0]?.message?.content
     if (typeof answer !== 'string' || !answer.trim() || data.choices[0].finish_reason !== 'stop') throw new RequestError(502, 'The AI response was incomplete. Try a shorter question.')
-    return { answer }
+    return { answer, research: {status:researchStatus,sources:researchSources} }
   }
   if (!['summary', 'flashcards', 'quiz'].includes(String(body.action))) throw new RequestError(400, 'Unknown AI action.')
   const action = body.action as AITask, text = requiredText(body.text, 25000, 'Source text or topic')

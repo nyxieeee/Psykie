@@ -39,4 +39,9 @@ for(const image of ['https://example.com/private.png','data:image/svg+xml;base64
 {const rt=runtime({ocrText:'a'.repeat(25001)});assert.equal((await createHandler(rt,'ai')(req({action:'ocr',image:'data:image/png;base64,iVBORw0KGgo='}))).status,502);checks++}
 {const rt=runtime({finish:'length'});assert.equal((await createHandler(rt,'ai')(req({action:'ocr',image:'data:image/png;base64,iVBORw0KGgo='}))).status,502);checks++}
 {const rt=runtime();assert.equal((await createHandler(rt,'ai')(req({action:'ocr',image:'data:image/png;base64,iVBORw0KGgo='},{authorization:''}))).status,401);assert(!rt.calls.some(c=>c.url.includes('api.mistral.ai')));checks++}
+
+{const rt=runtime();const response=await createHandler(rt,'ai')(req({action:'chat',liveResearch:true,messages:[{role:'user',content:'Explain memory'}]}));const data=await response.json();assert.equal(data.research.status,'used');assert.equal(data.research.sources.length,1);assert.match(data.research.sources[0].url,/nimh/);checks++}
+{const rt=runtime({related:false});const response=await createHandler(rt,'ai')(req({action:'chat',liveResearch:true,messages:[{role:'user',content:'Explain memory'}]}));assert.equal((await response.json()).research.status,'empty');checks++}
+{const rt=runtime(),original=rt.fetch;rt.fetch=async(url,init)=>url.endsWith('/conversations')?json({},429):original(url,init);const response=await createHandler(rt,'ai')(req({action:'chat',liveResearch:true,messages:[{role:'user',content:'Explain memory'}]}));const data=await response.json();assert.equal(data.research.status,'unavailable');assert.equal(typeof data.answer,'string');checks++}
+
 console.log(`Passed ${checks} backend checks: authentication, account type, CORS, quotas, input/output validation, Mistral requests, off-topic queries, retrieved-only citations, relevance, and domain spoofing.`)

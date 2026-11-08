@@ -1,7 +1,7 @@
 import { AIGenerator } from '../components/AIGenerator'
-import { AITask } from '../utils/ai'
+import { AITask, extractImageText } from '../utils/ai'
 import { workspaceStorage } from '../utils/workspaceStorage'
-import { HandwritingCanvas, HandwritingDrawing } from '../components/HandwritingCanvas'
+import { HandwritingCanvas, HandwritingDrawing, handwritingImages } from '../components/HandwritingCanvas'
 import {
   ArrowRight, CheckCircle, Trash, FileText, Folder, Link as LinkIcon, ListBullets,
   Plus, Star, TextB, TextItalic, TextUnderline, UploadSimple, X, Scribble, PenNib
@@ -31,7 +31,7 @@ function sanitizeNoteHtml(html: string) {
 const EMPTY_DRAWING: HandwritingDrawing = { strokes: [], paper: 'lined', pages: 1 }
 
 export function NotesPage() {
-  const { notes, addNote, deleteNote, updateNoteSummary, generateFlashcardsFromNote, createDeck, addCard } = useStudyStore()
+  const { notes, addNote, deleteNote, updateNoteSummary, createDeck, addCard } = useStudyStore()
   const navigate = useNavigate(), location = useLocation()
   const [selectedId, setSelectedId] = useState(notes[0]?.id || '')
   const [notebook, setNotebook] = useState('all')
@@ -48,6 +48,9 @@ export function NotesPage() {
   const [saved, setSaved] = useState(true)
   const [notice, setNotice] = useState('')
   const [aiTask, setAITask] = useState<AITask | null>(null)
+  const [readingInk,setReadingInk] = useState(false),[inkProgress,setInkProgress] = useState(''),[inkError,setInkError] = useState('')
+  const inkController = useRef<AbortController|null>(null)
+  useEffect(()=>()=>inkController.current?.abort(),[])
   const uploadRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef<HTMLDivElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout>>()
@@ -264,13 +267,23 @@ export function NotesPage() {
                   </button>
                 ))}
                 <LinkIcon size={17} /><span>Normal text</span>
-                <button className="ref-text-action" onClick={() => { const count = generateFlashcardsFromNote(active.id); setNotice(`${count} flashcards created`); setTimeout(() => setNotice(''), 3000) }}>Make cards</button>
                 <button className="ref-text-action" onClick={() => setAITask('summary')}>AI summary</button>
                 <button className="ref-text-action" onClick={() => navigate('/quizzes', {state:{studyText:editorRef.current?.innerText || active.summary,sourceName:active.title,category:active.category}})}>Quiz me on this</button>
                 <button className="ref-text-action" onClick={() => setAITask('flashcards')}>AI flashcards</button>
               </div>
             )}
 
+            {isHandwriting&&<div className="note-ink-ai"><strong>Turn your handwriting into study material</strong><p>Read these pages with AI, review the extracted text, then make a quiz, summary, or flashcards. Sends up to five page images to Mistral and uses your AI allowance.</p><button className="ref-secondary" disabled={readingInk} onClick={async()=>{
+              setReadingInk(true);setInkError('');const controller=new AbortController();inkController.current=controller
+              try {
+                const sourceId=active.id,images=handwritingImages(drawing),pages:string[]=[]
+                for(let index=0;index<images.length;index++){setInkProgress('Reading page '+(index+1)+' of '+images.length);pages.push(await extractImageText(images[index],controller.signal))}
+                if(controller.signal.aborted)return
+                const text=pages.join('\n\n').trim();if(!text)throw new Error('No readable handwriting was found. Try clearer, larger writing.');if(text.length>25000)throw new Error('The extracted text is too long. Read fewer pages.')
+                const source=notes.find(note=>note.id===sourceId);if(!source)throw new Error('The source note is no longer available.')
+                const id=addNote({title:source.title+' - transcript',fileName:source.title+'.txt',fileSize:'AI handwriting transcript',category:source.category,summary:text,keyTopics:[],keyConcepts:[],importantTerms:[]});setSelectedId(id);setNotebook('all');setTab('all')
+              }catch(error){if(!controller.signal.aborted)setInkError(error instanceof Error?error.message:'Handwriting could not be read.')}finally{setReadingInk(false);setInkProgress('')}
+            }}>Read handwriting with AI</button>{readingInk&&<><p role="status">{inkProgress}</p><button className="ref-text-action" onClick={()=>inkController.current?.abort()}>Cancel reading</button></>}{inkError&&<p role="alert" className="ref-form-error">{inkError}</p>}</div>}
             <div className="ref-editor-content">
               {isHandwriting ? (
                 <HandwritingCanvas drawing={drawing} onChange={saveDrawing} />

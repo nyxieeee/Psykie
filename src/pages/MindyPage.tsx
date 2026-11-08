@@ -73,7 +73,7 @@ export function MindyPage() {
     if (next.length > existing.length) addMessage(id, next[next.length - 1])
     setInputMessage(''); if (inputRef.current) inputRef.current.style.height = ''; followMessages.current = true
     controller.current = new AbortController()
-    try { const answer = await chatWithMindy(history, controller.current.signal, liveResearch); addMessage(id, { id: crypto.randomUUID(), sender: 'ai', text: answer, timestamp: new Date() }) }
+    try { const answer = await chatWithMindy(history, controller.current.signal, liveResearch); addMessage(id, { id: crypto.randomUUID(), sender: 'ai', text: answer.answer, research:answer.research, timestamp: new Date() }) }
     catch(error) { if (!controller.current.signal.aborted) { if (error instanceof AIServiceError && error.status === 429) setRetryAt(Date.now() + 60000); setSavedActionNotice(error instanceof Error ? error.message : 'Mindy could not respond. Please try again.'); setInputMessage(text) } }
     finally { sending.current = false; setIsSending(false) }
   }, [inputMessage, currentSessionId, createSession, addMessage, retryAt, liveResearch])
@@ -227,7 +227,7 @@ export function MindyPage() {
             )}
             {messages.map(msg => msg.sender === 'user' ? <div className="mindy-user-message" key={msg.id}><span className="ref-avatar tint-2">{initials}</span><p>{msg.text}</p></div> : <article key={msg.id} className="mindy-response">
               <div className="mindy-response-heading"><img src="/mindy-mascot.png" alt=""/><strong>Mindy</strong><time>{new Date(msg.timestamp).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}</time></div>
-              <div className="mindy-response-content"><p>{msg.text}</p>
+              <div className="mindy-response-content"><p>{msg.text}</p>{msg.research&&msg.research.status!=='off'&&<div className="mindy-research-results"><small>{msg.research.status==='used'?'Sources retrieved for this answer':msg.research.status==='empty'?'No matching sources were retrieved. This answer uses model knowledge.':'Research lookup was unavailable. This answer uses model knowledge.'}</small>{msg.research.sources.map(source=><a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer">{source.title}<span>{source.source}</span></a>)}</div>}
 <div className="mindy-response-footer"><button className="mindy-references" onClick={() => navigate('/research')}><BookOpen size={17}/> Find research sources</button><div className="mindy-message-actions"><button onClick={() => handleCopy(msg.id,msg.text)}>{copiedId === msg.id ? <Check size={16}/> : <Copy size={16}/>}<span>{copiedId === msg.id ? 'Copied' : 'Copy'}</span></button><button onClick={() => handleSaveToNotes(msg.text)}><Bookmark size={16}/><span>Save</span></button><details className="mindy-more"><summary aria-label="More study actions"><DotsThree size={20}/></summary><div><button onClick={() => handleCreateFlashcardFromChat(msg.text)}>Make flashcard</button><button onClick={() => handleRetry(msg.text)}>Try another explanation</button><button onClick={() => toggleLike(msg.id)}>{likedMap[msg.id] ? 'Liked' : 'Like response'}</button></div></details></div></div>
               </div>
             </article>)}

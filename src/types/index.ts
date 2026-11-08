@@ -31,6 +31,7 @@ export interface RegisterData extends LoginCredentials {
 
 // Message Types (for Mindy Chat)
 export interface Message {
+  research?: {status:'off'|'used'|'empty'|'unavailable';sources:{title:string;url:string;source:string}[]}
   context?: string
   id: string
   text: string

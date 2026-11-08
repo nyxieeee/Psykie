@@ -25,6 +25,21 @@ export type InkPoint = [number, number, number]
 export interface InkStroke { tool: Tool; color: string; size: number; points: InkPoint[] }
 export interface HandwritingDrawing { strokes: InkStroke[]; paper: Paper; pages: number }
 
+/** Render original ink for OCR; drawing remains editable and untouched. */
+export function handwritingImages(drawing:HandwritingDrawing):string[] {
+  if(!drawing.strokes.length)throw new Error('Write something on the page first.')
+  if(drawing.pages>5)throw new Error('Read up to five handwritten pages at a time.')
+  return Array.from({length:drawing.pages},(_,page)=>{
+    const canvas=document.createElement('canvas'),width=1000
+    canvas.width=width;canvas.height=Math.ceil(width*PAGE_RATIO)
+    const context=canvas.getContext('2d')
+    if(!context)throw new Error('Handwriting could not be prepared.')
+    context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height)
+    drawing.strokes.forEach(stroke=>drawStroke(context,stroke,width,page*PAGE_RATIO))
+    return canvas.toDataURL('image/jpeg',0.85)
+  })
+}
+
 const round = (n: number) => Math.round(n * 10000) / 10000
 
 function strokePath(stroke: InkStroke, width: number, yOffset: number) {

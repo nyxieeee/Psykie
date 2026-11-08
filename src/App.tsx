@@ -1,3 +1,4 @@
+import { PasswordPage } from './pages/auth/PasswordPage'
 import { useMotionPreference } from './hooks/useMotionPreference'
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage'
 import { AccountTypePage } from './pages/auth/AccountTypePage'
@@ -178,7 +179,7 @@ function InnerApp() {
     <>
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
-          <Route element={<AuthLayout />}><Route path="/account-type" element={<AccountTypePage />} /><Route path="/auth/callback" element={<AuthCallbackPage />} /></Route>
+          <Route element={<AuthLayout />}><Route path="/forgot-password" element={<PasswordPage/>}/><Route path="/reset-password" element={<PasswordPage reset/>}/><Route path="/account-type" element={<AccountTypePage />} /><Route path="/auth/callback" element={<AuthCallbackPage />} /></Route>
           {/* Public Routes */}
           <Route element={<PublicRoute><AuthLayout /></PublicRoute>}>
             <Route path="/login"    element={<RouteTransition><LoginPage /></RouteTransition>} />

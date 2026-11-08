@@ -17,10 +17,13 @@ async function invoke(name: string, body: Record<string, unknown>, signal?: Abor
   if (data?.error) throw new Error(data.error)
   return data
 }
-export async function chatWithMindy(messages: { role: 'user' | 'assistant'; content: string }[], signal?: AbortSignal, liveResearch?: boolean): Promise<string> {
+export type MindyResearch = {status:'off'|'used'|'empty'|'unavailable';sources:{title:string;url:string;source:string}[]}
+export async function chatWithMindy(messages: { role: 'user' | 'assistant'; content: string }[], signal?: AbortSignal, liveResearch?: boolean): Promise<{answer:string;research:MindyResearch}> {
   const data = await invoke('psykie-ai', { action: 'chat', messages, liveResearch }, signal)
   if (typeof data?.answer !== 'string' || !data.answer.trim()) throw new Error('Mindy returned an empty response. Please try again.')
-  return data.answer
+  const status=['off','used','empty','unavailable'].includes(data.research?.status)?data.research.status:'off'
+  const sources=Array.isArray(data.research?.sources)?data.research.sources.filter((source:any)=>source&&typeof source.title==='string'&&typeof source.source==='string'&&typeof source.url==='string'&&trustedSource(source.url)):[]
+  return {answer:data.answer,research:{status,sources}}
 }
 export async function generateAIDraft(task: AITask, text: string, category: string, count: number, signal?: AbortSignal, quizOptions?: QuizOptions): Promise<AIDraft> {
   return validateDraft(await invoke('psykie-ai', { action: task, text, category, count, quizOptions }, signal), task)

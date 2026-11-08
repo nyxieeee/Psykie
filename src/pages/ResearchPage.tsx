@@ -17,7 +17,7 @@ function formatAPA7(item: SavedReference | ResearchResult): string {
     ? new Date(item.retrievedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
-  const year = ('year' in item && item.year) ? item.year : new Date().getFullYear()
+  const year = ('year' in item && item.year) ? item.year : 'n.d.'
   const url = item.url || ''
   const title = item.title || 'Untitled'
   const source = ('source' in item && item.source) ? item.source : (('journal' in item && item.journal) ? item.journal : '')
