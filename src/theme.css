@@ -156,6 +156,27 @@
 :root[data-psykie-theme] body :is(.ref-sidebar,.ref-mobile-sidebar,.ref-main-nav) { scrollbar-width:none; -ms-overflow-style:none; }
 :root[data-psykie-theme] body :is(.ref-sidebar,.ref-mobile-sidebar,.ref-main-nav)::-webkit-scrollbar { display:none; width:0; height:0; }
 
+/* File selection is a full drop target, with a keyboard-accessible native input. */
+.study-file-picker { position:relative; border:2px dashed var(--ref-border); border-radius:20px; background:var(--ref-soft); margin:14px 0; transition:border-color .2s,background .2s; }
+.study-file-picker:is(:hover,:focus-within,.is-dragging) { border-color:var(--ref-accent); }
+.study-file-picker>input { position:absolute; left:16px; top:16px; opacity:0; width:1px; height:1px; clip-path:inset(50%); }
+.study-file-picker>label { display:flex!important; flex-direction:column; align-items:center; gap:9px; padding:26px 20px; text-align:center; cursor:pointer; margin:0!important; }
+.study-file-picker strong { max-width:100%; overflow-wrap:anywhere; font-size:15px; color:var(--ref-ink); }
+.study-file-picker label>span:not(.file-picker-icon):not(.file-picker-button),.study-file-picker small { font-size:12px; color:var(--ref-muted); line-height:1.7; }
+.file-picker-icon { display:grid; place-items:center; width:54px; height:54px; background:var(--ref-surface); color:var(--ref-accent); border-radius:17px; }
+.file-picker-button { padding:10px 22px; background:var(--ref-accent); color:var(--fn-button-text); border-radius:999px; font-size:12px; font-weight:800; margin:4px 0; }
+.study-file-picker.is-busy { opacity:.65; }
+:root[data-psykie-theme] body select { appearance:none; border:1px solid var(--ref-border); border-radius:12px; padding:10px 36px 10px 13px; min-height:42px; font-size:13px; color:var(--ref-ink); background-color:var(--ref-surface); background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23be5b6c' stroke-width='2'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E")!important; background-repeat:no-repeat!important; background-position:right 12px center!important; padding-right:36px!important; cursor:pointer; }
+:root[data-psykie-theme] body select:focus-visible { outline:2px solid var(--ref-accent); outline-offset:2px; }
+:root[data-psykie-theme] body select option { color:var(--ref-ink); background:var(--ref-surface); }
+@supports (appearance:base-select) {
+  :root[data-psykie-theme] body select,:root[data-psykie-theme] body select::picker(select) { appearance:base-select; }
+  :root[data-psykie-theme] body select::picker-icon { display:none; }
+  :root[data-psykie-theme] body select::picker(select) { background:var(--ref-surface); color:var(--ref-ink); border:1px solid var(--ref-border); border-radius:14px; box-shadow:0 12px 32px #0002; padding:6px; margin-top:6px; max-height:320px; }
+  :root[data-psykie-theme] body select option { padding:10px 12px; border-radius:8px; white-space:normal; }
+  :root[data-psykie-theme] body select option:is(:hover,:checked) { background:var(--ref-soft); color:var(--ref-accent); }
+}
+
 .psykie-loading { display:grid; place-items:center; color:var(--fn-text); font-family:var(--font-family-primary); }
 .psykie-loading-full { position:fixed; inset:0; z-index:9999; padding:24px; background:var(--fn-bg); }
 .psykie-loading-inline { width:100%; min-height:280px; padding:24px; }

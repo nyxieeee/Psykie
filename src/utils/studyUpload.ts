@@ -2,7 +2,8 @@ import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
 export const MAX_SOURCE_LENGTH = 25000
 export const MAX_OCR_PAGES = 5
-export const STUDY_UPLOAD_ACCEPT = '.pdf,.docx,.txt,.md,.csv,.jpg,.jpeg,.png,.webp'
+export const STUDY_UPLOAD_ACCEPT = '.pdf,.docx,.pptx,.odt,.odp,.ods,.xlsx,.txt,.md,.csv,.json,.html,.htm,.rtf,.jpg,.jpeg,.png,.webp,.gif,.bmp'
+export const canReadStudyUpload = (file:File) => STUDY_UPLOAD_ACCEPT.split(',').includes('.'+file.name.split('.').pop()?.toLowerCase()) || file.type.startsWith('text/')
 type UploadOptions = {ocr?: (image: string, signal?: AbortSignal) => Promise<string>; onProgress?: (message: string) => void; signal?: AbortSignal}
 const requireOCR = (options: UploadOptions) => {
   if (!options.ocr) throw new Error('Enable AI OCR to read photos or scanned PDF pages. Images are sent to Mistral and use your AI allowance.')
@@ -34,8 +35,24 @@ export async function readStudyUpload(file: File, options: UploadOptions = {}): 
   options.signal?.throwIfAborted()
   const extension = file.name.split('.').pop()?.toLowerCase()
   let text = ''
-  if (['txt', 'md', 'csv'].includes(extension || '')) text = await file.text()
-  else if (['jpg', 'jpeg', 'png', 'webp'].includes(extension || '')) {
+  if (['txt', 'md', 'csv', 'json'].includes(extension || '') || file.type.startsWith('text/')&&!['html','htm','rtf'].includes(extension||'')) text = await file.text()
+  else if (['html','htm'].includes(extension||'')) {
+    const document=new DOMParser().parseFromString(await file.text(),'text/html')
+    document.querySelectorAll('script,style,noscript').forEach(element=>element.remove())
+    text=document.body.textContent||''
+  } else if(extension==='rtf') {
+    text=(await file.text()).replace(/\\'[0-9a-f]{2}/gi,value=>String.fromCharCode(parseInt(value.slice(2),16))).replace(/\\(?:par|line)\b/g,'\n').replace(/\\[a-z]+-?\d* ?/gi,'').replace(/[{}]/g,'')
+  } else if(['pptx','odt','odp','ods','xlsx'].includes(extension||'')) {
+    const {default:JSZip}=await import('jszip'),zip=await JSZip.loadAsync(await file.arrayBuffer())
+    const xml=async(name:string)=>{const entry=zip.file(name);if(!entry)return null;options.signal?.throwIfAborted();return new DOMParser().parseFromString(await entry.async('string'),'application/xml')}
+    if(extension==='pptx') {
+      const slides=Object.keys(zip.files).filter(name=>/^ppt\/slides\/slide\d+\.xml$/.test(name)).sort((a,b)=>Number(a.match(/slide(\d+)/)?.[1])-Number(b.match(/slide(\d+)/)?.[1]))
+      for(const name of slides){options.onProgress?.(`Reading slide ${slides.indexOf(name)+1} of ${slides.length}...`);const page=await xml(name);text+=Array.from(page?.getElementsByTagNameNS('*','t')||[]).map(node=>node.textContent).join('\n')+'\n\n';if(text.length>MAX_SOURCE_LENGTH)break}
+    } else if(extension==='xlsx') {
+      const shared=await xml('xl/sharedStrings.xml'),strings=Array.from(shared?.getElementsByTagNameNS('*','si')||[]).map(node=>node.textContent||'')
+      for(const name of Object.keys(zip.files).filter(name=>/^xl\/worksheets\/sheet\d+\.xml$/.test(name))){const sheet=await xml(name);text+=Array.from(sheet?.getElementsByTagNameNS('*','row')||[]).map(row=>Array.from(row.getElementsByTagNameNS('*','c')).map(cell=>{const value=cell.getElementsByTagNameNS('*','v')[0]?.textContent||'';return cell.getAttribute('t')==='s'?strings[Number(value)]||'':cell.getAttribute('t')==='inlineStr'?cell.textContent||'':value}).join('\t')).join('\n')+'\n\n';if(text.length>MAX_SOURCE_LENGTH)break}
+    } else {const content=await xml('content.xml');text=Array.from(content?.getElementsByTagNameNS('*','p')||[]).map(node=>node.textContent).join('\n')}
+  } else if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(extension || '')) {
     const ocr = requireOCR(options)
     options.onProgress?.('Preparing image for AI OCR...')
     const image = await prepareImage(file)
@@ -89,7 +106,7 @@ export async function readStudyUpload(file: File, options: UploadOptions = {}): 
         if (text.length > MAX_SOURCE_LENGTH) break
       }
     } finally { await pdf.destroy() }
-  } else throw new Error('Choose a PDF, DOCX, TXT, Markdown, CSV, JPEG, PNG, or WebP file.')
+  } else throw new Error('This format can be stored in Library, but cannot be read for AI yet. Export it as PDF, DOCX, PPTX or text, or paste its contents.')
   options.signal?.throwIfAborted()
   text = text.split(String.fromCharCode(0)).join('').trim()
   if (!text) throw new Error('No readable text found. Try a clearer image or scan, or paste the text manually.')

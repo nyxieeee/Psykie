@@ -1,3 +1,4 @@
+import { StudyFilePicker } from '../components/StudyFilePicker'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, BookOpen, Cards, ChartBar, DownloadSimple, FileText, Folder, PencilSimple, Plus, Sparkle, Star, Trash, X } from '@phosphor-icons/react'
@@ -7,7 +8,7 @@ import { ViewportOverlay } from '../components/ViewportOverlay'
 import { useStudyStore } from '../store'
 import { AITask, extractImageText } from '../utils/ai'
 import { deleteDocumentFile, getDocumentFile, storeDocumentFile } from '../utils/documentFiles'
-import { MAX_SOURCE_LENGTH, STUDY_UPLOAD_ACCEPT, readStudyUpload } from '../utils/studyUpload'
+import { MAX_SOURCE_LENGTH, canReadStudyUpload, readStudyUpload } from '../utils/studyUpload'
 import { LIBRARY_FOLDERS_KEY, LibraryFolder, LibraryMaterial, librarySource, readLibrary, saveLibrary } from '../utils/studyLibrary'
 import { readWorkspaceList, workspaceStorage } from '../utils/workspaceStorage'
 import '../library.css'
@@ -61,18 +62,21 @@ export function StudyBoxPage() {
   const dismiss = () => {controller.current?.abort();setModal(null);setError('')}
   const upload = async (file?: File) => {
     if (!file) return
-    controller.current=new AbortController();setReading(true);setError('')
+    if(file.size>10*1024*1024){setIncomingFile(null);setForm(previous=>({...previous,text:'',sourceName:''}));setError('Choose a file smaller than 10 MB.');return}
+    setIncomingFile(file);setForm(previous=>({...previous,title:previous.title||file.name.replace(/\.[^.]+$/,''),text:'',sourceName:file.name}));setError('');setNotice('')
+    if(!canReadStudyUpload(file)){setNotice('This file can be saved as an original. Add readable text to use it for quizzes or flashcards.');return}
+    controller.current=new AbortController();setReading(true)
     try {
       const text=await readStudyUpload(file,{ocr:ocr?extractImageText:undefined,signal:controller.current.signal,onProgress:setProgress})
       setIncomingFile(file);setForm(previous=>({...previous,title:previous.title||file.name.replace(/\.[^.]+$/,''),text,sourceName:file.name}))
-    } catch(error) {if(!controller.current.signal.aborted)setError(error instanceof Error?error.message:'Could not read this material.')}
+    } catch(error) {if(!controller.current.signal.aborted)setError((error instanceof Error?error.message:'Could not read this material.')+' You can still save the original file, or paste its text below.')}
     finally {setReading(false);setProgress('')}
   }
   const saveMaterial = async (event: React.FormEvent) => {
     event.preventDefault();setError('')
     const tags=[...new Set(form.tags.split(',').map(tag=>tag.trim()).filter(Boolean))]
     if(tags.length>10||tags.some(tag=>tag.length>30)){setError('Use up to 10 tags, with 30 characters or fewer per tag.');return}
-    if(!form.title.trim()||!form.text.trim()||form.text.length>MAX_SOURCE_LENGTH){setError('Enter a title and 1-25,000 characters of study text.');return}
+    if(!form.title.trim()||(!form.text.trim()&&!incomingFile&&!items.find(item=>item.id===editId)?.fileId)||form.text.length>MAX_SOURCE_LENGTH){setError('Enter a title, then choose a file or add up to 25,000 characters of study text.');return}
     const existing=items.find(item=>item.id===editId), now=new Date().toISOString()
     const item:LibraryMaterial={id:existing?.id||'material-'+crypto.randomUUID(),title:form.title.trim(),text:form.text.trim(),summary:form.summary.trim()||undefined,category:form.category,folderId:form.folderId||null,tags,favorite:existing?.favorite||false,kind:existing?.kind||(incomingFile?'upload':sourceMode==='note'?'note':'text'),sourceName:form.sourceName||form.title.trim(),createdAt:existing?.createdAt||now,updatedAt:now,fileId:existing?.fileId,ownsFile:existing?.ownsFile}
     let storedId=''
@@ -91,6 +95,7 @@ export function StudyBoxPage() {
   }
   const saveToNotes = () => {
     if(!active)return
+    if(!active.text.trim()){setError('Add study text using Edit material before saving this file to Notes.');return}
     const content=previewTab==='summary'&&active.summary?active.summary:active.text
     const id=addNote({title:active.title+(previewTab==='summary'?' - summary':''),fileName:active.sourceName,fileSize:'Library text',category:active.category,summary:content,keyTopics:[],keyConcepts:[],importantTerms:[]})
     navigate('/notes',{state:{noteId:id}})
@@ -142,16 +147,16 @@ export function StudyBoxPage() {
       {active&&<section ref={previewRef} className="ref-panel library-reader" aria-label="Material reader">{active?<>
         <div className="workflow-back"><button className="ref-secondary" onClick={()=>{setActiveId('');setSelected([])}}><ArrowLeft size={16}/>Back to Library</button></div>
         <div className="ref-panel-title"><div><small>{active.category}</small><h2>{active.title}</h2></div><button aria-label="Edit material" onClick={()=>openMaterial(active)}><PencilSimple size={18}/></button><button aria-label="Delete material" onClick={()=>{setDeletion({kind:'material',id:active.id});setModal('delete')}}><Trash size={18}/></button></div>
-        <div className="library-study-actions"><p>{selected.length?`Study actions use the ${selected.length} selected materials.`:'Study actions use the saved source text.'}</p><div className="study-actions"><button className="ref-primary" onClick={()=>study('quiz')}><ChartBar size={17}/>Quiz me on this</button><button className="ref-secondary" onClick={()=>study('flashcards')}><Cards size={17}/>Make flashcards</button><button className="ref-secondary" onClick={()=>study('summary')}><Sparkle size={17}/>Summarize</button></div></div>
-        <p className="library-source-name">{active.sourceName} | Updated {new Date(active.updatedAt).toLocaleDateString()}</p><ReferenceTabs items={[{id:'source',label:'Source text'},{id:'summary',label:'AI summary'}]} value={previewTab} onChange={setPreviewTab}/>
+        <div className="library-study-actions"><p>{selected.length?`Study actions use the ${selected.length} selected materials.`:'Study actions use the saved source text.'}</p><div className="study-actions"><button className="ref-primary" disabled={!active.text.trim()} onClick={()=>study('quiz')}><ChartBar size={17}/>Quiz me on this</button><button className="ref-secondary" disabled={!active.text.trim()} onClick={()=>study('flashcards')}><Cards size={17}/>Make flashcards</button><button className="ref-secondary" disabled={!active.text.trim()} onClick={()=>study('summary')}><Sparkle size={17}/>Summarize</button></div></div>
+        <p className="library-source-name">{!active.text.trim()&&<span>Original file saved. Use Edit material to add text before creating AI practice. </span>}{active.sourceName} | Updated {new Date(active.updatedAt).toLocaleDateString()}</p><ReferenceTabs items={[{id:'source',label:'Source text'},{id:'summary',label:'AI summary'}]} value={previewTab} onChange={setPreviewTab}/>
         {previewTab==='summary'&&!active.summary?<div className="library-empty"><Sparkle size={30}/><p>Build a study summary from this material. Your original text stays intact.</p><button className="ref-secondary" onClick={()=>{setSelected([]);try{setGeneration({task:'summary',text:librarySource([active]),category:active.category,sourceName:active.title,ids:[active.id]});setError('')}catch(error){setError(error instanceof Error?error.message:'Source is too long.')}}}>Generate material summary</button></div>:<div className="library-reading" tabIndex={0} aria-label={previewTab==='summary'?'Saved material summary':'Saved material text'}>{previewTab==='summary'?active.summary:active.text}</div>}
         {(previewTab==='summary'&&active.summary||active.kind==='summary')&&<p className="ref-inline-notice">AI-generated summary. Check it against your original source.</p>}
-        <div className="library-reader-footer"><button className="ref-text-action" disabled={previewTab==='summary'&&!active.summary} onClick={saveToNotes}>Save {previewTab==='summary'?'summary':'text'} to Notes</button><button className="ref-text-action" disabled={previewTab==='summary'&&!active.summary} onClick={()=>void download(false)}><DownloadSimple size={15}/>Download text</button>{active.fileId&&<button className="ref-text-action" onClick={()=>void download(true)}>Download original</button>}</div>
+        <div className="library-reader-footer"><button className="ref-text-action" disabled={!active.text.trim()||previewTab==='summary'&&!active.summary} onClick={saveToNotes}>Save {previewTab==='summary'?'summary':'text'} to Notes</button><button className="ref-text-action" disabled={!active.text.trim()||previewTab==='summary'&&!active.summary} onClick={()=>void download(false)}><DownloadSimple size={15}/>Download text</button>{active.fileId&&<button className="ref-text-action" onClick={()=>void download(true)}>Download original</button>}</div>
       </>:<ReferenceEmpty>Select a material to read, organize, and study it.</ReferenceEmpty>}</section>}
     </div>
     {modal==='material'&&<ViewportOverlay onDismiss={dismiss}><form className="glass-modal ref-form-dialog library-material-dialog" onSubmit={saveMaterial}><div className="ref-panel-title"><h2>{editId?'Edit material':'Add study material'}</h2><button type="button" aria-label="Close material editor" onClick={dismiss}><X size={20}/></button></div>
       {!editId&&<><label>Material source<select aria-label="Material source" disabled={reading} value={sourceMode} onChange={e=>{setSourceMode(e.target.value);setIncomingFile(null);setNoteId('');setForm(previous=>({...previous,text:'',sourceName:''}));setError('')}}><option value="file">Upload a file</option><option value="text">Paste or write text</option><option value="note">Import a saved note</option></select></label>
-        {sourceMode==='file'&&<><label className="study-ocr-toggle"><input type="checkbox" aria-label="Use AI OCR" checked={ocr} disabled={reading} onChange={e=>setOCR(e.target.checked)}/><span>Use AI OCR for photos and scanned pages<small>Sends images to Mistral when selected and uses your AI allowance. Up to 5 scanned pages per PDF.</small></span></label><label className="ref-file-upload">Choose a study file<input aria-label="Study material file" type="file" accept={STUDY_UPLOAD_ACCEPT} disabled={reading} onChange={e=>{void upload(e.target.files?.[0]);e.target.value=''}}/><small>PDF, DOCX, TXT, Markdown, CSV, JPEG, PNG, WebP. Up to 10 MB.</small></label>{incomingFile&&<p>Original: {incomingFile.name}</p>}</>}
+        {sourceMode==='file'&&<><label className="study-ocr-toggle"><input type="checkbox" aria-label="Use AI OCR" checked={ocr} disabled={reading} onChange={e=>setOCR(e.target.checked)}/><span>Use AI OCR for photos and scanned pages<small>Sends images to Mistral when selected and uses your AI allowance. Up to 5 scanned pages per PDF.</small></span></label><StudyFilePicker disabled={reading} onSelect={file=>void upload(file)} hint="Any file up to 10 MB. PDF, Word, slides and text can be read for study. Photos and scans need AI OCR."/>{incomingFile&&<p>Original: {incomingFile.name}</p>}{incomingFile&&!form.text.trim()&&!reading&&<p role="status" className="ref-inline-notice">The original file is ready to save. Add readable text below to use it for quizzes or flashcards.</p>}</>}
         {sourceMode==='note'&&<label>Saved note<select aria-label="Saved note to import" value={noteId} onChange={e=>{const note=notes.find(item=>item.id===e.target.value);setNoteId(e.target.value);if(note)setForm(previous=>({...previous,title:note.title,text:note.summary,category:note.category,sourceName:note.title}))}}><option value="">Choose a note</option>{notes.map(note=><option key={note.id} value={note.id}>{note.title}</option>)}</select>{!notes.length&&<small>No saved notes yet. Create one in Notes, or choose another material source.</small>}</label>}
       </>}
       {reading&&<div><p role="status">{progress||'Saving original file...'}</p><button type="button" className="ref-text-action" onClick={()=>controller.current?.abort()}>Cancel reading</button></div>}
@@ -160,7 +165,7 @@ export function StudyBoxPage() {
       <label>Tags<input aria-label="Material tags" value={form.tags} placeholder="e.g. memory, exam prep, theories" onChange={e=>setForm({...form,tags:e.target.value})}/><small>Separate tags with commas, up to 10.</small></label>
       <label>Review and edit study text<textarea aria-label="Material text" rows={9} maxLength={MAX_SOURCE_LENGTH} disabled={reading} value={form.text} onChange={e=>setForm({...form,text:e.target.value})}/></label><small>{form.text.length.toLocaleString()} / 25,000 characters. Saved text is reused without another OCR request.</small>
       {editId&&form.summary&&<label>Saved summary<textarea aria-label="Edit saved summary" rows={5} maxLength={MAX_SOURCE_LENGTH} value={form.summary} onChange={e=>setForm({...form,summary:e.target.value})}/></label>}
-      {error&&<p role="alert" className="ref-form-error">{error}</p>}<button className="ref-primary" disabled={reading||!form.title.trim()||!form.text.trim()||form.text.length>MAX_SOURCE_LENGTH}>Save material</button>
+      {error&&<p role="alert" className="ref-form-error">{error}</p>}<button className="ref-primary" disabled={reading||!form.title.trim()||(!form.text.trim()&&!incomingFile&&!items.find(item=>item.id===editId)?.fileId)||form.text.length>MAX_SOURCE_LENGTH}>Save material</button>
     </form></ViewportOverlay>}
     {modal==='folder'&&<ViewportOverlay onDismiss={dismiss}><form className="glass-modal ref-form-dialog" onSubmit={e=>{e.preventDefault();const name=folderName.trim();if(!name)return;if(folders.some(item=>item.id!==folderEdit&&item.name.toLowerCase()===name.toLowerCase())){setError('A folder with this name already exists.');return}if(commitFolders(folderEdit?folders.map(item=>item.id===folderEdit?{...item,name}:item):[...folders,{id:'folder-'+crypto.randomUUID(),name}]))setModal(null)}}><div className="ref-panel-title"><h2>{folderEdit?'Rename folder':'New library folder'}</h2><button type="button" aria-label="Close folder editor" onClick={dismiss}><X size={20}/></button></div><label>Folder name<input aria-label="Folder name" required maxLength={80} value={folderName} onChange={e=>setFolderName(e.target.value)}/></label>{error&&<p role="alert" className="ref-form-error">{error}</p>}<button className="ref-primary">Save folder</button></form></ViewportOverlay>}
     {modal==='delete'&&deletion&&<ViewportOverlay onDismiss={dismiss}><section className="glass-modal ref-form-dialog"><h2>Remove {deletion.kind==='folder'?'folder':'material'}?</h2><p>{deletion.kind==='folder'?'Materials will stay in your library as unfiled items.':'This removes the library text and any original file uploaded here. Documents referenced from the vault and saved notes stay in their original pages.'}</p>{error&&<p role="alert" className="ref-form-error">{error}</p>}<div className="study-actions"><button className="ref-secondary" onClick={dismiss}>Cancel</button><button className="ref-primary" onClick={()=>void remove()}>Remove {deletion.kind}</button></div></section></ViewportOverlay>}

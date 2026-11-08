@@ -1,3 +1,4 @@
+import { StudyFilePicker } from '../components/StudyFilePicker'
 import { readLibrary, saveDocumentToLibrary } from '../utils/studyLibrary'
 import { AIGenerator } from '../components/AIGenerator'
 import { AITask, extractImageText } from '../utils/ai'
@@ -16,7 +17,6 @@ import {
   Image as ImageIcon,
   Presentation,
   Star,
-  UploadSimple as UploadCloud,
   X
 } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -399,7 +399,7 @@ export function DocumentsPage() {
                   </div>
                 </div>
 
-                <label className="ref-file-upload"><UploadCloud size={27} /><strong>{uploadBlob?.name || 'Choose a document to upload'}</strong><input type="file" onChange={e => { const file = e.target.files?.[0]; if (!file) return; setUploadBlob(file); setUploadFileName(file.name); const extension = file.name.split('.').pop()?.toLowerCase(); setUploadFileType(file.type.startsWith('image/') ? 'image' : extension === 'pdf' ? 'pdf' : extension === 'docx' ? 'docx' : extension === 'pptx' ? 'presentation' : 'other'); setUploadError('') }} /><small>Files are stored locally in this browser.</small></label>{uploadError && <p role="alert" className="ref-form-error">{uploadError}</p>}
+                <StudyFilePicker label="Document file" hint="Any file up to 10 MB. Originals are saved in this browser." onSelect={file=>{setUploadBlob(file);setUploadFileName(file.name);const extension=file.name.split('.').pop()?.toLowerCase();setUploadFileType(file.type.startsWith('image/')?'image':extension==='pdf'?'pdf':extension==='docx'?'docx':extension==='pptx'?'presentation':'other');setUploadError('')}}/>{uploadError && <p role="alert" className="ref-form-error">{uploadError}</p>}
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="button"

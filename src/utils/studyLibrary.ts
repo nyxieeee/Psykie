@@ -13,6 +13,7 @@ export const readLibrary = () => readWorkspaceList<LibraryMaterial>(LIBRARY_KEY)
 export const saveLibrary = (items: LibraryMaterial[]) => workspaceStorage.setItem(LIBRARY_KEY, JSON.stringify(items))
 export function librarySource(items: LibraryMaterial[]): string {
   if (!items.length) throw new Error('Choose a study material first.')
+  if(items.some(item=>!item.text.trim()))throw new Error('One of these files has no study text yet. Open Edit material and add readable text before generating practice.')
   const text = items.map(item => `Source: ${item.title}\n${item.text}`).join('\n\n---\n\n')
   if (text.length > 25000) throw new Error('Selected materials exceed 25,000 characters. Choose fewer materials or edit them into shorter excerpts.')
   return text
