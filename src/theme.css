@@ -141,6 +141,16 @@
 
 :root[data-psykie-theme] body :is(button,input,textarea,select) { font-family:var(--font-family-primary); }
 
+/* Shared button shapes across pages, authentication, and portaled dialogs. */
+:root { --button-radius:999px; --button-compact-radius:12px; }
+:root[data-psykie-theme] body :is(.ref-primary,.ref-secondary,.ref-small-primary,.dream-button,.btn-primary,.btn-pink,.btn-3d-primary,.ref-social-button,.ref-download,.flashcard-flip-label,.mindy-subject-button,.mindy-suggestions button,.mindy-references,.mindy-message-actions>button,.ref-review-ratings button,.glass-modal button[type=submit],.viewport-overlay form button[type=submit]) { border-radius:var(--button-radius); }
+:root[data-psykie-theme] body :is(.ref-round-button,.ref-square-button,.mindy-icon-button,.ref-notification-button,.ref-mobile-menu,.ref-drawer-close,.mindy-prompt button) { border-radius:var(--button-radius); }
+:root[data-psykie-theme] body :is(.ref-main-nav,.ref-sidebar-bottom nav,.ref-settings-nav) button { border-radius:var(--button-radius); }
+:root[data-psykie-theme] body :is(.ref-tabs,.ref-tabs-pill,.ref-tabs>button) { border-radius:var(--button-radius); }
+:root[data-psykie-theme] body :is(.viewport-overlay button,.ref-auth-card button,.ink-toolbar button) { border-radius:var(--button-compact-radius); }
+:root[data-psykie-theme] body :is(.viewport-overlay,.ref-auth-card) :is(.ref-primary,.ref-secondary,.ref-social-button,button[type=submit]) { border-radius:var(--button-radius); }
+:root[data-psykie-theme] body .ink-toolbar .ink-color { border-radius:50%; }
+
 .psykie-loading { display:grid; place-items:center; color:var(--fn-text); font-family:var(--font-family-primary); }
 .psykie-loading-full { position:fixed; inset:0; z-index:9999; padding:24px; background:var(--fn-bg); }
 .psykie-loading-inline { width:100%; min-height:280px; padding:24px; }
