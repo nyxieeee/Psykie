@@ -1,5 +1,5 @@
 import { plainText } from '../../supabase/functions/_shared/plainText'
-﻿import { ArrowRight, BookOpen, CalendarCheck, Cards, ChartBar, CheckCircle, Folder, Lightbulb, NoteBlank } from '@phosphor-icons/react'
+import { ArrowRight, BookOpen, CalendarCheck, Cards, ChartBar, CheckCircle, Folder, Lightbulb, NoteBlank } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStudyStore, useUser } from '../store'
