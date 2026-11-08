@@ -28,3 +28,21 @@ body .book-spread-scene { position:relative; perspective:2400px; overflow:visibl
 .book-sheet-front::after,.book-sheet-back::after { content:''; position:absolute; inset:0; pointer-events:none; background:linear-gradient(90deg,#35254226,transparent 30%,#35254208); }
 @media(max-width:600px) { .reader-toolbar { padding:12px; } .reader-navigation { gap:10px; } .reader-pagination { order:3; width:100%; justify-content:center; border-top:1px solid var(--ref-border); padding-top:12px; } .reader-options-panel { width:min(300px,calc(100vw - 60px)); } body .dsm-page .dsm-intro { padding:18px; } }
 @media(prefers-reduced-motion:reduce) { .book-spread-sheet { display:none; } }
+
+/* A flexible sheet is formed from continuous strips, each hinged at its edge. */
+.curved-paper-sheet { overflow:visible; }
+.curved-paper-strip { position:absolute; top:0; bottom:0; transform-style:preserve-3d; }
+.curved-paper-face { position:absolute; inset:0; overflow:hidden; backface-visibility:hidden; background:var(--paper-bg,#faf7f2); }
+.curved-paper-back { transform:rotateY(180deg); }
+.curved-paper-content { height:100%; pointer-events:none; }
+.curved-paper-content>.dsm-paper { height:100%; margin:0; border-radius:0!important; }
+.curved-paper-shading { position:absolute; inset:0; pointer-events:none; background:#322522; }
+.book-page-cast-shadow { position:absolute; top:8px; bottom:8px; width:calc(50% - 14px); z-index:4; pointer-events:none; }
+.book-page-cast-shadow.shadow-left { left:8px; background:linear-gradient(270deg,#23161f,transparent 75%); }
+.book-page-cast-shadow.shadow-right { right:8px; background:linear-gradient(90deg,#23161f,transparent 75%); }
+body .book-single-scene { perspective:2000px; overflow:clip; }
+.book-single-scene>.book-spread-sheet { top:0; bottom:0; width:100%; }
+.book-single-scene>.turn-forward { left:0; }
+.book-single-scene>.turn-backward { right:0; }
+.book-single-scene>.book-page-cast-shadow { inset:0; width:100%; }
+.book-spread-scene::after { content:''; position:absolute; left:9px; right:9px; bottom:-4px; height:5px; border-radius:0 0 10px 10px; background:repeating-linear-gradient(to bottom,#d9cfc2 0 1px,#faf7f2 1px 2px); box-shadow:0 5px 10px #20152218; pointer-events:none; }

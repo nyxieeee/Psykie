@@ -1,37 +1,80 @@
+﻿import { animate, motion, useMotionValue, useTransform, type MotionValue } from 'framer-motion'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useMotionPreference } from '../hooks/useMotionPreference'
-import { AnimatePresence, motion, useIsPresent } from 'framer-motion'
-import { forwardRef, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 
-const ease = [0.22, 1, 0.36, 1] as const
-const Leaf = forwardRef<HTMLDivElement, {children:ReactNode; direction:number; side:'left'|'right'|'single'}>(function Leaf({children,direction,side},ref) {
-  const present = useIsPresent()
-  const hinge = side === 'left' ? 'right center' : 'left center'
-  return <motion.div ref={ref} className="book-turn-leaf" aria-hidden={!present} data-present={present}
-    custom={direction}
-    initial={{rotateY:direction < 0 ? -180 : 0, opacity:1}}
-    animate={{rotateY:0, opacity:1, transition:{duration:0.75,ease}}}
-    variants={{leave:(exitDirection:number) => ({rotateY:exitDirection > 0 ? -180 : 0,opacity:1,transition:{duration:0.75,ease}})}} exit="leave"
-    style={{transformOrigin:hinge,pointerEvents:present?'auto':'none',zIndex:present?(direction<0?3:1):2}}>
-    {children}
-    <motion.span className="book-turn-shade" aria-hidden="true" initial={{opacity:0.22}} animate={{opacity:0,transition:{duration:0.52,ease}}}/>
+const STRIPS = 20
+const TURN_SECONDS = .9
+
+type SheetProps = { front:ReactNode; back:ReactNode; direction:number; onHalf:()=>void; onComplete:()=>void }
+
+function PaperStrip({progress,width,index,direction,front,back}:{progress:MotionValue<number>;width:number;index:number;direction:number;front:ReactNode;back:ReactNode}) {
+  const stripWidth=width/STRIPS
+  const forward=direction>0
+  const transform=useTransform(progress,value=>{
+    const curl=Math.sin(Math.PI*value)*.58
+    let x=0,z=0
+    for(let segment=0;segment<index;segment++) {
+      const angle=curl*segment/(STRIPS-1)
+      x+=Math.cos(angle)*stripWidth
+      z+=Math.sin(angle)*stripWidth
+    }
+    const angle=curl*index/(STRIPS-1)*180/Math.PI
+    return `translate3d(${forward?x:-x}px,0,${z}px) rotateY(${forward?-angle:angle}deg)`
+  })
+  const shade=useTransform(progress,value=>Math.sin(Math.PI*value)*(.05+index/STRIPS*.16))
+  const frontOffset=(forward?index:STRIPS-1-index)*stripWidth
+  const backOffset=(forward?STRIPS-1-index:index)*stripWidth
+  return <motion.div className="curved-paper-strip" style={{width:stripWidth+.5,transform,left:forward?0:undefined,right:forward?undefined:0,transformOrigin:forward?'left center':'right center'}}>
+    <div className="curved-paper-face"><div className="curved-paper-content" style={{width,marginLeft:-frontOffset}}>{front}</div><motion.span className="curved-paper-shading" style={{opacity:shade}}/></div>
+    <div className="curved-paper-face curved-paper-back"><div className="curved-paper-content" style={{width,marginLeft:-backOffset}}>{back}</div><motion.span className="curved-paper-shading" style={{opacity:shade}}/></div>
   </motion.div>
-})
+}
 
-/** Each leaf pivots around the spine. Exiting copies are hidden from assistive technology. */
+function CurvedSheet({front,back,direction,onHalf,onComplete}:SheetProps) {
+  const ref=useRef<HTMLDivElement>(null)
+  const callbacks=useRef({onHalf,onComplete})
+  callbacks.current={onHalf,onComplete}
+  const [width,setWidth]=useState(0)
+  const progress=useMotionValue(0)
+  const rotation=useTransform(progress,value=>value*(direction>0?-180:180))
+  const shadowOpacity=useTransform(progress,value=>Math.sin(Math.PI*value)*.24)
+  useLayoutEffect(()=>{
+    const element=ref.current
+    if(!element)return
+    const observer=new ResizeObserver(()=>setWidth(element.offsetWidth))
+    setWidth(element.offsetWidth)
+    observer.observe(element)
+    return()=>observer.disconnect()
+  },[])
+  useEffect(()=>{
+    if(!width)return
+    let passedHalf=false
+    const controls=animate(progress,1,{duration:TURN_SECONDS,ease:[.35,0,.2,1],onUpdate:value=>{if(value>=.5&&!passedHalf){passedHalf=true;callbacks.current.onHalf()}},onComplete:()=>callbacks.current.onComplete()})
+    return()=>controls.stop()
+  },[progress,width])
+  return <>
+    <motion.div className={'book-page-cast-shadow '+(direction>0?'shadow-left':'shadow-right')} style={{opacity:shadowOpacity}} aria-hidden="true"/>
+    <motion.div ref={ref} className={'book-spread-sheet curved-paper-sheet '+(direction>0?'turn-forward':'turn-backward')} style={{rotateY:rotation}} aria-hidden="true">
+      {width>0&&Array.from({length:STRIPS},(_,index)=><PaperStrip key={index} progress={progress} width={width} index={index} direction={direction} front={front} back={back}/>)}
+    </motion.div>
+  </>
+}
+
 export function BookTurn({page,side='single',children}:{page:number;side?:'left'|'right'|'single';children:ReactNode}) {
-  const previous = useRef(page)
-  const direction = page >= previous.current ? 1 : -1
-  const reduced = useMotionPreference()
-  useLayoutEffect(() => { previous.current = page }, [page])
-  return <div className="book-turn-stage" data-page={page} data-side={side}>
-    {reduced ? <div className="book-turn-leaf" data-present="true">{children}</div> :
-      <AnimatePresence initial={false} mode="popLayout" custom={direction}>
-        <Leaf key={page} direction={direction} side={side}>{children}</Leaf>
-      </AnimatePresence>}
+  const reduced=useMotionPreference()
+  const previous=useRef({page,children})
+  const [turn,setTurn]=useState<{from:ReactNode;direction:number}|null>(null)
+  useLayoutEffect(()=>{
+    if(previous.current.page!==page&&!reduced)setTurn({from:previous.current.children,direction:page>previous.current.page?1:-1})
+    if(reduced)setTurn(null)
+    previous.current={page,children}
+  },[page,children,reduced])
+  return <div className="book-turn-stage book-single-scene" data-page={page} data-side={side}>
+    <div className="book-turn-leaf" data-present="true">{children}</div>
+    {turn&&<CurvedSheet key={page} front={turn.from} back={children} direction={turn.direction} onHalf={()=>{}} onComplete={()=>setTurn(null)}/>}
   </div>
 }
 
-/** One two-sided sheet turns across the spine; the other pages stay still. */
 export function BookSpreadTurn({page,left,right}:{page:number;left:ReactNode;right:ReactNode}) {
   const reduced=useMotionPreference()
   const previous=useRef({page,left,right})
@@ -47,9 +90,6 @@ export function BookSpreadTurn({page,left,right}:{page:number;left:ReactNode;rig
     <div data-side="left">{turn&&forward&&!pastHalf?turn.from.left:left}</div>
     <div className="dsm-book-spine" aria-hidden="true"/>
     <div data-side="right">{turn&&!forward&&!pastHalf?turn.from.right:right}</div>
-    {turn&&<motion.div key={page} className={'book-spread-sheet '+(forward?'turn-forward':'turn-backward')} aria-hidden="true" initial={{rotateY:0}} animate={{rotateY:forward?-180:180}} transition={{duration:.85,ease:[.4,.05,.2,1]}} onUpdate={value=>setPastHalf(Math.abs(Number(value.rotateY))>=90)} onAnimationComplete={()=>setTurn(null)}>
-      <div className="book-sheet-front">{forward?turn.from.right:turn.from.left}</div>
-      <div className="book-sheet-back">{forward?left:right}</div>
-    </motion.div>}
+    {turn&&<CurvedSheet key={page} front={forward?turn.from.right:turn.from.left} back={forward?left:right} direction={turn.direction} onHalf={()=>setPastHalf(true)} onComplete={()=>setTurn(null)}/>}
   </div>
 }

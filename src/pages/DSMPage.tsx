@@ -353,7 +353,7 @@ export function DSMPage() {
   const openSpread=spreadMode==='spread'&&wideReader
 
   const previousReaderPage = useCallback(() => setCurrentPageNumber(page => Math.max(1, page - (openSpread ? (page === 2 ? 1 : 2) : 1))), [openSpread])
-  const nextReaderPage = useCallback(() => setCurrentPageNumber(page => Math.min(TOTAL_DSM5_PAGES, page + (spreadMode === 'spread' ? (page === 1 ? 1 : 2) : 1))), [spreadMode])
+  const nextReaderPage = useCallback(() => setCurrentPageNumber(page => Math.min(TOTAL_DSM5_PAGES, page + (openSpread ? (page === 1 ? 1 : 2) : 1))), [openSpread])
 
   // Keyboard navigation for authentic book flipping
   useEffect(() => {
@@ -625,7 +625,7 @@ export function DSMPage() {
           )}</AnimatePresence>
 
           {/* Authentic Book Spread / Single Page View */}
-          {spreadMode === 'spread' && currentPageNumber > 1 && currentPageNumber < TOTAL_DSM5_PAGES ? (
+          {openSpread && currentPageNumber > 1 && currentPageNumber < TOTAL_DSM5_PAGES ? (
             // Two-Page Open Book Spread
             <BookSpreadTurn page={currentPageNumber} left={<BookSheet page={getDSMPage(currentPageNumber-currentPageNumber%2)} isLeftPage={true} isSpread={true} paperTheme={paperTheme} fontSizeMultiplier={fontSizeMultiplier}/>} right={<BookSheet page={getDSMPage(Math.min(TOTAL_DSM5_PAGES,currentPageNumber-currentPageNumber%2+1))} isLeftPage={false} isSpread={true} paperTheme={paperTheme} fontSizeMultiplier={fontSizeMultiplier}/>}/>
           ) : (
@@ -648,7 +648,7 @@ export function DSMPage() {
               onClick={() => previousReaderPage()}
               className="flex items-center gap-1.5 text-xs font-bold text-pink-600 hover:text-pink-700 bg-pink-50 px-4 py-2.5 rounded-xl disabled:opacity-40 transition-colors shadow-xs"
             >
-              <CaretLeft size={16} />Previous {spreadMode === 'spread' ? 'Spread' : 'Page'}
+              <CaretLeft size={16} />Previous {openSpread ? 'Spread' : 'Page'}
             </button>
 
             <span className="text-[11px] text-neutral-400 text-center hidden sm:inline">
@@ -660,7 +660,7 @@ export function DSMPage() {
               onClick={() => nextReaderPage()}
               className="flex items-center gap-1.5 text-xs font-bold text-pink-600 hover:text-pink-700 bg-pink-50 px-4 py-2.5 rounded-xl disabled:opacity-40 transition-colors shadow-xs"
             >
-              Next {spreadMode === 'spread' ? 'Spread' : 'Page'}<CaretRight size={16} />
+              Next {openSpread ? 'Spread' : 'Page'}<CaretRight size={16} />
             </button>
           </div>
         </div>
