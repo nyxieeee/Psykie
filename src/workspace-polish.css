@@ -26,3 +26,86 @@ body .ref-start button { margin-top:3px; }
 @media(max-width:1150px) { .journey-steps { grid-template-columns:1fr; } .journey-steps>button { align-items:center; padding:12px 14px; } .journey-steps p { margin-top:2px; } .journey-steps>button>svg { margin-top:0; } }
 @media(max-width:480px) { .workspace-journey { padding:18px; } .journey-heading { align-items:flex-start; } .journey-heading h2 { font-size:17px; } .journey-step-icon { width:32px; height:32px; } }
 @media(prefers-reduced-motion:reduce) { .journey-steps>button { transition:none; } }
+
+/* A shared scale and collection entry point across the learning workspace. */
+:root[data-psykie-theme] body .ref-main-content { font-size:15px; line-height:1.65; }
+:root[data-psykie-theme] body .ref-page-header { padding-bottom:26px; margin-bottom:28px; gap:20px; border-bottom-color:var(--fn-border); }
+:root[data-psykie-theme] body :is(.ref-page-header,.overview-heading) h1 { font-size:clamp(28px,2.7vw,38px); font-weight:900; line-height:1.2; letter-spacing:-1.1px; }
+:root[data-psykie-theme] body :is(.ref-page-header,.overview-heading) p { font-size:15px; line-height:1.7; margin-top:10px; max-width:680px; }
+:root[data-psykie-theme] body :is(.ref-panel-title,.overview-section-heading) h2 { font-size:18px; font-weight:800; }
+:root[data-psykie-theme] body .reference-page :is(.ref-primary,.ref-secondary) { min-height:44px; padding:11px 20px; font-size:14px; line-height:1.4; font-weight:800; gap:9px; }
+:root[data-psykie-theme] body :is(.ref-main-nav,.ref-sidebar-bottom nav) button { font-size:14px; font-weight:700; min-height:44px; }
+:root[data-psykie-theme] body :is(.ref-search,.ref-global-search) { min-height:44px; border-radius:14px; }
+:root[data-psykie-theme] body :is(.ref-search input,.ref-global-search span) { font-size:14px; }
+:root[data-psykie-theme] body :is(.ref-panel,.dashboard-panel,.ref-notebooks,.ref-note-list,.ref-note-editor) { border-radius:20px; box-shadow:0 3px 16px rgba(var(--fn-shadow),.035); }
+:root[data-psykie-theme] body .ref-tabs button { min-height:38px; font-size:13px; font-weight:750; padding-inline:16px; }
+:root[data-psykie-theme] body .ref-tabs { padding:5px; }
+.collection-welcome { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(200px,.7fr); align-items:center; gap:28px 40px; padding:clamp(28px,4vw,56px); border:1px solid var(--fn-border); border-radius:26px; background:radial-gradient(ellipse at 100% 0,var(--fn-soft),transparent 70%),var(--fn-card); box-shadow:0 12px 40px rgba(var(--fn-shadow),.045); overflow:hidden; }
+.collection-eyebrow { display:block; color:var(--ref-accent); font-size:11px; font-weight:900; line-height:1.5; letter-spacing:1.6px; margin-bottom:16px; }
+:root[data-psykie-theme] body .reference-page .collection-welcome h2 { font-size:clamp(27px,2.6vw,36px); font-weight:900; line-height:1.2; letter-spacing:-.8px; max-width:510px; }
+.collection-welcome-copy>p { font-size:16px; line-height:1.85; color:var(--fn-muted); max-width:550px; margin:20px 0 26px; }
+.collection-welcome-actions { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+.collection-illustration { position:relative; width:230px; height:230px; margin:auto; display:grid; place-items:center; border-radius:50%; background:var(--fn-soft); }
+.collection-paper { position:absolute; width:138px; height:176px; border:1px solid var(--fn-accent); border-radius:18px; background:var(--fn-card); box-shadow:0 12px 28px rgba(var(--fn-shadow),.1); }
+.paper-back { transform:rotate(-14deg) translate(-12px,0); background:var(--fn-secondary); }
+.paper-front { transform:rotate(8deg) translate(10px,0); padding:23px; }
+.paper-front>span { display:block; color:var(--ref-accent); margin-bottom:19px; }
+.paper-front>i { display:block; width:100%; height:5px; border-radius:8px; background:var(--fn-border); margin:9px 0; }
+.paper-front>i:last-of-type { width:65%; }
+.paper-front>b { position:absolute; right:-13px; bottom:17px; display:grid; place-items:center; width:33px; height:33px; border-radius:50%; background:var(--ref-accent); color:var(--fn-button-text); border:4px solid var(--fn-card); }
+.collection-sparkle { position:absolute; color:var(--ref-accent); font-size:30px; }
+.sparkle-one { right:-9px; top:18px; }
+.sparkle-two { bottom:0; left:5px; font-size:35px; }
+.collection-welcome-steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); grid-column:1/-1; gap:16px; margin-top:12px; padding-top:26px; border-top:1px solid var(--fn-border); list-style:none; }
+.collection-welcome-steps li { display:flex; align-items:center; gap:10px; font-size:13px; color:var(--fn-muted); font-weight:700; }
+.collection-welcome-steps li>span { display:grid; place-items:center; width:27px; height:27px; flex-shrink:0; border-radius:50%; background:var(--fn-soft); color:var(--ref-accent); font-weight:900; }
+:root[data-psykie-theme] body .ref-quiz-list.is-empty-collection { padding:0; border:0; background:transparent; box-shadow:none; }
+.library-layout[data-empty=true][data-has-folders=false][data-view=browse] .library-folders,.library-layout[data-empty=true] .library-collection-heading,.library-layout[data-empty=true] .library-collection>.ref-search { display:none; }
+.collection-welcome-extra { margin-top:20px; font-size:14px; }
+.collection-welcome-extra button { display:inline-flex; align-items:center; gap:8px; min-height:40px; font-weight:700; }
+.form-actions { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:12px; margin-top:12px; }
+:root[data-psykie-theme] body .ref-form-dialog :is(.ref-primary,.ref-secondary) { min-height:44px; font-size:14px; font-weight:800; padding:11px 20px; }
+.study-session-complete { text-align:center; }
+.study-session-complete>.ref-start-icon { margin-inline:auto; }
+:root[data-psykie-theme] body .ref-faq p { font-size:15px; line-height:1.85; }
+:root[data-psykie-theme] body .ref-note-body [contenteditable] { font-size:16px; line-height:1.85; }
+:root[data-psykie-theme] body .library-layout[data-empty=true][data-view=browse] .library-collection { border:0; padding:0; background:transparent; box-shadow:none; }
+body .library-layout[data-empty=true][data-view=browse] { display:block; }
+:root[data-psykie-theme] body .ref-inline-notice { font-size:13px; line-height:1.7; border-radius:12px; }
+:root[data-psykie-theme] body .ref-quiz-row :is(p,small),:root[data-psykie-theme] body .library-material small { font-size:13px; }
+:root[data-psykie-theme] body .overview-metric { padding:22px; border-radius:20px; gap:16px; }
+:root[data-psykie-theme] body .overview-metric>svg { width:44px; height:44px; padding:10px; border-radius:14px; background:var(--fn-soft); }
+:root[data-psykie-theme] body .overview-metric strong { font-size:30px; font-weight:900; line-height:1.15; }
+:root[data-psykie-theme] body .overview-metric small { font-size:13px; line-height:1.5; }
+:root[data-psykie-theme] body .study-start { border-radius:24px; padding:32px; min-height:310px; align-items:center; }
+:root[data-psykie-theme] body .study-start h2 { font-size:28px!important; font-weight:900; line-height:1.25; }
+:root[data-psykie-theme] body .study-start p { font-size:15px; line-height:1.8; }
+.dashboard-mascot { width:138px; height:146px; object-fit:contain; flex-shrink:0; filter:drop-shadow(0 10px 18px rgba(var(--fn-shadow),.12)); }
+:root[data-psykie-theme] body .overview-tool { padding:20px; border-radius:18px; }
+:root[data-psykie-theme] body .overview-tool strong { font-size:15px; font-weight:800; }
+:root[data-psykie-theme] body .overview-tool small { font-size:13px; line-height:1.65; }
+.overview-page .workspace-journey { margin-top:26px; }
+:root[data-psykie-theme] body .dashboard-panel :is(.empty-copy,.recent-row small,.deadline-row small) { font-size:13px; }
+:root[data-psykie-theme] body .ref-sidebar-profile strong { font-size:13px; }
+:root[data-psykie-theme] body .ref-sidebar-profile small { font-size:11px; }
+:root[data-psykie-theme] body :is(.ref-form-dialog,.glass-modal)>label { font-size:14px; font-weight:700; line-height:1.6; }
+:root[data-psykie-theme] body .ref-form-dialog :is(input,textarea,select):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]) { font-size:16px; border-radius:12px; min-height:44px; }
+:root[data-psykie-theme] body .ref-form-dialog h2 { font-size:22px; font-weight:900; }
+:root[data-psykie-theme] body .library-reading { font-size:16px; line-height:1.9; }
+:root[data-psykie-theme] body .ref-note-content { font-size:16px; line-height:1.85; }
+@media(max-width:1150px) { .dashboard-mascot { width:100px; height:110px; } .study-start .dashboard-plan { display:flex; margin:12px 0 0; width:fit-content; } }
+@media(max-width:800px) {
+  :root[data-psykie-theme] body .ref-page-header { margin-bottom:22px; padding-bottom:20px; }
+  .collection-welcome { grid-template-columns:minmax(0,1fr); gap:22px; padding:28px 24px; border-radius:22px; }
+  .collection-illustration { display:none; }
+  .collection-welcome-copy>p { font-size:16px; margin:16px 0 22px; }
+  .collection-welcome-actions { align-items:stretch; flex-direction:column; }
+  .collection-welcome-actions>button { width:100%; justify-content:center; }
+  .collection-welcome-steps { grid-template-columns:1fr; gap:14px; padding-top:22px; margin-top:0; }
+  :root[data-psykie-theme] body .reference-page :is(.ref-primary,.ref-secondary) { font-size:14px; }
+  :root[data-psykie-theme] body .study-start { min-height:0; padding:24px; }
+  .dashboard-mascot { display:none; }
+  :root[data-psykie-theme] body .overview-metric { padding:16px; gap:10px; }
+  :root[data-psykie-theme] body .overview-metric>svg { width:34px; height:34px; padding:7px; }
+  :root[data-psykie-theme] body .overview-metric small { font-size:12px; }
+}

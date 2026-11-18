@@ -1,3 +1,4 @@
+import { CollectionWelcome } from '../components/CollectionWelcome'
 import { plainText } from '../../supabase/functions/_shared/plainText'
 import { AIGenerator } from '../components/AIGenerator'
 import { AITask, extractImageText } from '../utils/ai'
@@ -35,7 +36,7 @@ const EMPTY_DRAWING: HandwritingDrawing = { strokes: [], paper: 'lined', pages: 
 export function NotesPage() {
   const { notes, addNote, deleteNote, updateNoteSummary, createDeck, addCard } = useStudyStore()
   const navigate = useNavigate(), location = useLocation()
-  const [selectedId, setSelectedId] = useState('')
+  const [selectedId, setSelectedId] = useState(()=>workspaceStorage.getItem('psykie-active-note')||'')
   const [browserOpen,setBrowserOpen] = useState(() => window.innerWidth > 900)
   const [notebook, setNotebook] = useState('all')
   const [tab, setTab] = useState('all')
@@ -80,6 +81,7 @@ export function NotesPage() {
   ).sort((a, b) => sort === 'name' ? a.title.localeCompare(b.title) : b.date.localeCompare(a.date))
 
   useEffect(() => { workspaceStorage.setItem('psykie-note-favorites', JSON.stringify(favorites)) }, [favorites])
+  useEffect(() => { if(selectedId)workspaceStorage.setItem('psykie-active-note',selectedId) }, [selectedId])
 
   // Switch drawing state when active note changes
   useEffect(() => {
@@ -159,12 +161,12 @@ export function NotesPage() {
   return <div className="reference-page ref-notes-page" data-browser-open={browserOpen || !active}>
     <ReferenceHeader
       title="Notes"
-      actions={<button className="ref-secondary" onClick={()=>{setNewKind('handwriting');setShowNew(true)}}><Scribble size={18}/>Handwritten note</button>}
+      actions={<button className="ref-secondary" aria-label="Handwritten note" onClick={()=>{setNewKind('handwriting');setShowNew(true)}}><Scribble size={18}/>Handwrite</button>}
       subtitle="A little clarity, one thought at a time."
       action="New note"
       onAction={() => { setNewKind('text'); setShowNew(true) }}
     />
-    <div className="notes-viewbar"><p>{active ? <><strong>{plainText(active.title)}</strong><span>{isHandwriting?'Handwritten note':'Text note'}</span></> : 'Your notebooks and writing space'}</p>{active&&<button className="ref-secondary" aria-controls="notes-browser" aria-expanded={browserOpen} onClick={()=>setBrowserOpen(value=>!value)}><SidebarSimple size={18}/>{browserOpen?'Focus editor':'Show notes'}</button>}</div>
+    {notes.length>0?<><div className="notes-viewbar"><p>{active ? <><strong>{plainText(active.title)}</strong><span>{isHandwriting?'Handwritten note':'Text note'}</span></> : 'Your notebooks and writing space'}</p>{active&&<button className="ref-secondary" aria-controls="notes-browser" aria-expanded={browserOpen} onClick={()=>setBrowserOpen(value=>!value)}><SidebarSimple size={18}/>{browserOpen?'Focus editor':'Show notes'}</button>}</div>
     <div className="ref-notes-layout"><div className="notes-browser" id="notes-browser">
       <aside className="ref-panel ref-notebooks">
         <div className="ref-panel-title">
@@ -182,12 +184,6 @@ export function NotesPage() {
         <button className="ref-text-action ref-upload-note" onClick={() => uploadRef.current?.click()}>
           <UploadSimple size={17} />Import text
         </button>
-        <input hidden ref={uploadRef} type="file" accept=".txt,.md" onChange={async e => {
-          const file = e.target.files?.[0]; if (!file) return
-          const text = await file.text()
-          const id = addNote({ title: file.name.replace(/\.[^.]+$/, ''), fileName: file.name, fileSize: `${Math.max(1, Math.round(file.size / 1024))} KB`, category: 'General Psychology', summary: text, keyTopics: [], keyConcepts: [], importantTerms: [] })
-          setSelectedId(id); setNotebook('all'); if(window.innerWidth<=900)setBrowserOpen(false); e.target.value = ''
-        }} />
       </aside>
 
       <section className="ref-panel ref-note-list">
@@ -311,6 +307,14 @@ export function NotesPage() {
         )}
       </section>
     </div>
+
+    </>:<CollectionWelcome eyebrow="A LITTLE CLARITY, EVERY DAY" title="Give your thoughts a little room." icon={<FileText size={44} weight="duotone"/>} action="Write your first note" onAction={()=>{setNewKind('text');setShowNew(true)}} extra={<button className="ref-text-action" onClick={()=>uploadRef.current?.click()}><UploadSimple size={17}/>Import text</button>} secondary="Start a handwritten note" onSecondary={()=>{setNewKind('handwriting');setShowNew(true)}} steps={['Capture a thought','Make it your own','Turn it into practice']}>Lecture notes, handwritten ideas, and the concepts you want to keep. Start with a blank page; your work saves as you go.</CollectionWelcome>}
+        <input hidden ref={uploadRef} type="file" accept=".txt,.md" onChange={async e => {
+          const file = e.target.files?.[0]; if (!file) return
+          const text = await file.text()
+          const id = addNote({ title: file.name.replace(/\.[^.]+$/, ''), fileName: file.name, fileSize: `${Math.max(1, Math.round(file.size / 1024))} KB`, category: 'General Psychology', summary: text, keyTopics: [], keyConcepts: [], importantTerms: [] })
+          setSelectedId(id); setNotebook('all'); if(window.innerWidth<=900)setBrowserOpen(false); e.target.value = ''
+        }} />
 
     {showNew && (
       <ViewportOverlay onDismiss={() => setShowNew(false)}>
